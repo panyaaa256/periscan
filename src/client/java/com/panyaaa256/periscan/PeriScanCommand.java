@@ -2,6 +2,7 @@ package com.panyaaa256.periscan;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
 import com.panyaaa256.periscan.persist.RegionStore;
 import com.panyaaa256.periscan.scan.ScanManager;
@@ -19,13 +20,29 @@ public final class PeriScanCommand {
 	private PeriScanCommand() {
 	}
 
+	// Suggest the chunk the player is currently standing in.
+	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
+		if (ctx.getSource().getPlayer() != null) {
+			builder.suggest(ctx.getSource().getPlayer().chunkPosition().x);
+		}
+		return builder.buildFuture();
+	};
+	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_Z = (ctx, builder) -> {
+		if (ctx.getSource().getPlayer() != null) {
+			builder.suggest(ctx.getSource().getPlayer().chunkPosition().z);
+		}
+		return builder.buildFuture();
+	};
+
 	public static void register() {
+		// Only the full 4-argument form has an executes(); with fewer arguments
+		// brigadier fails with the vanilla "Unknown or incomplete command" error.
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
 				literal("periscan")
-						.then(argument("x1", IntegerArgumentType.integer())
-								.then(argument("z1", IntegerArgumentType.integer())
-										.then(argument("x2", IntegerArgumentType.integer())
-												.then(argument("z2", IntegerArgumentType.integer())
+						.then(argument("x1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
+								.then(argument("z1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
+										.then(argument("x2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
+												.then(argument("z2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
 														.executes(PeriScanCommand::run)))))
 						.then(literal("clear").executes(ctx -> clear(ctx.getSource())))
 						.then(literal("reload").executes(ctx -> reload(ctx.getSource())))
@@ -55,11 +72,12 @@ public final class PeriScanCommand {
 	}
 
 	private static int reload(FabricClientCommandSource source) {
-		if (!ScanManager.INSTANCE.isActive()) {
+		if (!ScanManager.INSTANCE.hasRegion()) {
 			source.sendError(Component.translatable("periscan.msg.no_region"));
 			return 0;
 		}
-		List<String> invalidEntries = ScanManager.INSTANCE.rescan();
+		// Also starts scanning for a region restored on login (kept dormant until now).
+		List<String> invalidEntries = ScanManager.INSTANCE.activate(ScanManager.INSTANCE.cornerA(), ScanManager.INSTANCE.cornerB());
 		source.sendFeedback(Component.translatable("periscan.msg.reloaded"));
 		warnInvalidEntries(source, invalidEntries);
 		return 1;

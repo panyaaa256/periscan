@@ -7,6 +7,8 @@
 	"periscan.config.ns_width.desc": "Width in columns of the trenches at both Z ends of the perimeter.",
 	"periscan.config.ew_width": "East-west trench width",
 	"periscan.config.ew_width.desc": "Width in columns of the trenches at both X ends of the perimeter.",
+	"periscan.config.scan_max_y": "Maximum scanned Y",
+	"periscan.config.scan_max_y.desc": "Scan up to this Y (inclusive). The scan always starts at the world bottom.",
 	"periscan.config.category.trench_outer": "One outside the trench",
 	"periscan.config.category.trench_inner": "Inside the trench",
 	"periscan.config.category.eater": "Eater area",
@@ -19,10 +21,13 @@
 	"periscan.config.waterlogged_blacklist.desc": "Blocks (id or #tag) never highlighted as waterlogged, in addition to the automatic exclusion. Shared by all zones.",
 	"periscan.config.zone.blocks": "Highlighted blocks",
 	"periscan.config.zone.blocks.desc": "Block ids (minecraft:obsidian) or block tags (#minecraft:walls).",
+	"periscan.config.zone.fence_blocks": "Walls/fences (specific lanes only)",
+	"periscan.config.zone.fence_blocks.desc": "Blocks in this list are only highlighted in trench columns whose 1-based index from the perimeter edge has remainder 2 when divided by 3 (2, 5, 8, 11...). In other columns they do not obstruct the trencher and are ignored. Width-3 trenches survive walls/fences even in the middle column, so nothing is highlighted there.",
 	"periscan.msg.activated": "PeriScan: highlighting a %s x %s block perimeter",
 	"periscan.msg.cleared": "PeriScan: highlights cleared",
 	"periscan.msg.reloaded": "PeriScan: region rescanned",
 	"periscan.msg.no_region": "PeriScan: no active region. Run /periscan <x1> <z1> <x2> <z2> first.",
+	"periscan.msg.region_available": "PeriScan: a saved region is available. Run /periscan reload to start scanning.",
 	"periscan.msg.invalid_entry": "PeriScan: ignored invalid config entry: %s",
 	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan"
 }

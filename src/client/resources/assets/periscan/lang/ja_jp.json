@@ -7,6 +7,8 @@
 	"periscan.config.ns_width.desc": "ペリメータのZ軸方向両端にあるトレンチの幅(列数)。",
 	"periscan.config.ew_width": "東西トレンチの幅",
 	"periscan.config.ew_width.desc": "ペリメータのX軸方向両端にあるトレンチの幅(列数)。",
+	"periscan.config.scan_max_y": "スキャンする最大Y",
+	"periscan.config.scan_max_y.desc": "このY(含む)までを走査対象にします。走査はワールド最下端から始まります。",
 	"periscan.config.category.trench_outer": "トレンチの一つ外側",
 	"periscan.config.category.trench_inner": "トレンチの内側",
 	"periscan.config.category.eater": "イーター領域",
@@ -19,10 +21,13 @@
 	"periscan.config.waterlogged_blacklist.desc": "水没していてもハイライトしないブロック(ID または #タグ)。全ゾーン共通で、自動除外に追加で適用されます。",
 	"periscan.config.zone.blocks": "ハイライトするブロック",
 	"periscan.config.zone.blocks.desc": "ブロックID(minecraft:obsidian)またはブロックタグ(#minecraft:walls)。",
+	"periscan.config.zone.fence_blocks": "塀・フェンス類(特定レーンのみ)",
+	"periscan.config.zone.fence_blocks.desc": "このリストのブロックは、トレンチの端から数えて3で割って2余る列(2, 5, 8, 11...)にある場合のみハイライトされます。それ以外の列ではtrencherの妨げにならないため無視されます。幅が3のトレンチは真ん中に塀等があっても壊れないため、全くハイライトされません。",
 	"periscan.msg.activated": "PeriScan: %s x %s ブロックのペリメータをハイライト中",
 	"periscan.msg.cleared": "PeriScan: ハイライトを消去しました",
 	"periscan.msg.reloaded": "PeriScan: 領域を再スキャンしました",
 	"periscan.msg.no_region": "PeriScan: アクティブな領域がありません。先に /periscan <x1> <z1> <x2> <z2> を実行してください。",
+	"periscan.msg.region_available": "PeriScan: 保存された領域があります。/periscan reload で再走査を開始します。",
 	"periscan.msg.invalid_entry": "PeriScan: 不正なconfigエントリを無視しました: %s",
 	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます"
 }

@@ -31,7 +31,9 @@ public final class RegionStore {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			SavedRegion region = load();
 			if (region != null) {
-				ScanManager.INSTANCE.activate(new ChunkPos(region.x1, region.z1), new ChunkPos(region.x2, region.z2));
+				// Restore the region but stay dormant: scanning only starts when the
+				// user runs /periscan reload.
+				ScanManager.INSTANCE.setDormantRegion(new ChunkPos(region.x1, region.z1), new ChunkPos(region.x2, region.z2));
 			}
 		});
 	}

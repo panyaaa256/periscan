@@ -31,6 +31,10 @@ public class PeriScanConfig {
 	@SerialEntry
 	public int eastWestWidth = 3;
 
+	// Upper Y bound of the scan (inclusive). The scan always starts at the world bottom.
+	@SerialEntry
+	public int scanMaxY = 128;
+
 	// Entries are block ids ("minecraft:obsidian") or block tags ("#minecraft:walls").
 	@SerialEntry
 	public List<String> trenchOuterBlocks = new ArrayList<>(List.of(
@@ -46,6 +50,7 @@ public class PeriScanConfig {
 	public List<String> trenchInnerBlocks = new ArrayList<>(List.of(
 			"minecraft:chest",
 			"minecraft:trapped_chest",
+			"minecraft:ender_chest",
 			"minecraft:obsidian",
 			"minecraft:crying_obsidian",
 			"minecraft:vault",
@@ -55,7 +60,11 @@ public class PeriScanConfig {
 			"minecraft:calibrated_sculk_sensor",
 			"minecraft:sculk_catalyst",
 			"minecraft:sculk_shrieker",
-			"minecraft:reinforced_deepslate",
+			"minecraft:reinforced_deepslate"));
+	// Walls/fences only obstruct the trencher in specific columns (1-based from the
+	// perimeter edge, index % 3 == 2); entries here are only highlighted there.
+	@SerialEntry
+	public List<String> trenchInnerFenceBlocks = new ArrayList<>(List.of(
 			"#minecraft:walls",
 			"#minecraft:fences",
 			"#minecraft:fence_gates"));
@@ -67,6 +76,7 @@ public class PeriScanConfig {
 	@SerialEntry
 	public List<String> eaterBlocks = new ArrayList<>(List.of(
 			"minecraft:obsidian",
+			"minecraft:ender_chest",
 			"minecraft:vault",
 			"minecraft:trial_spawner",
 			"minecraft:reinforced_deepslate"));

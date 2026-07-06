@@ -7,6 +7,7 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
+import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
@@ -52,6 +53,14 @@ public final class PeriScanConfigScreen {
 										v -> config.eastWestWidth = v)
 								.controller(opt -> IntegerSliderControllerBuilder.create(opt).range(3, 32).step(1))
 								.build())
+						.option(Option.<Integer>createBuilder()
+								.name(Component.translatable("periscan.config.scan_max_y"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.scan_max_y.desc")))
+								.binding(defaults.scanMaxY,
+										() -> config.scanMaxY,
+										v -> config.scanMaxY = v)
+								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-2032, 2031))
+								.build())
 						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("periscan.config.waterlogged_exclude_push"))
 								.description(OptionDescription.of(Component.translatable("periscan.config.waterlogged_exclude_push.desc")))
@@ -73,15 +82,26 @@ public final class PeriScanConfigScreen {
 				.category(zoneCategory("periscan.config.category.trench_outer",
 						defaults.trenchOuterBlocks, () -> config.trenchOuterBlocks, v -> config.trenchOuterBlocks = new ArrayList<>(v),
 						defaults.trenchOuterWaterlogged, () -> config.trenchOuterWaterlogged, v -> config.trenchOuterWaterlogged = v,
-						defaults.trenchOuterColor, () -> config.trenchOuterColor, v -> config.trenchOuterColor = v))
+						defaults.trenchOuterColor, () -> config.trenchOuterColor, v -> config.trenchOuterColor = v,
+						null))
 				.category(zoneCategory("periscan.config.category.trench_inner",
 						defaults.trenchInnerBlocks, () -> config.trenchInnerBlocks, v -> config.trenchInnerBlocks = new ArrayList<>(v),
 						defaults.trenchInnerWaterlogged, () -> config.trenchInnerWaterlogged, v -> config.trenchInnerWaterlogged = v,
-						defaults.trenchInnerColor, () -> config.trenchInnerColor, v -> config.trenchInnerColor = v))
+						defaults.trenchInnerColor, () -> config.trenchInnerColor, v -> config.trenchInnerColor = v,
+						ListOption.<String>createBuilder()
+								.name(Component.translatable("periscan.config.zone.fence_blocks"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.zone.fence_blocks.desc")))
+								.binding(defaults.trenchInnerFenceBlocks,
+										() -> config.trenchInnerFenceBlocks,
+										v -> config.trenchInnerFenceBlocks = new ArrayList<>(v))
+								.controller(StringControllerBuilder::create)
+								.initial("minecraft:")
+								.build()))
 				.category(zoneCategory("periscan.config.category.eater",
 						defaults.eaterBlocks, () -> config.eaterBlocks, v -> config.eaterBlocks = new ArrayList<>(v),
 						defaults.eaterWaterlogged, () -> config.eaterWaterlogged, v -> config.eaterWaterlogged = v,
-						defaults.eaterColor, () -> config.eaterColor, v -> config.eaterColor = v))
+						defaults.eaterColor, () -> config.eaterColor, v -> config.eaterColor = v,
+						null))
 				.save(() -> {
 					PeriScanConfig.HANDLER.save();
 					// Re-derive zones and rescan with the new settings if a region is active.
@@ -93,8 +113,9 @@ public final class PeriScanConfigScreen {
 	private static ConfigCategory zoneCategory(String nameKey,
 			List<String> defaultBlocks, Supplier<List<String>> getBlocks, Consumer<List<String>> setBlocks,
 			boolean defaultWaterlogged, Supplier<Boolean> getWaterlogged, Consumer<Boolean> setWaterlogged,
-			Color defaultColor, Supplier<Color> getColor, Consumer<Color> setColor) {
-		return ConfigCategory.createBuilder()
+			Color defaultColor, Supplier<Color> getColor, Consumer<Color> setColor,
+			ListOption<String> extraGroup) {
+		ConfigCategory.Builder builder = ConfigCategory.createBuilder()
 				.name(Component.translatable(nameKey))
 				.option(Option.<Color>createBuilder()
 						.name(Component.translatable("periscan.config.zone.color"))
@@ -113,7 +134,10 @@ public final class PeriScanConfigScreen {
 						.binding(defaultBlocks, getBlocks, setBlocks)
 						.controller(StringControllerBuilder::create)
 						.initial("minecraft:")
-						.build())
-				.build();
+						.build());
+		if (extraGroup != null) {
+			builder.group(extraGroup);
+		}
+		return builder.build();
 	}
 }

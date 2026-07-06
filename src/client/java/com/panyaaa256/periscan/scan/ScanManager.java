@@ -32,6 +32,7 @@ public class ScanManager {
 	private final EnumMap<Zone, LongOpenHashSet> highlights = new EnumMap<>(Zone.class);
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
 	private int tickCounter = 0;
+	private boolean dormantNoticePending = false;
 
 	private ScanManager() {
 		for (Zone zone : Zone.VALUES) {
@@ -47,6 +48,22 @@ public class ScanManager {
 
 	public boolean isActive() {
 		return layout != null;
+	}
+
+	/** A region is known (active, or restored from disk and waiting for /periscan reload). */
+	public boolean hasRegion() {
+		return cornerA != null;
+	}
+
+	/**
+	 * Remembers a region without scanning or highlighting anything. Used when
+	 * restoring on login: scanning only starts once /periscan reload is run.
+	 */
+	public void setDormantRegion(ChunkPos a, ChunkPos b) {
+		deactivate();
+		this.cornerA = a;
+		this.cornerB = b;
+		this.dormantNoticePending = true;
 	}
 
 	public ChunkPos cornerA() {
@@ -80,7 +97,15 @@ public class ScanManager {
 				config.waterloggedBlacklist, config.waterloggedExcludePushDestroy, invalidEntries);
 		matchers.clear();
 		for (Zone zone : Zone.VALUES) {
-			matchers.put(zone, ZoneMatcher.compile(zone.blockEntries(config), zone.includeWaterlogged(config), exclusions, invalidEntries));
+			if (zone == Zone.TRENCH_INNER) {
+				// Walls/fences only matter in specific trench columns (index % 3 == 2 from the edge).
+				matchers.put(zone, ZoneMatcher.compile(zone.blockEntries(config),
+						config.trenchInnerFenceBlocks, layout::fenceLaneMatters,
+						zone.includeWaterlogged(config), exclusions, invalidEntries));
+			} else {
+				matchers.put(zone, ZoneMatcher.compile(zone.blockEntries(config),
+						zone.includeWaterlogged(config), exclusions, invalidEntries));
+			}
 		}
 
 		for (LongOpenHashSet set : highlights.values()) {
@@ -123,6 +148,7 @@ public class ScanManager {
 		layout = null;
 		cornerA = null;
 		cornerB = null;
+		dormantNoticePending = false;
 		matchers.clear();
 		pendingChunks.clear();
 		for (LongOpenHashSet set : highlights.values()) {
@@ -166,7 +192,7 @@ public class ScanManager {
 		}
 
 		int minY = level.getMinY();
-		int maxY = level.getMaxY();
+		int maxY = Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
 		for (int y = minY; y <= maxY; y++) {
 			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
 			if (section.hasOnlyAir()) {
@@ -186,7 +212,7 @@ public class ScanManager {
 						continue;
 					}
 					for (Zone zone : Zone.VALUES) {
-						if ((mask & zone.mask()) != 0 && matchers.get(zone).matches(state)) {
+						if ((mask & zone.mask()) != 0 && matchers.get(zone).matches(state, baseX + dx, baseZ + dz)) {
 							highlights.get(zone).add(BlockPos.asLong(baseX + dx, y, baseZ + dz));
 						}
 					}
@@ -196,7 +222,14 @@ public class ScanManager {
 	}
 
 	private void onTick(Minecraft client) {
-		if (layout == null || client.level == null) {
+		if (client.level == null) {
+			return;
+		}
+		if (dormantNoticePending && client.player != null) {
+			dormantNoticePending = false;
+			client.player.displayClientMessage(Component.translatable("periscan.msg.region_available"), false);
+		}
+		if (layout == null) {
 			return;
 		}
 		tickCounter++;
@@ -226,7 +259,7 @@ public class ScanManager {
 				if (!level.getChunkSource().hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
 					return false; // keep cached highlights for unloaded chunks
 				}
-				return !matcher.matches(level.getBlockState(pos));
+				return !matcher.matches(level.getBlockState(pos), pos.getX(), pos.getZ());
 			});
 		}
 	}

@@ -1,0 +1,45 @@
+package com.panyaaa256.periscan;
+
+import com.panyaaa256.periscan.config.PeriScanConfig;
+import com.panyaaa256.periscan.persist.RegionStore;
+import com.panyaaa256.periscan.render.HighlightRenderer;
+import com.panyaaa256.periscan.scan.ScanManager;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+
+import java.util.function.Supplier;
+
+public class PeriScanClient implements ClientModInitializer {
+	public static final String MOD_ID = "periscan";
+
+	private static Supplier<Screen> scheduledScreen = null;
+
+	@Override
+	public void onInitializeClient() {
+		PeriScanConfig.HANDLER.load();
+		PeriScanCommand.register();
+		ScanManager.INSTANCE.init();
+		HighlightRenderer.init();
+		RegionStore.init();
+
+		// Screens cannot be opened directly from a command (the chat screen closes
+		// afterwards and would override it), so open scheduled screens next tick.
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (scheduledScreen != null && client.screen == null) {
+				Screen screen = scheduledScreen.get();
+				scheduledScreen = null;
+				client.setScreen(screen);
+			}
+		});
+	}
+
+	public static void scheduleScreen(Supplier<Screen> screen) {
+		scheduledScreen = screen;
+	}
+
+	public static Minecraft client() {
+		return Minecraft.getInstance();
+	}
+}

@@ -14,6 +14,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -80,6 +81,11 @@ public class ScanManager {
 
 	public int pendingChunkCount() {
 		return pendingChunks.size();
+	}
+
+	/** Chunks in the region not scanned yet (as ChunkPos longs). Do not modify. */
+	public LongOpenHashSet pendingChunks() {
+		return pendingChunks;
 	}
 
 	/**
@@ -191,7 +197,7 @@ public class ScanManager {
 			return;
 		}
 
-		int minY = level.getMinY();
+		int minY = Math.max(level.getMinY(), scanMinY(level));
 		int maxY = Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
 		for (int y = minY; y <= maxY; y++) {
 			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
@@ -219,6 +225,17 @@ public class ScanManager {
 				}
 			}
 		}
+	}
+
+	/** Skips the bedrock floor: overworld scans only y > -59, the nether only y > 5. */
+	public static int scanMinY(ClientLevel level) {
+		if (level.dimension() == Level.OVERWORLD) {
+			return -59;
+		}
+		if (level.dimension() == Level.NETHER) {
+			return 5;
+		}
+		return level.getMinY();
 	}
 
 	private void onTick(Minecraft client) {

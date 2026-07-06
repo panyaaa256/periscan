@@ -14,12 +14,14 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -28,6 +30,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class HighlightRenderer {
 	private static final int FILL_ALPHA = 0x40;
+	private static final int PENDING_FILL_ALPHA = 0x18;
+	// Pending chunk boxes are only drawn within this horizontal distance of the camera.
+	private static final double PENDING_RENDER_DISTANCE = 2048.0;
 
 	private static final RenderPipeline FILL_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
 			.withLocation(Identifier.fromNamespaceAndPath("periscan", "pipeline/highlight_fill"))
@@ -83,6 +88,10 @@ public final class HighlightRenderer {
 				addBoxFaces(fill, pose, camera, it.nextLong(), color);
 			}
 		}
+		if (config.showPendingChunks) {
+			addPendingChunkBoxes(fill, pose, camera, false,
+					(PENDING_FILL_ALPHA << 24) | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
+		}
 
 		VertexConsumer lines = consumers.getBuffer(LINE_TYPE);
 		for (Zone zone : Zone.VALUES) {
@@ -92,16 +101,54 @@ public final class HighlightRenderer {
 				addBoxEdges(lines, pose, camera, it.nextLong(), color);
 			}
 		}
+		if (config.showPendingChunks) {
+			addPendingChunkBoxes(lines, pose, camera, true,
+					0xFF000000 | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
+		}
+	}
+
+	/** Draws one box over each unscanned chunk near the camera, spanning the scan's Y range. */
+	private static void addPendingChunkBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera,
+			boolean edges, int color) {
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level == null) {
+			return;
+		}
+		PeriScanConfig config = PeriScanConfig.get();
+		float y0 = (float) (Math.max(level.getMinY(), ScanManager.scanMinY(level)) - camera.y);
+		float y1 = (float) (Math.min(level.getMaxY(), config.scanMaxY) + 1 - camera.y);
+		if (y1 <= y0) {
+			return;
+		}
+		LongIterator it = ScanManager.INSTANCE.pendingChunks().iterator();
+		while (it.hasNext()) {
+			long key = it.nextLong();
+			double blockX = ChunkPos.getX(key) * 16.0;
+			double blockZ = ChunkPos.getZ(key) * 16.0;
+			double dx = blockX + 8 - camera.x;
+			double dz = blockZ + 8 - camera.z;
+			if (dx * dx + dz * dz > PENDING_RENDER_DISTANCE * PENDING_RENDER_DISTANCE) {
+				continue;
+			}
+			float x0 = (float) (blockX - camera.x);
+			float z0 = (float) (blockZ - camera.z);
+			if (edges) {
+				boxEdges(buffer, pose, color, x0, y0, z0, x0 + 16, y1, z0 + 16);
+			} else {
+				boxFaces(buffer, pose, color, x0, y0, z0, x0 + 16, y1, z0 + 16);
+			}
+		}
 	}
 
 	private static void addBoxFaces(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, long posKey, int color) {
 		float x0 = (float) (BlockPos.getX(posKey) - camera.x);
 		float y0 = (float) (BlockPos.getY(posKey) - camera.y);
 		float z0 = (float) (BlockPos.getZ(posKey) - camera.z);
-		float x1 = x0 + 1;
-		float y1 = y0 + 1;
-		float z1 = z0 + 1;
+		boxFaces(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
+	}
 
+	private static void boxFaces(VertexConsumer buffer, PoseStack.Pose pose, int color,
+			float x0, float y0, float z0, float x1, float y1, float z1) {
 		quad(buffer, pose, color, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1); // bottom
 		quad(buffer, pose, color, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0); // top
 		quad(buffer, pose, color, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0); // north (z0)
@@ -123,10 +170,11 @@ public final class HighlightRenderer {
 		float x0 = (float) (BlockPos.getX(posKey) - camera.x);
 		float y0 = (float) (BlockPos.getY(posKey) - camera.y);
 		float z0 = (float) (BlockPos.getZ(posKey) - camera.z);
-		float x1 = x0 + 1;
-		float y1 = y0 + 1;
-		float z1 = z0 + 1;
+		boxEdges(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
+	}
 
+	private static void boxEdges(VertexConsumer buffer, PoseStack.Pose pose, int color,
+			float x0, float y0, float z0, float x1, float y1, float z1) {
 		// bottom rectangle
 		line(buffer, pose, color, x0, y0, z0, x1, y0, z0);
 		line(buffer, pose, color, x1, y0, z0, x1, y0, z1);

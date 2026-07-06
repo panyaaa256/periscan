@@ -35,15 +35,16 @@ public final class PeriScanCommand {
 	};
 
 	public static void register() {
-		// Only the full 4-argument form has an executes(); with fewer arguments
-		// brigadier fails with the vanilla "Unknown or incomplete command" error.
+		// Only the full "start x1 z1 x2 z2" form has an executes(); with fewer
+		// arguments brigadier fails with the vanilla "Unknown or incomplete command" error.
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
 				literal("periscan")
-						.then(argument("x1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
-								.then(argument("z1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
-										.then(argument("x2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
-												.then(argument("z2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
-														.executes(PeriScanCommand::run)))))
+						.then(literal("start")
+								.then(argument("x1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
+										.then(argument("z1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
+												.then(argument("x2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
+														.then(argument("z2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
+																.executes(PeriScanCommand::run))))))
 						.then(literal("clear").executes(ctx -> clear(ctx.getSource())))
 						.then(literal("reload").executes(ctx -> reload(ctx.getSource())))
 						.then(literal("config").executes(ctx -> openConfig(ctx.getSource())))));

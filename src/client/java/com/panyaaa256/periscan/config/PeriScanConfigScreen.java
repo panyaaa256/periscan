@@ -62,6 +62,21 @@ public final class PeriScanConfigScreen {
 								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-2032, 2031))
 								.build())
 						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("periscan.config.show_pending"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.show_pending.desc")))
+								.binding(defaults.showPendingChunks,
+										() -> config.showPendingChunks,
+										v -> config.showPendingChunks = v)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.option(Option.<Color>createBuilder()
+								.name(Component.translatable("periscan.config.pending_color"))
+								.binding(defaults.pendingChunkColor,
+										() -> config.pendingChunkColor,
+										v -> config.pendingChunkColor = v)
+								.controller(ColorControllerBuilder::create)
+								.build())
+						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("periscan.config.waterlogged_exclude_push"))
 								.description(OptionDescription.of(Component.translatable("periscan.config.waterlogged_exclude_push.desc")))
 								.binding(defaults.waterloggedExcludePushDestroy,

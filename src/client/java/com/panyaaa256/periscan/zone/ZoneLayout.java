@@ -15,6 +15,10 @@ import java.util.List;
  * Z ends, east-west width (config, along X) at both X ends. The "one outside the
  * trench" zone is the single-column line on both sides of each strip, which extends
  * one block beyond the specified region on the outside.
+ *
+ * If the region is too narrow along an axis to hold two opposite strips (size
+ * &lt; 2 * width), it is assumed to contain a single trench on that axis, anchored
+ * at the edge farther from the world origin (the outer side of a real perimeter).
  */
 public final class ZoneLayout {
 
@@ -33,7 +37,7 @@ public final class ZoneLayout {
 
 	private final List<ZoneRect> rects = new ArrayList<>();
 	// Bounds of everything that needs scanning (region plus the outer one-block ring if present).
-	private final Rect scanBounds;
+	private Rect scanBounds;
 
 	private final boolean trenchActive;
 	private final int regionMinX;
@@ -42,10 +46,15 @@ public final class ZoneLayout {
 	private final int regionMaxZ;
 	private final int ns;
 	private final int ew;
+	// Which of the four trench strips exist (single-trench regions drop one per axis).
+	private final boolean stripZMin;
+	private final boolean stripZMax;
+	private final boolean stripXMin;
+	private final boolean stripXMax;
 
-	private ZoneLayout(Rect scanBounds, boolean trenchActive,
-			int regionMinX, int regionMinZ, int regionMaxX, int regionMaxZ, int ns, int ew) {
-		this.scanBounds = scanBounds;
+	private ZoneLayout(boolean trenchActive,
+			int regionMinX, int regionMinZ, int regionMaxX, int regionMaxZ, int ns, int ew,
+			boolean stripZMin, boolean stripZMax, boolean stripXMin, boolean stripXMax) {
 		this.trenchActive = trenchActive;
 		this.regionMinX = regionMinX;
 		this.regionMinZ = regionMinZ;
@@ -53,6 +62,10 @@ public final class ZoneLayout {
 		this.regionMaxZ = regionMaxZ;
 		this.ns = ns;
 		this.ew = ew;
+		this.stripZMin = stripZMin;
+		this.stripZMax = stripZMax;
+		this.stripXMin = stripXMin;
+		this.stripXMax = stripXMax;
 	}
 
 	public static ZoneLayout of(ChunkPos cornerA, ChunkPos cornerB, PeriScanConfig config) {
@@ -66,33 +79,68 @@ public final class ZoneLayout {
 
 		if (!config.useQuarryLikeTrencher) {
 			// No trench: the whole specified region is the eater area.
-			ZoneLayout layout = new ZoneLayout(new Rect(minX, minZ, maxX, maxZ), false, minX, minZ, maxX, maxZ, ns, ew);
+			ZoneLayout layout = new ZoneLayout(false, minX, minZ, maxX, maxZ, ns, ew, false, false, false, false);
 			layout.add(Zone.EATER, new Rect(minX, minZ, maxX, maxZ));
+			layout.scanBounds = new Rect(minX, minZ, maxX, maxZ);
 			return layout;
 		}
 
-		ZoneLayout layout = new ZoneLayout(new Rect(minX - 1, minZ - 1, maxX + 1, maxZ + 1), true, minX, minZ, maxX, maxZ, ns, ew);
+		// A region too narrow for two opposite strips holds a single trench, anchored
+		// at the edge farther from the origin (ties go to the max side).
+		boolean twoZ = maxZ - minZ + 1 >= 2 * ns;
+		boolean stripZMax = twoZ || Math.abs(maxZ) >= Math.abs(minZ);
+		boolean stripZMin = twoZ || !stripZMax;
+		boolean twoX = maxX - minX + 1 >= 2 * ew;
+		boolean stripXMax = twoX || Math.abs(maxX) >= Math.abs(minX);
+		boolean stripXMin = twoX || !stripXMax;
 
-		// Trench body: two Z-end strips (full X length) and two X-end strips (full Z length).
-		layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, maxX, minZ + ns - 1));
-		layout.add(Zone.TRENCH_INNER, new Rect(minX, maxZ - ns + 1, maxX, maxZ));
-		layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, minX + ew - 1, maxZ));
-		layout.add(Zone.TRENCH_INNER, new Rect(maxX - ew + 1, minZ, maxX, maxZ));
+		ZoneLayout layout = new ZoneLayout(true, minX, minZ, maxX, maxZ, ns, ew,
+				stripZMin, stripZMax, stripXMin, stripXMax);
 
-		// One-block lines on both sides of each strip, spanning the strip's full length.
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ - 1, maxX, minZ - 1));
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ + ns, maxX, minZ + ns));
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ - ns, maxX, maxZ - ns));
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ + 1, maxX, maxZ + 1));
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX - 1, minZ, minX - 1, maxZ));
-		layout.add(Zone.TRENCH_OUTER, new Rect(minX + ew, minZ, minX + ew, maxZ));
-		layout.add(Zone.TRENCH_OUTER, new Rect(maxX - ew, minZ, maxX - ew, maxZ));
-		layout.add(Zone.TRENCH_OUTER, new Rect(maxX + 1, minZ, maxX + 1, maxZ));
+		// Trench body strips (Z ends span the full X length, X ends the full Z length),
+		// each with its one-block "outside the trench" lines on both sides.
+		if (stripZMin) {
+			layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, maxX, Math.min(minZ + ns - 1, maxZ)));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ - 1, maxX, minZ - 1));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ + ns, maxX, minZ + ns));
+		}
+		if (stripZMax) {
+			layout.add(Zone.TRENCH_INNER, new Rect(minX, Math.max(maxZ - ns + 1, minZ), maxX, maxZ));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ - ns, maxX, maxZ - ns));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ + 1, maxX, maxZ + 1));
+		}
+		if (stripXMin) {
+			layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, Math.min(minX + ew - 1, maxX), maxZ));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX - 1, minZ, minX - 1, maxZ));
+			layout.add(Zone.TRENCH_OUTER, new Rect(minX + ew, minZ, minX + ew, maxZ));
+		}
+		if (stripXMax) {
+			layout.add(Zone.TRENCH_INNER, new Rect(Math.max(maxX - ew + 1, minX), minZ, maxX, maxZ));
+			layout.add(Zone.TRENCH_OUTER, new Rect(maxX - ew, minZ, maxX - ew, maxZ));
+			layout.add(Zone.TRENCH_OUTER, new Rect(maxX + 1, minZ, maxX + 1, maxZ));
+		}
 
 		// Eater area: the interior with the trenches removed.
-		layout.add(Zone.EATER, new Rect(minX + ew, minZ + ns, maxX - ew, maxZ - ns));
+		layout.add(Zone.EATER, new Rect(
+				stripXMin ? minX + ew : minX, stripZMin ? minZ + ns : minZ,
+				stripXMax ? maxX - ew : maxX, stripZMax ? maxZ - ns : maxZ));
 
+		layout.scanBounds = layout.unionRects(new Rect(minX, minZ, maxX, maxZ));
 		return layout;
+	}
+
+	private Rect unionRects(Rect base) {
+		int minX = base.minX;
+		int minZ = base.minZ;
+		int maxX = base.maxX;
+		int maxZ = base.maxZ;
+		for (ZoneRect zr : rects) {
+			minX = Math.min(minX, zr.rect.minX);
+			minZ = Math.min(minZ, zr.rect.minZ);
+			maxX = Math.max(maxX, zr.rect.maxX);
+			maxZ = Math.max(maxZ, zr.rect.maxZ);
+		}
+		return new Rect(minX, minZ, maxX, maxZ);
 	}
 
 	private void add(Zone zone, Rect rect) {
@@ -130,18 +178,18 @@ public final class ZoneLayout {
 			return false;
 		}
 		if (ns != 3) {
-			if (z >= regionMinZ && z <= regionMinZ + ns - 1 && (z - regionMinZ + 1) % 3 == 2) {
+			if (stripZMin && z >= regionMinZ && z <= regionMinZ + ns - 1 && (z - regionMinZ + 1) % 3 == 2) {
 				return true;
 			}
-			if (z <= regionMaxZ && z >= regionMaxZ - ns + 1 && (regionMaxZ - z + 1) % 3 == 2) {
+			if (stripZMax && z <= regionMaxZ && z >= regionMaxZ - ns + 1 && (regionMaxZ - z + 1) % 3 == 2) {
 				return true;
 			}
 		}
 		if (ew != 3) {
-			if (x >= regionMinX && x <= regionMinX + ew - 1 && (x - regionMinX + 1) % 3 == 2) {
+			if (stripXMin && x >= regionMinX && x <= regionMinX + ew - 1 && (x - regionMinX + 1) % 3 == 2) {
 				return true;
 			}
-			if (x <= regionMaxX && x >= regionMaxX - ew + 1 && (regionMaxX - x + 1) % 3 == 2) {
+			if (stripXMax && x <= regionMaxX && x >= regionMaxX - ew + 1 && (regionMaxX - x + 1) % 3 == 2) {
 				return true;
 			}
 		}

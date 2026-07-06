@@ -35,6 +35,13 @@ public class PeriScanConfig {
 	@SerialEntry
 	public int scanMaxY = 128;
 
+	// Highlight chunks inside the region that have not been scanned yet (not
+	// loaded since the region was activated) as chunk-sized boxes.
+	@SerialEntry
+	public boolean showPendingChunks = true;
+	@SerialEntry
+	public Color pendingChunkColor = new Color(0xFF8800);
+
 	// Entries are block ids ("minecraft:obsidian") or block tags ("#minecraft:walls").
 	@SerialEntry
 	public List<String> trenchOuterBlocks = new ArrayList<>(List.of(

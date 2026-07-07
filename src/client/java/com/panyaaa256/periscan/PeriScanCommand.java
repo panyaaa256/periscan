@@ -3,6 +3,7 @@ package com.panyaaa256.periscan;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
 import com.panyaaa256.periscan.persist.RegionStore;
 import com.panyaaa256.periscan.scan.ScanManager;
@@ -52,6 +53,10 @@ public final class PeriScanCommand {
 
 	private static int run(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
+		if (!PeriScanConfig.anyZoneEnabled()) {
+			source.sendError(Component.translatable("periscan.msg.all_disabled"));
+			return 0;
+		}
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 
@@ -75,6 +80,10 @@ public final class PeriScanCommand {
 	private static int reload(FabricClientCommandSource source) {
 		if (!ScanManager.INSTANCE.hasRegion()) {
 			source.sendError(Component.translatable("periscan.msg.no_region"));
+			return 0;
+		}
+		if (!PeriScanConfig.anyZoneEnabled()) {
+			source.sendError(Component.translatable("periscan.msg.all_disabled"));
 			return 0;
 		}
 		// Also starts scanning for a region restored on login (kept dormant until now).

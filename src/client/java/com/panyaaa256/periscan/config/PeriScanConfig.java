@@ -22,8 +22,11 @@ public class PeriScanConfig {
 		return HANDLER.instance();
 	}
 
-	@SerialEntry
-	public boolean useQuarryLikeTrencher = true;
+	public static boolean anyZoneEnabled() {
+		PeriScanConfig config = get();
+		return config.trenchOuterEnabled || config.trenchInnerEnabled
+				|| config.bottomTrenchEnabled || config.eaterEnabled;
+	}
 
 	// Trench thickness in columns. northSouth runs along the Z axis, eastWest along the X axis.
 	@SerialEntry
@@ -44,6 +47,8 @@ public class PeriScanConfig {
 
 	// Entries are block ids ("minecraft:obsidian") or block tags ("#minecraft:walls").
 	@SerialEntry
+	public boolean trenchOuterEnabled = true;
+	@SerialEntry
 	public List<String> trenchOuterBlocks = new ArrayList<>(List.of(
 			"minecraft:sculk_sensor",
 			"minecraft:calibrated_sculk_sensor",
@@ -53,6 +58,8 @@ public class PeriScanConfig {
 	@SerialEntry
 	public Color trenchOuterColor = Color.WHITE;
 
+	@SerialEntry
+	public boolean trenchInnerEnabled = true;
 	@SerialEntry
 	public List<String> trenchInnerBlocks = new ArrayList<>(List.of(
 			"minecraft:chest",
@@ -79,14 +86,35 @@ public class PeriScanConfig {
 	public boolean trenchInnerWaterlogged = false;
 	@SerialEntry
 	public Color trenchInnerColor = Color.WHITE;
+	// Highlight runs of at least this many falling blocks (sand, gravel, ...) along
+	// the trencher's direction of travel inside the trench body. Air, liquids and
+	// blocks destroyed by a piston push don't count but don't interrupt the run
+	// either; only other blocks end it.
+	@SerialEntry
+	public int trenchFallingRunLength = 10;
 
+	// Bottom two scanned layers of the trench body: everything except air and
+	// liquids is highlighted, and the trench inner zone excludes those layers.
+	@SerialEntry
+	public boolean bottomTrenchEnabled = true;
+	@SerialEntry
+	public Color bottomTrenchColor = Color.WHITE;
+
+	@SerialEntry
+	public boolean eaterEnabled = true;
+	// true: the eater zone covers the whole specified region including the trenches;
+	// false: only the interior with the trench strips removed.
+	@SerialEntry
+	public boolean eaterIncludeTrench = false;
 	@SerialEntry
 	public List<String> eaterBlocks = new ArrayList<>(List.of(
 			"minecraft:obsidian",
 			"minecraft:ender_chest",
 			"minecraft:vault",
 			"minecraft:trial_spawner",
-			"minecraft:reinforced_deepslate"));
+			"minecraft:reinforced_deepslate",
+			"minecraft:kelp",
+			"minecraft:kelp_plant"));
 	@SerialEntry
 	public boolean eaterWaterlogged = true;
 	@SerialEntry

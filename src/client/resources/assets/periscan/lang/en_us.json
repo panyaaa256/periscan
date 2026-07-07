@@ -1,8 +1,6 @@
 {
 	"periscan.config.title": "PeriScan",
 	"periscan.config.category.general": "General",
-	"periscan.config.quarry_like": "Use quarry-like trencher",
-	"periscan.config.quarry_like.desc": "ON: scan all three zones (one outside the trench, inside the trench, eater area). OFF: scan only the eater area, which then covers the whole specified region.",
 	"periscan.config.ns_width": "North-south trench width",
 	"periscan.config.ns_width.desc": "Width in columns of the trenches at both Z ends of the perimeter.",
 	"periscan.config.ew_width": "East-west trench width",
@@ -14,7 +12,15 @@
 	"periscan.config.pending_color": "Unscanned chunk color",
 	"periscan.config.category.trench_outer": "One outside the trench",
 	"periscan.config.category.trench_inner": "Inside the trench",
+	"periscan.config.category.bottom_trench": "Trench bottom",
+	"periscan.config.bottom_trench.desc": "In the bottom two scanned layers of the trench area (Y=-59, -58 in the overworld), every block except air and liquids is highlighted. Those two layers are excluded from the \"inside the trench\" checks (block list and falling-block runs).",
 	"periscan.config.category.eater": "Eater area",
+	"periscan.config.zone.enabled": "Scan this zone",
+	"periscan.config.zone.enabled.desc": "When OFF this zone is not scanned or highlighted. A scan cannot start while all zones are OFF.",
+	"periscan.config.eater.include_trench": "Include trench area",
+	"periscan.config.eater.include_trench.desc": "ON: the eater zone covers the whole specified region including the trenches. OFF: only the interior with the trenches removed.",
+	"periscan.config.falling_run": "Falling block run threshold",
+	"periscan.config.falling_run.desc": "Inside the trench, highlight spots where at least this many falling blocks (sand, gravel, concrete powder, ...) run consecutively along the trencher's direction of travel (the trench's long axis). Air, liquids and blocks destroyed by a piston push (dripstone, ...) don't count but don't interrupt the run either; only other blocks end it.",
 	"periscan.config.zone.color": "Highlight color",
 	"periscan.config.zone.waterlogged": "Include waterlogged blocks",
 	"periscan.config.zone.waterlogged.desc": "Also highlight waterlogged blocks in this zone. Plain water sources are never highlighted.",
@@ -29,8 +35,9 @@
 	"periscan.msg.activated": "PeriScan: highlighting a %s x %s block perimeter",
 	"periscan.msg.cleared": "PeriScan: highlights cleared",
 	"periscan.msg.reloaded": "PeriScan: region rescanned",
-	"periscan.msg.no_region": "PeriScan: no active region. Run /periscan <x1> <z1> <x2> <z2> first.",
+	"periscan.msg.no_region": "PeriScan: no active region. Run /periscan start <x1> <z1> <x2> <z2> first.",
 	"periscan.msg.region_available": "PeriScan: a saved region is available. Run /periscan reload to start scanning.",
 	"periscan.msg.invalid_entry": "PeriScan: ignored invalid config entry: %s",
-	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan"
+	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan",
+	"periscan.msg.all_disabled": "PeriScan: all zones are disabled. Enable at least one zone in the config."
 }

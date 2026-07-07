@@ -11,6 +11,7 @@ import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
@@ -80,12 +81,21 @@ public final class HighlightRenderer {
 
 		// All fills first, then all lines: BufferSource batches by RenderType and
 		// ends the previous batch when a different type is requested.
+		// Falling-block runs belong to the trench inner zone and use its color.
+		int fallingRgb = Zone.TRENCH_INNER.color(config).getRGB() & 0xFFFFFF;
+
 		VertexConsumer fill = consumers.getBuffer(FILL_TYPE);
 		for (Zone zone : Zone.VALUES) {
 			int color = (FILL_ALPHA << 24) | (zone.color(config).getRGB() & 0xFFFFFF);
 			LongIterator it = scan.highlights(zone).iterator();
 			while (it.hasNext()) {
 				addBoxFaces(fill, pose, camera, it.nextLong(), color);
+			}
+		}
+		for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
+			LongIterator it = set.iterator();
+			while (it.hasNext()) {
+				addBoxFaces(fill, pose, camera, it.nextLong(), (FILL_ALPHA << 24) | fallingRgb);
 			}
 		}
 		if (config.showPendingChunks) {
@@ -99,6 +109,12 @@ public final class HighlightRenderer {
 			LongIterator it = scan.highlights(zone).iterator();
 			while (it.hasNext()) {
 				addBoxEdges(lines, pose, camera, it.nextLong(), color);
+			}
+		}
+		for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
+			LongIterator it = set.iterator();
+			while (it.hasNext()) {
+				addBoxEdges(lines, pose, camera, it.nextLong(), 0xFF000000 | fallingRgb);
 			}
 		}
 		if (config.showPendingChunks) {

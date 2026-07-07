@@ -19,6 +19,10 @@ import java.util.List;
  * If the region is too narrow along an axis to hold two opposite strips (size
  * &lt; 2 * width), it is assumed to contain a single trench on that axis, anchored
  * at the edge farther from the world origin (the outer side of a real perimeter).
+ *
+ * Each zone can be disabled in the config; disabled zones contribute no rects.
+ * The eater zone either covers the whole specified region (trenches included) or
+ * only the interior with the trench strips removed, per config.
  */
 public final class ZoneLayout {
 
@@ -30,13 +34,26 @@ public final class ZoneLayout {
 		public boolean contains(int x, int z) {
 			return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
 		}
+
+		public boolean intersectsChunk(int chunkMinX, int chunkMinZ) {
+			return chunkMinX + 15 >= minX && chunkMinX <= maxX
+					&& chunkMinZ + 15 >= minZ && chunkMinZ <= maxZ;
+		}
 	}
 
 	public record ZoneRect(Zone zone, Rect rect) {
 	}
 
+	/**
+	 * One trench body strip. {@code alongX} is the trencher's direction of travel
+	 * (the strip's long axis): strips at the Z ends run along X and vice versa.
+	 */
+	public record TrenchStrip(Rect rect, boolean alongX) {
+	}
+
 	private final List<ZoneRect> rects = new ArrayList<>();
-	// Bounds of everything that needs scanning (region plus the outer one-block ring if present).
+	private final List<TrenchStrip> trenchStrips = new ArrayList<>();
+	// Bounds of everything that needs scanning (union of all enabled zone rects).
 	private Rect scanBounds;
 
 	private final boolean trenchActive;
@@ -77,14 +94,6 @@ public final class ZoneLayout {
 		int ns = config.northSouthWidth; // thickness along Z
 		int ew = config.eastWestWidth;   // thickness along X
 
-		if (!config.useQuarryLikeTrencher) {
-			// No trench: the whole specified region is the eater area.
-			ZoneLayout layout = new ZoneLayout(false, minX, minZ, maxX, maxZ, ns, ew, false, false, false, false);
-			layout.add(Zone.EATER, new Rect(minX, minZ, maxX, maxZ));
-			layout.scanBounds = new Rect(minX, minZ, maxX, maxZ);
-			return layout;
-		}
-
 		// A region too narrow for two opposite strips holds a single trench, anchored
 		// at the edge farther from the origin (ties go to the max side).
 		boolean twoZ = maxZ - minZ + 1 >= 2 * ns;
@@ -94,46 +103,69 @@ public final class ZoneLayout {
 		boolean stripXMax = twoX || Math.abs(maxX) >= Math.abs(minX);
 		boolean stripXMin = twoX || !stripXMax;
 
-		ZoneLayout layout = new ZoneLayout(true, minX, minZ, maxX, maxZ, ns, ew,
+		ZoneLayout layout = new ZoneLayout(config.trenchInnerEnabled, minX, minZ, maxX, maxZ, ns, ew,
 				stripZMin, stripZMax, stripXMin, stripXMax);
 
+		boolean inner = config.trenchInnerEnabled;
+		boolean outer = config.trenchOuterEnabled;
+		boolean bottom = config.bottomTrenchEnabled;
+
 		// Trench body strips (Z ends span the full X length, X ends the full Z length),
-		// each with its one-block "outside the trench" lines on both sides.
+		// each with its one-block "outside the trench" lines on both sides. The bottom
+		// trench zone shares the strip footprint (its Y range is cut in the scan).
 		if (stripZMin) {
-			layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, maxX, Math.min(minZ + ns - 1, maxZ)));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ - 1, maxX, minZ - 1));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ + ns, maxX, minZ + ns));
+			layout.addStrip(new Rect(minX, minZ, maxX, Math.min(minZ + ns - 1, maxZ)), true, inner, bottom);
+			if (outer) {
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ - 1, maxX, minZ - 1));
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ + ns, maxX, minZ + ns));
+			}
 		}
 		if (stripZMax) {
-			layout.add(Zone.TRENCH_INNER, new Rect(minX, Math.max(maxZ - ns + 1, minZ), maxX, maxZ));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ - ns, maxX, maxZ - ns));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ + 1, maxX, maxZ + 1));
+			layout.addStrip(new Rect(minX, Math.max(maxZ - ns + 1, minZ), maxX, maxZ), true, inner, bottom);
+			if (outer) {
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ - ns, maxX, maxZ - ns));
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ + 1, maxX, maxZ + 1));
+			}
 		}
 		if (stripXMin) {
-			layout.add(Zone.TRENCH_INNER, new Rect(minX, minZ, Math.min(minX + ew - 1, maxX), maxZ));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX - 1, minZ, minX - 1, maxZ));
-			layout.add(Zone.TRENCH_OUTER, new Rect(minX + ew, minZ, minX + ew, maxZ));
+			layout.addStrip(new Rect(minX, minZ, Math.min(minX + ew - 1, maxX), maxZ), false, inner, bottom);
+			if (outer) {
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX - 1, minZ, minX - 1, maxZ));
+				layout.add(Zone.TRENCH_OUTER, new Rect(minX + ew, minZ, minX + ew, maxZ));
+			}
 		}
 		if (stripXMax) {
-			layout.add(Zone.TRENCH_INNER, new Rect(Math.max(maxX - ew + 1, minX), minZ, maxX, maxZ));
-			layout.add(Zone.TRENCH_OUTER, new Rect(maxX - ew, minZ, maxX - ew, maxZ));
-			layout.add(Zone.TRENCH_OUTER, new Rect(maxX + 1, minZ, maxX + 1, maxZ));
+			layout.addStrip(new Rect(Math.max(maxX - ew + 1, minX), minZ, maxX, maxZ), false, inner, bottom);
+			if (outer) {
+				layout.add(Zone.TRENCH_OUTER, new Rect(maxX - ew, minZ, maxX - ew, maxZ));
+				layout.add(Zone.TRENCH_OUTER, new Rect(maxX + 1, minZ, maxX + 1, maxZ));
+			}
 		}
 
-		// Eater area: the interior with the trenches removed.
-		layout.add(Zone.EATER, new Rect(
-				stripXMin ? minX + ew : minX, stripZMin ? minZ + ns : minZ,
-				stripXMax ? maxX - ew : maxX, stripZMax ? maxZ - ns : maxZ));
+		if (config.eaterEnabled) {
+			if (config.eaterIncludeTrench) {
+				layout.add(Zone.EATER, new Rect(minX, minZ, maxX, maxZ));
+			} else {
+				// The interior with the trenches removed (regardless of whether the
+				// trench zones themselves are enabled).
+				layout.add(Zone.EATER, new Rect(
+						stripXMin ? minX + ew : minX, stripZMin ? minZ + ns : minZ,
+						stripXMax ? maxX - ew : maxX, stripZMax ? maxZ - ns : maxZ));
+			}
+		}
 
-		layout.scanBounds = layout.unionRects(new Rect(minX, minZ, maxX, maxZ));
+		layout.scanBounds = layout.unionRects();
 		return layout;
 	}
 
-	private Rect unionRects(Rect base) {
-		int minX = base.minX;
-		int minZ = base.minZ;
-		int maxX = base.maxX;
-		int maxZ = base.maxZ;
+	private Rect unionRects() {
+		if (rects.isEmpty()) {
+			return new Rect(0, 0, -1, -1);
+		}
+		int minX = Integer.MAX_VALUE;
+		int minZ = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE;
+		int maxZ = Integer.MIN_VALUE;
 		for (ZoneRect zr : rects) {
 			minX = Math.min(minX, zr.rect.minX);
 			minZ = Math.min(minZ, zr.rect.minZ);
@@ -141,6 +173,19 @@ public final class ZoneLayout {
 			maxZ = Math.max(maxZ, zr.rect.maxZ);
 		}
 		return new Rect(minX, minZ, maxX, maxZ);
+	}
+
+	private void addStrip(Rect rect, boolean alongX, boolean inner, boolean bottom) {
+		if (!rect.valid()) {
+			return;
+		}
+		if (inner) {
+			add(Zone.TRENCH_INNER, rect);
+			trenchStrips.add(new TrenchStrip(rect, alongX));
+		}
+		if (bottom) {
+			add(Zone.BOTTOM_TRENCH, rect);
+		}
 	}
 
 	private void add(Zone zone, Rect rect) {
@@ -151,6 +196,27 @@ public final class ZoneLayout {
 
 	public Rect scanBounds() {
 		return scanBounds;
+	}
+
+	/** The trench body strips, empty when the trench inner zone is disabled. */
+	public List<TrenchStrip> trenchStrips() {
+		return trenchStrips;
+	}
+
+	public int regionMinX() {
+		return regionMinX;
+	}
+
+	public int regionMinZ() {
+		return regionMinZ;
+	}
+
+	public int regionMaxX() {
+		return regionMaxX;
+	}
+
+	public int regionMaxZ() {
+		return regionMaxZ;
 	}
 
 	/** Bitmask of zones (Zone#mask) that contain the given column. */
@@ -196,23 +262,37 @@ public final class ZoneLayout {
 		return false;
 	}
 
+	/** Whether any enabled zone rect intersects the given chunk. */
 	public boolean intersectsChunk(ChunkPos pos) {
 		int minBX = pos.getMinBlockX();
 		int minBZ = pos.getMinBlockZ();
-		return minBX + 15 >= scanBounds.minX && minBX <= scanBounds.maxX
-				&& minBZ + 15 >= scanBounds.minZ && minBZ <= scanBounds.maxZ;
+		if (!scanBounds.valid() || !scanBounds.intersectsChunk(minBX, minBZ)) {
+			return false;
+		}
+		for (ZoneRect zr : rects) {
+			if (zr.rect.intersectsChunk(minBX, minBZ)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
-	/** All chunk positions that intersect the scan bounds. */
+	/** All chunk positions that intersect some enabled zone rect. */
 	public List<ChunkPos> chunks() {
 		List<ChunkPos> result = new ArrayList<>();
+		if (!scanBounds.valid()) {
+			return result;
+		}
 		int minCX = scanBounds.minX >> 4;
 		int maxCX = scanBounds.maxX >> 4;
 		int minCZ = scanBounds.minZ >> 4;
 		int maxCZ = scanBounds.maxZ >> 4;
 		for (int cx = minCX; cx <= maxCX; cx++) {
 			for (int cz = minCZ; cz <= maxCZ; cz++) {
-				result.add(new ChunkPos(cx, cz));
+				ChunkPos pos = new ChunkPos(cx, cz);
+				if (intersectsChunk(pos)) {
+					result.add(pos);
+				}
 			}
 		}
 		return result;

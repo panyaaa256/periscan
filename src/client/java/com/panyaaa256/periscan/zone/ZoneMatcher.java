@@ -5,6 +5,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.PushReaction;
@@ -101,14 +102,21 @@ public final class ZoneMatcher {
 	private final LanePredicate lanePredicate;
 	private final boolean includeWaterlogged;
 	private final WaterloggedExclusions waterloggedExclusions;
+	private final boolean everythingButLiquids;
 
 	private ZoneMatcher(BlockSet main, BlockSet laneRestricted, LanePredicate lanePredicate,
 			boolean includeWaterlogged, WaterloggedExclusions waterloggedExclusions) {
+		this(main, laneRestricted, lanePredicate, includeWaterlogged, waterloggedExclusions, false);
+	}
+
+	private ZoneMatcher(BlockSet main, BlockSet laneRestricted, LanePredicate lanePredicate,
+			boolean includeWaterlogged, WaterloggedExclusions waterloggedExclusions, boolean everythingButLiquids) {
 		this.main = main;
 		this.laneRestricted = laneRestricted;
 		this.lanePredicate = lanePredicate;
 		this.includeWaterlogged = includeWaterlogged;
 		this.waterloggedExclusions = waterloggedExclusions;
+		this.everythingButLiquids = everythingButLiquids;
 	}
 
 	public static ZoneMatcher compile(List<String> entries, boolean includeWaterlogged,
@@ -128,7 +136,15 @@ public final class ZoneMatcher {
 				includeWaterlogged, waterloggedExclusions);
 	}
 
+	/** Matcher that highlights every block except air and liquids (trench bottom). */
+	public static ZoneMatcher everythingButLiquids() {
+		return new ZoneMatcher(new BlockSet(), null, null, false, null, true);
+	}
+
 	public boolean matches(BlockState state, int x, int z) {
+		if (everythingButLiquids) {
+			return !state.isAir() && !(state.getBlock() instanceof LiquidBlock);
+		}
 		if (main.matches(state)) {
 			return true;
 		}

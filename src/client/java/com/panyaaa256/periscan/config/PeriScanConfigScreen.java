@@ -29,14 +29,6 @@ public final class PeriScanConfigScreen {
 				.title(Component.translatable("periscan.config.title"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable("periscan.config.category.general"))
-						.option(Option.<Boolean>createBuilder()
-								.name(Component.translatable("periscan.config.quarry_like"))
-								.description(OptionDescription.of(Component.translatable("periscan.config.quarry_like.desc")))
-								.binding(defaults.useQuarryLikeTrencher,
-										() -> config.useQuarryLikeTrencher,
-										v -> config.useQuarryLikeTrencher = v)
-								.controller(TickBoxControllerBuilder::create)
-								.build())
 						.option(Option.<Integer>createBuilder()
 								.name(Component.translatable("periscan.config.ns_width"))
 								.description(OptionDescription.of(Component.translatable("periscan.config.ns_width.desc")))
@@ -95,14 +87,25 @@ public final class PeriScanConfigScreen {
 								.build())
 						.build())
 				.category(zoneCategory("periscan.config.category.trench_outer",
+						defaults.trenchOuterEnabled, () -> config.trenchOuterEnabled, v -> config.trenchOuterEnabled = v,
 						defaults.trenchOuterBlocks, () -> config.trenchOuterBlocks, v -> config.trenchOuterBlocks = new ArrayList<>(v),
 						defaults.trenchOuterWaterlogged, () -> config.trenchOuterWaterlogged, v -> config.trenchOuterWaterlogged = v,
 						defaults.trenchOuterColor, () -> config.trenchOuterColor, v -> config.trenchOuterColor = v,
+						List.of(),
 						null))
 				.category(zoneCategory("periscan.config.category.trench_inner",
+						defaults.trenchInnerEnabled, () -> config.trenchInnerEnabled, v -> config.trenchInnerEnabled = v,
 						defaults.trenchInnerBlocks, () -> config.trenchInnerBlocks, v -> config.trenchInnerBlocks = new ArrayList<>(v),
 						defaults.trenchInnerWaterlogged, () -> config.trenchInnerWaterlogged, v -> config.trenchInnerWaterlogged = v,
 						defaults.trenchInnerColor, () -> config.trenchInnerColor, v -> config.trenchInnerColor = v,
+						List.of(Option.<Integer>createBuilder()
+								.name(Component.translatable("periscan.config.falling_run"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.falling_run.desc")))
+								.binding(defaults.trenchFallingRunLength,
+										() -> config.trenchFallingRunLength,
+										v -> config.trenchFallingRunLength = v)
+								.controller(opt -> IntegerSliderControllerBuilder.create(opt).range(2, 64).step(1))
+								.build()),
 						ListOption.<String>createBuilder()
 								.name(Component.translatable("periscan.config.zone.fence_blocks"))
 								.description(OptionDescription.of(Component.translatable("periscan.config.zone.fence_blocks.desc")))
@@ -112,10 +115,37 @@ public final class PeriScanConfigScreen {
 								.controller(StringControllerBuilder::create)
 								.initial("minecraft:")
 								.build()))
+				.category(ConfigCategory.createBuilder()
+						.name(Component.translatable("periscan.config.category.bottom_trench"))
+						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("periscan.config.zone.enabled"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.bottom_trench.desc")))
+								.binding(defaults.bottomTrenchEnabled,
+										() -> config.bottomTrenchEnabled,
+										v -> config.bottomTrenchEnabled = v)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.option(Option.<Color>createBuilder()
+								.name(Component.translatable("periscan.config.zone.color"))
+								.binding(defaults.bottomTrenchColor,
+										() -> config.bottomTrenchColor,
+										v -> config.bottomTrenchColor = v)
+								.controller(ColorControllerBuilder::create)
+								.build())
+						.build())
 				.category(zoneCategory("periscan.config.category.eater",
+						defaults.eaterEnabled, () -> config.eaterEnabled, v -> config.eaterEnabled = v,
 						defaults.eaterBlocks, () -> config.eaterBlocks, v -> config.eaterBlocks = new ArrayList<>(v),
 						defaults.eaterWaterlogged, () -> config.eaterWaterlogged, v -> config.eaterWaterlogged = v,
 						defaults.eaterColor, () -> config.eaterColor, v -> config.eaterColor = v,
+						List.of(Option.<Boolean>createBuilder()
+								.name(Component.translatable("periscan.config.eater.include_trench"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.eater.include_trench.desc")))
+								.binding(defaults.eaterIncludeTrench,
+										() -> config.eaterIncludeTrench,
+										v -> config.eaterIncludeTrench = v)
+								.controller(TickBoxControllerBuilder::create)
+								.build()),
 						null))
 				.save(() -> {
 					PeriScanConfig.HANDLER.save();
@@ -126,12 +156,19 @@ public final class PeriScanConfigScreen {
 	}
 
 	private static ConfigCategory zoneCategory(String nameKey,
+			boolean defaultEnabled, Supplier<Boolean> getEnabled, Consumer<Boolean> setEnabled,
 			List<String> defaultBlocks, Supplier<List<String>> getBlocks, Consumer<List<String>> setBlocks,
 			boolean defaultWaterlogged, Supplier<Boolean> getWaterlogged, Consumer<Boolean> setWaterlogged,
 			Color defaultColor, Supplier<Color> getColor, Consumer<Color> setColor,
-			ListOption<String> extraGroup) {
+			List<Option<?>> extraOptions, ListOption<String> extraGroup) {
 		ConfigCategory.Builder builder = ConfigCategory.createBuilder()
 				.name(Component.translatable(nameKey))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.translatable("periscan.config.zone.enabled"))
+						.description(OptionDescription.of(Component.translatable("periscan.config.zone.enabled.desc")))
+						.binding(defaultEnabled, getEnabled, setEnabled)
+						.controller(TickBoxControllerBuilder::create)
+						.build())
 				.option(Option.<Color>createBuilder()
 						.name(Component.translatable("periscan.config.zone.color"))
 						.binding(defaultColor, getColor, setColor)
@@ -150,6 +187,9 @@ public final class PeriScanConfigScreen {
 						.controller(StringControllerBuilder::create)
 						.initial("minecraft:")
 						.build());
+		for (Option<?> extra : extraOptions) {
+			builder.option(extra);
+		}
 		if (extraGroup != null) {
 			builder.group(extraGroup);
 		}

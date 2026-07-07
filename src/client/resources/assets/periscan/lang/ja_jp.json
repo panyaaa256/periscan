@@ -1,8 +1,6 @@
 {
 	"periscan.config.title": "PeriScan",
 	"periscan.config.category.general": "全般",
-	"periscan.config.quarry_like": "quarry-like trencherを使う",
-	"periscan.config.quarry_like.desc": "ON: 3ゾーン(トレンチの一つ外側・トレンチの内側・イーター領域)すべてを走査します。OFF: イーター領域のみ走査し、その範囲は指定範囲全体になります。",
 	"periscan.config.ns_width": "南北トレンチの幅",
 	"periscan.config.ns_width.desc": "ペリメータのZ軸方向両端にあるトレンチの幅(列数)。",
 	"periscan.config.ew_width": "東西トレンチの幅",
@@ -14,7 +12,15 @@
 	"periscan.config.pending_color": "未スキャンチャンクの色",
 	"periscan.config.category.trench_outer": "トレンチの一つ外側",
 	"periscan.config.category.trench_inner": "トレンチの内側",
+	"periscan.config.category.bottom_trench": "トレンチの底",
+	"periscan.config.bottom_trench.desc": "トレンチ範囲の一番下2マス(スキャン下端から2ブロック、オーバーワールドでは Y=-59, -58)では、空気と液体以外のすべてのブロックをハイライトします。この2マスは「トレンチの内側」の判定(ブロックリスト・落下ブロック連続)から除外されます。",
 	"periscan.config.category.eater": "イーター領域",
+	"periscan.config.zone.enabled": "このゾーンを走査する",
+	"periscan.config.zone.enabled.desc": "OFFにするとこのゾーンは走査・ハイライトされません。全ゾーンOFFの状態では走査を開始できません。",
+	"periscan.config.eater.include_trench": "トレンチ範囲を含める",
+	"periscan.config.eater.include_trench.desc": "ON: イーター領域が指定範囲全体(トレンチ含む)になります。OFF: トレンチを除いた内側のみになります。",
+	"periscan.config.falling_run": "落下ブロックの連続数しきい値",
+	"periscan.config.falling_run.desc": "トレンチ内側で、trencherの進行方向(トレンチの長手方向)にこの数以上落下ブロック(砂・砂利・コンクリートパウダーなど)が連続している箇所をハイライトします。空気・液体・押すと壊れるブロック(鍾乳石など)は数に入りませんが連続も途切れさせません。それ以外のブロックで途切れます。",
 	"periscan.config.zone.color": "ハイライト色",
 	"periscan.config.zone.waterlogged": "水没ブロックを含める",
 	"periscan.config.zone.waterlogged.desc": "このゾーンで水没状態(waterlogged)のブロックもハイライトします。水源そのものはハイライトしません。",
@@ -29,8 +35,9 @@
 	"periscan.msg.activated": "PeriScan: %s x %s ブロックのペリメータをハイライト中",
 	"periscan.msg.cleared": "PeriScan: ハイライトを消去しました",
 	"periscan.msg.reloaded": "PeriScan: 領域を再スキャンしました",
-	"periscan.msg.no_region": "PeriScan: アクティブな領域がありません。先に /periscan <x1> <z1> <x2> <z2> を実行してください。",
+	"periscan.msg.no_region": "PeriScan: アクティブな領域がありません。先に /periscan start <x1> <z1> <x2> <z2> を実行してください。",
 	"periscan.msg.region_available": "PeriScan: 保存された領域があります。/periscan reload で再走査を開始します。",
 	"periscan.msg.invalid_entry": "PeriScan: 不正なconfigエントリを無視しました: %s",
-	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます"
+	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます",
+	"periscan.msg.all_disabled": "PeriScan: すべてのゾーンが無効です。configで少なくとも1つのゾーンを有効にしてください。"
 }

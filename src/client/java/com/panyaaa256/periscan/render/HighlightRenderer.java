@@ -74,6 +74,11 @@ public final class HighlightRenderer {
 		if (!scan.isActive()) {
 			return;
 		}
+		// Highlights only exist in the dimension the region was started in.
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level == null || level.dimension() != scan.dimension()) {
+			return;
+		}
 		PeriScanConfig config = PeriScanConfig.get();
 		Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().position();
 		PoseStack.Pose pose = context.matrices().last();

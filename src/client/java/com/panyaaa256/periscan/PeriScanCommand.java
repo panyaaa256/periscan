@@ -10,7 +10,9 @@ import com.panyaaa256.periscan.scan.ScanManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 import java.util.List;
 
@@ -60,8 +62,11 @@ public final class PeriScanCommand {
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 
-		List<String> invalidEntries = ScanManager.INSTANCE.activate(a, b);
-		RegionStore.save(a, b);
+		// The region is bound to the dimension the command was run in; each
+		// dimension keeps its own saved region.
+		ResourceKey<Level> dimension = source.getWorld().dimension();
+		List<String> invalidEntries = ScanManager.INSTANCE.activate(dimension, a, b);
+		RegionStore.save(dimension, a, b);
 
 		int sizeX = (Math.abs(a.x - b.x) + 1) * 16;
 		int sizeZ = (Math.abs(a.z - b.z) + 1) * 16;
@@ -71,14 +76,19 @@ public final class PeriScanCommand {
 	}
 
 	private static int clear(FabricClientCommandSource source) {
-		ScanManager.INSTANCE.deactivate();
-		RegionStore.delete();
+		ResourceKey<Level> dimension = source.getWorld().dimension();
+		if (ScanManager.INSTANCE.dimension() == dimension) {
+			ScanManager.INSTANCE.deactivate();
+		}
+		RegionStore.delete(dimension);
 		source.sendFeedback(Component.translatable("periscan.msg.cleared"));
 		return 1;
 	}
 
 	private static int reload(FabricClientCommandSource source) {
-		if (!ScanManager.INSTANCE.hasRegion()) {
+		ResourceKey<Level> dimension = source.getWorld().dimension();
+		RegionStore.Region region = RegionStore.load(dimension);
+		if (region == null) {
 			source.sendError(Component.translatable("periscan.msg.no_region"));
 			return 0;
 		}
@@ -87,7 +97,7 @@ public final class PeriScanCommand {
 			return 0;
 		}
 		// Also starts scanning for a region restored on login (kept dormant until now).
-		List<String> invalidEntries = ScanManager.INSTANCE.activate(ScanManager.INSTANCE.cornerA(), ScanManager.INSTANCE.cornerB());
+		List<String> invalidEntries = ScanManager.INSTANCE.activate(dimension, region.a(), region.b());
 		source.sendFeedback(Component.translatable("periscan.msg.reloaded"));
 		warnInvalidEntries(source, invalidEntries);
 		return 1;

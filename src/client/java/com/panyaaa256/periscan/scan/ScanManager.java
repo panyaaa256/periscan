@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Fallable;
@@ -30,6 +31,7 @@ public class ScanManager {
 	public static final ScanManager INSTANCE = new ScanManager();
 
 	private ZoneLayout layout;
+	private ResourceKey<Level> dimension;
 	private ChunkPos cornerA;
 	private ChunkPos cornerB;
 	private final EnumMap<Zone, ZoneMatcher> matchers = new EnumMap<>(Zone.class);
@@ -60,28 +62,18 @@ public class ScanManager {
 		return layout != null;
 	}
 
-	/** A region is known (active, or restored from disk and waiting for /periscan reload). */
-	public boolean hasRegion() {
-		return cornerA != null;
+	/** Dimension the region belongs to; scanning, validation and rendering only happen there. */
+	public ResourceKey<Level> dimension() {
+		return dimension;
 	}
 
 	/**
-	 * Remembers a region without scanning or highlighting anything. Used when
-	 * restoring on login: scanning only starts once /periscan reload is run.
+	 * Shows the "saved region available, run /periscan reload" chat notice on the
+	 * next tick. Used when a saved region is found on login; nothing is scanned
+	 * until the user actually reloads.
 	 */
-	public void setDormantRegion(ChunkPos a, ChunkPos b) {
-		deactivate();
-		this.cornerA = a;
-		this.cornerB = b;
+	public void showDormantNotice() {
 		this.dormantNoticePending = true;
-	}
-
-	public ChunkPos cornerA() {
-		return cornerA;
-	}
-
-	public ChunkPos cornerB() {
-		return cornerB;
 	}
 
 	public LongOpenHashSet highlights(Zone zone) {
@@ -109,17 +101,20 @@ public class ScanManager {
 
 	/**
 	 * Activates highlighting for the given perimeter (chunk coordinates, outermost
-	 * rectangle). Returns config entries that could not be parsed, for feedback.
+	 * rectangle) in the given dimension. Returns config entries that could not be
+	 * parsed, for feedback.
 	 */
-	public List<String> activate(ChunkPos a, ChunkPos b) {
+	public List<String> activate(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
 		PeriScanConfig config = PeriScanConfig.get();
 		if (!PeriScanConfig.anyZoneEnabled()) {
 			// Nothing to scan; keep the region so a later reload can start it.
 			deactivate();
+			this.dimension = dim;
 			this.cornerA = a;
 			this.cornerB = b;
 			return List.of();
 		}
+		this.dimension = dim;
 		this.cornerA = a;
 		this.cornerB = b;
 		this.layout = ZoneLayout.of(a, b, config);
@@ -155,7 +150,7 @@ public class ScanManager {
 
 		// Scan whatever is already loaded; the rest is picked up by CHUNK_LOAD.
 		ClientLevel level = Minecraft.getInstance().level;
-		if (level != null) {
+		if (level != null && level.dimension() == dim) {
 			LongIterator it = pendingChunks.iterator();
 			List<LevelChunk> loaded = new ArrayList<>();
 			while (it.hasNext()) {
@@ -181,9 +176,11 @@ public class ScanManager {
 		}
 		if (!PeriScanConfig.anyZoneEnabled()) {
 			// All zones were just disabled: stop scanning but keep the region dormant.
+			ResourceKey<Level> dim = dimension;
 			ChunkPos a = cornerA;
 			ChunkPos b = cornerB;
 			deactivate();
+			this.dimension = dim;
 			this.cornerA = a;
 			this.cornerB = b;
 			Minecraft client = Minecraft.getInstance();
@@ -192,11 +189,12 @@ public class ScanManager {
 			}
 			return List.of();
 		}
-		return activate(cornerA, cornerB);
+		return activate(dimension, cornerA, cornerB);
 	}
 
 	public void deactivate() {
 		layout = null;
+		dimension = null;
 		cornerA = null;
 		cornerB = null;
 		dormantNoticePending = false;
@@ -211,7 +209,7 @@ public class ScanManager {
 	}
 
 	private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
-		if (layout == null || !layout.intersectsChunk(chunk.getPos())) {
+		if (layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
 			return;
 		}
 		pendingChunks.remove(chunk.getPos().toLong());
@@ -471,7 +469,7 @@ public class ScanManager {
 			dormantNoticePending = false;
 			client.player.displayClientMessage(Component.translatable("periscan.msg.region_available"), false);
 		}
-		if (layout == null) {
+		if (layout == null || client.level.dimension() != dimension) {
 			return;
 		}
 		tickCounter++;

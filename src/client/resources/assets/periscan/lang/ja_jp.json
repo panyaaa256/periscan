@@ -33,10 +33,10 @@
 	"periscan.config.zone.fence_blocks": "塀・フェンス類(特定レーンのみ)",
 	"periscan.config.zone.fence_blocks.desc": "このリストのブロックは、トレンチの端から数えて3で割って2余る列(2, 5, 8, 11...)にある場合のみハイライトされます。それ以外の列ではtrencherの妨げにならないため無視されます。幅が3のトレンチは真ん中に塀等があっても壊れないため、全くハイライトされません。",
 	"periscan.msg.activated": "PeriScan: %s x %s ブロックのペリメータをハイライト中",
-	"periscan.msg.cleared": "PeriScan: ハイライトを消去しました",
+	"periscan.msg.cleared": "PeriScan: このディメンションのハイライトを消去しました",
 	"periscan.msg.reloaded": "PeriScan: 領域を再スキャンしました",
-	"periscan.msg.no_region": "PeriScan: アクティブな領域がありません。先に /periscan start <x1> <z1> <x2> <z2> を実行してください。",
-	"periscan.msg.region_available": "PeriScan: 保存された領域があります。/periscan reload で再走査を開始します。",
+	"periscan.msg.no_region": "PeriScan: このディメンションに保存された領域がありません。先にここで /periscan start <x1> <z1> <x2> <z2> を実行してください。",
+	"periscan.msg.region_available": "PeriScan: 保存された領域があります。その領域のディメンションで /periscan reload を実行すると走査を開始します。",
 	"periscan.msg.invalid_entry": "PeriScan: 不正なconfigエントリを無視しました: %s",
 	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます",
 	"periscan.msg.all_disabled": "PeriScan: すべてのゾーンが無効です。configで少なくとも1つのゾーンを有効にしてください。"

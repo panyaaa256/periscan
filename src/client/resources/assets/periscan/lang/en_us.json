@@ -33,10 +33,10 @@
 	"periscan.config.zone.fence_blocks": "Walls/fences (specific lanes only)",
 	"periscan.config.zone.fence_blocks.desc": "Blocks in this list are only highlighted in trench columns whose 1-based index from the perimeter edge has remainder 2 when divided by 3 (2, 5, 8, 11...). In other columns they do not obstruct the trencher and are ignored. Width-3 trenches survive walls/fences even in the middle column, so nothing is highlighted there.",
 	"periscan.msg.activated": "PeriScan: highlighting a %s x %s block perimeter",
-	"periscan.msg.cleared": "PeriScan: highlights cleared",
+	"periscan.msg.cleared": "PeriScan: highlights for this dimension cleared",
 	"periscan.msg.reloaded": "PeriScan: region rescanned",
-	"periscan.msg.no_region": "PeriScan: no active region. Run /periscan start <x1> <z1> <x2> <z2> first.",
-	"periscan.msg.region_available": "PeriScan: a saved region is available. Run /periscan reload to start scanning.",
+	"periscan.msg.no_region": "PeriScan: no saved region for this dimension. Run /periscan start <x1> <z1> <x2> <z2> here first.",
+	"periscan.msg.region_available": "PeriScan: a saved region is available. Run /periscan reload in its dimension to start scanning.",
 	"periscan.msg.invalid_entry": "PeriScan: ignored invalid config entry: %s",
 	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan",
 	"periscan.msg.all_disabled": "PeriScan: all zones are disabled. Enable at least one zone in the config."

@@ -7,6 +7,7 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
+import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
@@ -17,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -52,6 +54,25 @@ public final class PeriScanConfigScreen {
 										() -> config.scanMaxY,
 										v -> config.scanMaxY = v)
 								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-2032, 2031))
+								.build())
+						.option(Option.<String>createBuilder()
+								.name(Component.translatable("periscan.config.schematics_folder"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.schematics_folder.desc")))
+								.binding(defaults.schematicsFolder,
+										() -> config.schematicsFolder,
+										v -> config.schematicsFolder = v)
+								.controller(StringControllerBuilder::create)
+								.build())
+						.option(Option.<PeriScanConfig.EdgeCorners>createBuilder()
+								.name(Component.translatable("periscan.config.edge_corners"))
+								.description(OptionDescription.of(Component.translatable("periscan.config.edge_corners.desc")))
+								.binding(defaults.edgeCorners,
+										() -> config.edgeCorners,
+										v -> config.edgeCorners = v)
+								.controller(opt -> EnumControllerBuilder.create(opt)
+										.enumClass(PeriScanConfig.EdgeCorners.class)
+										.formatValue(v -> Component.translatable(
+												"periscan.config.edge_corners." + v.name().toLowerCase(Locale.ROOT))))
 								.build())
 						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("periscan.config.show_pending"))

@@ -1,7 +1,7 @@
 package com.panyaaa256.periscan;
 
 import com.panyaaa256.periscan.config.PeriScanConfig;
-import com.panyaaa256.periscan.persist.RegionStore;
+import com.panyaaa256.periscan.persist.ProfileStore;
 import com.panyaaa256.periscan.render.HighlightRenderer;
 import com.panyaaa256.periscan.scan.ScanManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -19,10 +19,10 @@ public class PeriScanClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		PeriScanConfig.HANDLER.load();
-		PeriScanCommand.register();
+		PeriCommand.register();
 		ScanManager.INSTANCE.init();
 		HighlightRenderer.init();
-		RegionStore.init();
+		ProfileStore.init();
 
 		// Screens cannot be opened directly from a command (the chat screen closes
 		// afterwards and would override it), so open scheduled screens next tick.

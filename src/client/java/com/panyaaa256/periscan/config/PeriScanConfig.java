@@ -38,6 +38,24 @@ public class PeriScanConfig {
 	@SerialEntry
 	public int scanMaxY = 128;
 
+	// Folder under litematica's schematics directory holding the peri schematic
+	// sets (one subfolder per set, e.g. "ow", with "all"/"edge" inside).
+	@SerialEntry
+	public String schematicsFolder = "peri";
+
+	// Which corner pair the edge/ schematics anchor to. The untransformed content
+	// extends toward +x/+z from its corner. PM_MP uses mirrors, not 90/270
+	// rotations, so the NS/EW trench widths stay on their axes.
+	public enum EdgeCorners {
+		// Unmirrored at the -x/-z corner, rotated 180deg at the +x/+z corner.
+		PP_MM,
+		// X-flipped (FRONT_BACK) at the +x/-z corner, Z-flipped (LEFT_RIGHT) at the -x/+z corner.
+		PM_MP
+	}
+
+	@SerialEntry
+	public EdgeCorners edgeCorners = EdgeCorners.PP_MM;
+
 	// Highlight chunks inside the region that have not been scanned yet (not
 	// loaded since the region was activated) as chunk-sized boxes.
 	@SerialEntry
@@ -60,28 +78,20 @@ public class PeriScanConfig {
 
 	@SerialEntry
 	public boolean trenchInnerEnabled = true;
+	// #periscan:immovable covers everything piston-immovable (chests, spawners,
+	// sculk blocks, obsidian, reinforced deepslate, ...) in one entry.
 	@SerialEntry
 	public List<String> trenchInnerBlocks = new ArrayList<>(List.of(
-			"minecraft:chest",
-			"minecraft:trapped_chest",
-			"minecraft:ender_chest",
-			"minecraft:obsidian",
-			"minecraft:crying_obsidian",
-			"minecraft:vault",
-			"minecraft:spawner",
-			"minecraft:trial_spawner",
-			"minecraft:sculk_sensor",
-			"minecraft:calibrated_sculk_sensor",
-			"minecraft:sculk_catalyst",
-			"minecraft:sculk_shrieker",
-			"minecraft:reinforced_deepslate"));
-	// Walls/fences only obstruct the trencher in specific columns (1-based from the
-	// perimeter edge, index % 3 == 2); entries here are only highlighted there.
+			"#periscan:immovable"));
+	// Blocks whose state can change under the trencher (neighbor-connecting shapes
+	// and redstone-reactive blocks) only obstruct it in specific columns (1-based
+	// from the perimeter edge, index % 3 == 2); entries here are only highlighted
+	// there. The redstone lamp only has the "lit" property, so it is listed by id.
 	@SerialEntry
 	public List<String> trenchInnerFenceBlocks = new ArrayList<>(List.of(
-			"#minecraft:walls",
-			"#minecraft:fences",
-			"#minecraft:fence_gates"));
+			"#periscan:connecting",
+			"#periscan:redstone_reactive",
+			"minecraft:redstone_lamp"));
 	@SerialEntry
 	public boolean trenchInnerWaterlogged = false;
 	@SerialEntry

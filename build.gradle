@@ -16,6 +16,17 @@ repositories {
 		name = 'Xander Maven'
 		url = 'https://maven.isxander.dev/releases'
 	}
+	exclusiveContent {
+		forRepository {
+			maven {
+				name = 'Modrinth'
+				url = 'https://api.modrinth.com/maven'
+			}
+		}
+		filter {
+			includeGroup 'maven.modrinth'
+		}
+	}
 }
 
 loom {
@@ -40,6 +51,17 @@ dependencies {
 
 	// YetAnotherConfigLib (config screens)
 	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+
+	// Litematica + MaLiLib: soft dependency (placement feature is disabled at runtime when absent)
+	// sakura-ryoko fork builds, published on masa's Modrinth pages
+	modCompileOnly "maven.modrinth:litematica:${project.litematica_version}"
+	modCompileOnly "maven.modrinth:malilib:${project.malilib_version}"
+	modLocalRuntime "maven.modrinth:litematica:${project.litematica_version}"
+	modLocalRuntime "maven.modrinth:malilib:${project.malilib_version}"
+
+	// Iris: soft dependency, compile-only (runtime would also require Sodium).
+	// Used to tell Iris which shader program draws the highlight pipelines.
+	modCompileOnly "maven.modrinth:iris:${project.iris_version}"
 }
 
 processResources {

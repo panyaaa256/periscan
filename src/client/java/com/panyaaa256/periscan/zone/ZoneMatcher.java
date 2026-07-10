@@ -5,7 +5,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CrossCollisionBlock;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.PushReaction;
@@ -27,8 +30,20 @@ public final class ZoneMatcher {
 	}
 
 	private static final class BlockSet {
+		// Pseudo-tags resolved from block properties instead of real data tags,
+		// because mod-provided tags are not synced when joining vanilla servers.
+		// Every block a piston cannot move.
+		private static final String IMMOVABLE_ENTRY = "#periscan:immovable";
+		// Blocks whose shape connects to horizontal neighbors (walls, fences, panes, bars).
+		private static final String CONNECTING_ENTRY = "#periscan:connecting";
+		// Blocks whose state reacts to redstone signals (bulbs, pistons, trapdoors, ...).
+		private static final String REDSTONE_REACTIVE_ENTRY = "#periscan:redstone_reactive";
+
 		private final Set<Block> blocks = new HashSet<>();
 		private final List<TagKey<Block>> tags = new ArrayList<>();
+		private boolean immovable;
+		private boolean connecting;
+		private boolean redstoneReactive;
 
 		static BlockSet compile(List<String> entries, List<String> invalidEntries) {
 			BlockSet set = new BlockSet();
@@ -37,7 +52,13 @@ public final class ZoneMatcher {
 				if (entry.isEmpty()) {
 					continue;
 				}
-				if (entry.startsWith("#")) {
+				if (entry.equals(IMMOVABLE_ENTRY)) {
+					set.immovable = true;
+				} else if (entry.equals(CONNECTING_ENTRY)) {
+					set.connecting = true;
+				} else if (entry.equals(REDSTONE_REACTIVE_ENTRY)) {
+					set.redstoneReactive = true;
+				} else if (entry.startsWith("#")) {
 					Identifier id = Identifier.tryParse(entry.substring(1));
 					if (id == null) {
 						invalidEntries.add(raw);
@@ -58,6 +79,15 @@ public final class ZoneMatcher {
 		}
 
 		boolean matches(BlockState state) {
+			if (immovable && isImmovable(state)) {
+				return true;
+			}
+			if (connecting && isConnecting(state)) {
+				return true;
+			}
+			if (redstoneReactive && isRedstoneReactive(state)) {
+				return true;
+			}
 			if (blocks.contains(state.getBlock())) {
 				return true;
 			}
@@ -67,6 +97,42 @@ public final class ZoneMatcher {
 				}
 			}
 			return false;
+		}
+
+		/**
+		 * A piston cannot move this block: it either refuses the push outright or
+		 * carries a block entity (chests, spawners, sculk sensors, ...), which
+		 * pistons never move. Bedrock is exempt: it is terrain (nether ceiling/floor),
+		 * not an obstruction anyone placed.
+		 */
+		private static boolean isImmovable(BlockState state) {
+			if (state.is(Blocks.BEDROCK)) {
+				return false;
+			}
+			return state.getPistonPushReaction() == PushReaction.BLOCK || state.hasBlockEntity();
+		}
+
+		/**
+		 * The block's shape connects to horizontal neighbors, so placing a block
+		 * next to it changes its state: fences, glass panes and iron bars
+		 * (CrossCollisionBlock) and walls.
+		 */
+		private static boolean isConnecting(BlockState state) {
+			Block block = state.getBlock();
+			return block instanceof CrossCollisionBlock || block instanceof WallBlock;
+		}
+
+		/**
+		 * The block has a state property driven by redstone signals: powered
+		 * (doors, trapdoors, fence gates, copper bulbs, observers, note blocks),
+		 * extended (pistons), triggered (dispensers/droppers) or enabled (hoppers).
+		 */
+		private static boolean isRedstoneReactive(BlockState state) {
+			return state.hasProperty(BlockStateProperties.POWERED)
+					|| state.hasProperty(BlockStateProperties.OPEN)
+					|| state.hasProperty(BlockStateProperties.EXTENDED)
+					|| state.hasProperty(BlockStateProperties.TRIGGERED)
+					|| state.hasProperty(BlockStateProperties.ENABLED);
 		}
 	}
 

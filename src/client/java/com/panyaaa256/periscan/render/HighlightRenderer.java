@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
+import com.panyaaa256.periscan.integration.iris.IrisIntegration;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -66,6 +67,10 @@ public final class HighlightRenderer {
 	}
 
 	public static void init() {
+		// Iris only draws pipelines it can map to a shader-pack program; without
+		// this the highlights are invisible whenever a shader pack is active.
+		IrisIntegration.assignBasicPipeline(FILL_PIPELINE);
+		IrisIntegration.assignBasicPipeline(LINE_PIPELINE);
 		WorldRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
 	}
 

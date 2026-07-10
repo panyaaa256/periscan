@@ -68,7 +68,7 @@ public class ScanManager {
 	}
 
 	/**
-	 * Shows the "saved region available, run /periscan reload" chat notice on the
+	 * Shows the "saved profile available, run /peri scan reload" chat notice on the
 	 * next tick. Used when a saved region is found on login; nothing is scanned
 	 * until the user actually reloads.
 	 */

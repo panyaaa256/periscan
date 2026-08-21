@@ -1,24 +1,26 @@
 package com.panyaaa256.periscan.render;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.integration.iris.IrisIntegration;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
@@ -28,7 +30,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Draws highlighted blocks as translucent filled boxes with outlines, visible
- * through terrain (depth test disabled).
+ * through terrain (depth test always passes).
  */
 public final class HighlightRenderer {
 	private static final int FILL_ALPHA = 0x40;
@@ -40,28 +42,28 @@ public final class HighlightRenderer {
 			.withLocation(Identifier.fromNamespaceAndPath("periscan", "pipeline/highlight_fill"))
 			.withVertexShader("core/position_color")
 			.withFragmentShader("core/position_color")
-			.withBlend(BlendFunction.TRANSLUCENT)
-			.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-			.withDepthWrite(false)
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.withCull(false)
-			.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
+			.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+			.withPrimitiveTopology(PrimitiveTopology.QUADS)
 			.build());
 
 	private static final RenderPipeline LINE_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
 			.withLocation(Identifier.fromNamespaceAndPath("periscan", "pipeline/highlight_lines"))
 			.withVertexShader("core/position_color")
 			.withFragmentShader("core/position_color")
-			.withBlend(BlendFunction.TRANSLUCENT)
-			.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-			.withDepthWrite(false)
+			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 			.withCull(false)
-			.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.DEBUG_LINES)
+			.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+			.withPrimitiveTopology(PrimitiveTopology.DEBUG_LINES)
 			.build());
 
 	private static final RenderType FILL_TYPE = RenderType.create("periscan_highlight_fill",
-			RenderSetup.builder(FILL_PIPELINE).bufferSize(1 << 20).createRenderSetup());
+			RenderSetup.builder(FILL_PIPELINE).createRenderSetup());
 	private static final RenderType LINE_TYPE = RenderType.create("periscan_highlight_lines",
-			RenderSetup.builder(LINE_PIPELINE).bufferSize(1 << 20).createRenderSetup());
+			RenderSetup.builder(LINE_PIPELINE).createRenderSetup());
 
 	private HighlightRenderer() {
 	}
@@ -71,10 +73,10 @@ public final class HighlightRenderer {
 		// this the highlights are invisible whenever a shader pack is active.
 		IrisIntegration.assignBasicPipeline(FILL_PIPELINE);
 		IrisIntegration.assignBasicPipeline(LINE_PIPELINE);
-		WorldRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
+		LevelRenderEvents.COLLECT_SUBMITS.register(HighlightRenderer::render);
 	}
 
-	private static void render(WorldRenderContext context) {
+	private static void render(LevelRenderContext context) {
 		ScanManager scan = ScanManager.INSTANCE;
 		if (!scan.isActive()) {
 			return;
@@ -85,52 +87,53 @@ public final class HighlightRenderer {
 			return;
 		}
 		PeriScanConfig config = PeriScanConfig.get();
-		Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().position();
-		PoseStack.Pose pose = context.matrices().last();
-		MultiBufferSource consumers = context.consumers();
+		Vec3 camera = context.levelState().cameraRenderState.pos;
+		PoseStack poseStack = context.poseStack();
+		SubmitNodeCollector collector = context.submitNodeCollector();
 
-		// All fills first, then all lines: BufferSource batches by RenderType and
-		// ends the previous batch when a different type is requested.
 		// Falling-block runs belong to the trench inner zone and use its color.
 		int fallingRgb = Zone.TRENCH_INNER.color(config).getRGB() & 0xFFFFFF;
 
-		VertexConsumer fill = consumers.getBuffer(FILL_TYPE);
-		for (Zone zone : Zone.VALUES) {
-			int color = (FILL_ALPHA << 24) | (zone.color(config).getRGB() & 0xFFFFFF);
-			LongIterator it = scan.highlights(zone).iterator();
-			while (it.hasNext()) {
-				addBoxFaces(fill, pose, camera, it.nextLong(), color);
+		// One submit per render type: all fills in one batch, all lines in another.
+		collector.submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) -> {
+			for (Zone zone : Zone.VALUES) {
+				int color = (FILL_ALPHA << 24) | (zone.color(config).getRGB() & 0xFFFFFF);
+				LongIterator it = scan.highlights(zone).iterator();
+				while (it.hasNext()) {
+					addBoxFaces(fill, pose, camera, it.nextLong(), color);
+				}
 			}
-		}
-		for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
-			LongIterator it = set.iterator();
-			while (it.hasNext()) {
-				addBoxFaces(fill, pose, camera, it.nextLong(), (FILL_ALPHA << 24) | fallingRgb);
+			for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
+				LongIterator it = set.iterator();
+				while (it.hasNext()) {
+					addBoxFaces(fill, pose, camera, it.nextLong(), (FILL_ALPHA << 24) | fallingRgb);
+				}
 			}
-		}
-		if (config.showPendingChunks) {
-			addPendingChunkBoxes(fill, pose, camera, false,
-					(PENDING_FILL_ALPHA << 24) | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
-		}
+			if (config.showPendingChunks) {
+				addPendingChunkBoxes(fill, pose, camera, false,
+						(PENDING_FILL_ALPHA << 24) | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
+			}
+		});
 
-		VertexConsumer lines = consumers.getBuffer(LINE_TYPE);
-		for (Zone zone : Zone.VALUES) {
-			int color = 0xFF000000 | (zone.color(config).getRGB() & 0xFFFFFF);
-			LongIterator it = scan.highlights(zone).iterator();
-			while (it.hasNext()) {
-				addBoxEdges(lines, pose, camera, it.nextLong(), color);
+		collector.submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) -> {
+			for (Zone zone : Zone.VALUES) {
+				int color = 0xFF000000 | (zone.color(config).getRGB() & 0xFFFFFF);
+				LongIterator it = scan.highlights(zone).iterator();
+				while (it.hasNext()) {
+					addBoxEdges(lines, pose, camera, it.nextLong(), color);
+				}
 			}
-		}
-		for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
-			LongIterator it = set.iterator();
-			while (it.hasNext()) {
-				addBoxEdges(lines, pose, camera, it.nextLong(), 0xFF000000 | fallingRgb);
+			for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
+				LongIterator it = set.iterator();
+				while (it.hasNext()) {
+					addBoxEdges(lines, pose, camera, it.nextLong(), 0xFF000000 | fallingRgb);
+				}
 			}
-		}
-		if (config.showPendingChunks) {
-			addPendingChunkBoxes(lines, pose, camera, true,
-					0xFF000000 | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
-		}
+			if (config.showPendingChunks) {
+				addPendingChunkBoxes(lines, pose, camera, true,
+						0xFF000000 | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
+			}
+		});
 	}
 
 	/** Draws one box over each unscanned chunk near the camera, spanning the scan's Y range. */

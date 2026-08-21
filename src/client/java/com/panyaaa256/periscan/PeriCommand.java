@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
 /**
  * The /peri command: peri profiles (add/remove/list) and scanning bound to
@@ -58,13 +58,13 @@ public final class PeriCommand {
 	// Suggest the chunk the player is currently standing in.
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
 		if (ctx.getSource().getPlayer() != null) {
-			builder.suggest(ctx.getSource().getPlayer().chunkPosition().x);
+			builder.suggest(ctx.getSource().getPlayer().chunkPosition().x());
 		}
 		return builder.buildFuture();
 	};
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_Z = (ctx, builder) -> {
 		if (ctx.getSource().getPlayer() != null) {
-			builder.suggest(ctx.getSource().getPlayer().chunkPosition().z);
+			builder.suggest(ctx.getSource().getPlayer().chunkPosition().z());
 		}
 		return builder.buildFuture();
 	};
@@ -122,7 +122,7 @@ public final class PeriCommand {
 
 	/** Peris are never built in the end; fail fast so the mistake is obvious. */
 	private static boolean rejectEnd(FabricClientCommandSource source) {
-		if (source.getWorld().dimension() == Level.END) {
+		if (source.getLevel().dimension() == Level.END) {
 			source.sendError(Component.translatable("periscan.msg.end_not_supported"));
 			return true;
 		}
@@ -142,7 +142,7 @@ public final class PeriCommand {
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 		// The profile is bound to the dimension the command was run in.
-		PeriProfile profile = PeriProfile.of(name, a, b, source.getWorld().dimension().identifier().toString());
+		PeriProfile profile = PeriProfile.of(name, a, b, source.getLevel().dimension().identifier().toString());
 		ProfileStore.put(profile);
 		source.sendFeedback(Component.translatable("periscan.msg.profile_added",
 				name, profile.sizeBlocksX(), profile.sizeBlocksZ()));
@@ -242,7 +242,7 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.all_disabled"));
 			return false;
 		}
-		ResourceKey<Level> dimension = source.getWorld().dimension();
+		ResourceKey<Level> dimension = source.getLevel().dimension();
 		if (!profile.dimension().equals(dimension.identifier().toString())) {
 			source.sendError(Component.translatable("periscan.msg.wrong_dimension",
 					profile.name(), profile.dimension()));
@@ -277,7 +277,7 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.no_profile", name));
 			return 0;
 		}
-		if (!profile.dimension().equals(source.getWorld().dimension().identifier().toString())) {
+		if (!profile.dimension().equals(source.getLevel().dimension().identifier().toString())) {
 			source.sendError(Component.translatable("periscan.msg.wrong_dimension", name, profile.dimension()));
 			return 0;
 		}

@@ -14,8 +14,8 @@ public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, S
 	/** Creates a profile from two arbitrary corner chunks, normalizing them. */
 	public static PeriProfile of(String name, ChunkPos a, ChunkPos b, String dimension) {
 		return new PeriProfile(name,
-				Math.min(a.x, b.x), Math.min(a.z, b.z),
-				Math.max(a.x, b.x), Math.max(a.z, b.z),
+				Math.min(a.x(), b.x()), Math.min(a.z(), b.z()),
+				Math.max(a.x(), b.x()), Math.max(a.z(), b.z()),
 				dimension, LocalDate.now().toString());
 	}
 

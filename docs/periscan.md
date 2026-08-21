@@ -4,7 +4,7 @@
 
 [方針(決定)]
 - 単体modとして作る(malilib / tweakerooには依存しない)
-- 依存: Fabric API + YACL のみ(MC 1.21.11)
+- 依存: Fabric API + YACL のみ(MC 26.2)
 - 実装の参考(依存はしない):
 	- clientcommandsのRenderQueue → コマンド起点のハイライト描画の構造
 	- litematicaのSchematic Verifier → ブロック面オーバーレイ描画
@@ -139,3 +139,44 @@ client sideとする
 	- この2マスは「トレンチの内側」の判定(ブロックリスト・塀レーン・落下ブロック連続)から除外
 	- config: enable/disable と色のみ(デフォ有効・白)。全ゾーン無効判定にも含まれる
 - 全ゾーン無効時: /periscan start / reload はエラーで走査しない。config保存時に全ゾーン無効になった場合は走査を止めて領域は保持(reloadで再開可能)
+
+[26.2移植メモ (2026-08-22)]
+1.21.11ブランチからの移植。MCの新バージョン体系(年.リリース)で 1.21.11 → 26.1 → 26.2。
+- **難読化の廃止**: 26.1以降、Mojangはversion manifestにclient_mappings/server_mappingsを出さなくなり、
+  jar自体がmojmap名で配布される。fabricのintermediaryも 26.2 では "0.0.0"(=不要のマーカー)、yarnは0件。
+  → build.gradleから `mappings loom.officialMojangMappings()` を削除。
+  → loomプラグインを `net.fabricmc.fabric-loom-remap` から `net.fabricmc.fabric-loom` に変更。
+  → 依存も `modImplementation`/`modCompileOnly`/`modLocalRuntime` → `implementation`/`compileOnly`/`localRuntime`。
+  → remapJarタスクが無くなり `jar` の出力がそのまま配布物になる。
+- **Java 25必須** (version jsonのjavaVersion.majorVersion=25)。release=25 / fabric.mod.json の java を >=25 に。
+- 依存バージョン: fabric-api 0.158.0+26.2 / YACL 3.9.6+26.2-fabric / loader 0.19.3 / loom 1.17.19 /
+  litematica 0.28.5 / malilib 0.29.4 / iris 1.11.2+26.2-fabric
+
+■ API変更(コンパイルエラーになった箇所すべて)
+| 1.21.11 | 26.2 |
+|---|---|
+| `ChunkPos` の public field `x` / `z` | recordになり `x()` / `z()` |
+| `ChunkPos#toLong()` | `pack()` (逆は `ChunkPos.unpack(long)`) |
+| `Minecraft#screen` / `setScreen(Screen)` | `Minecraft.gui.screen()` / `gui.setScreen(Screen)` |
+| `Player#displayClientMessage(c, false/true)` | `sendSystemMessage(c)` / `sendOverlayMessage(c)` |
+| `GameRenderer#getMainCamera()` | `mainCamera()` |
+| `ClientCommandManager.literal/argument` | `ClientCommands.literal/argument` |
+| `FabricClientCommandSource#getWorld()` | `getLevel()` |
+| `fabric...rendering.v1.world` パッケージ | `fabric...rendering.v1.level` |
+| `WorldRenderEvents.AFTER_ENTITIES` + `WorldRenderContext` | `LevelRenderEvents.COLLECT_SUBMITS` + `LevelRenderContext` |
+| `MultiBufferSource` / `consumers().getBuffer(type)` | 廃止。`context.submitNodeCollector().submitCustomGeometry(poseStack, renderType, (pose, buffer) -> ...)` |
+| `context.matrices()` | `context.poseStack()` (カメラ相対座標を渡す規約は同じ) |
+| `RenderPipeline.Builder#withBlend(BlendFunction)` | `withColorTargetState(new ColorTargetState(BlendFunction))` |
+| `withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)` + `withDepthWrite(false)` | `withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))` |
+| `withVertexFormat(fmt, VertexFormat.Mode.X)` | `withVertexBinding(0, fmt)` + `withPrimitiveTopology(PrimitiveTopology.X)` |
+| `RenderSetup.builder(p).bufferSize(n)` | `bufferSize` 廃止(サイズは `RenderType` 側が持つ) |
+- `com.mojang.blaze3d.platform.DepthTestFunction` → `CompareOp`、`VertexFormat.Mode` → `com.mojang.blaze3d.PrimitiveTopology`(トップレベル化)
+- 描画は「即時にVertexConsumerへ書く」方式から「submit nodeを積んで後でまとめて描く」方式に変わった。
+  fill/lineそれぞれ1回ずつ `submitCustomGeometry` を呼び、コールバック内で全ボックスを流し込む形にした
+  (RenderTypeごとにバッチされる点は旧BufferSourceと同じ)。
+- カメラ位置は `Minecraft.getInstance().gameRenderer.mainCamera().position()` ではなく
+  フレームの抽出済み状態 `context.levelState().cameraRenderState.pos` を使う。
+- `MATRICES_FOG_SNIPPET` は GLOBALS + MATRICES_PROJECTION + FOG のBindGroupLayoutを含むので、
+  1.21.11と同じくこれをベースにシェーダとステートを足すだけでよい(vanillaの DEBUG_FILLED_SNIPPET と同じ組み方)。
+  `core/position_color` シェーダは 26.2 にも存在する。
+- iris(`IrisApi#assignPipeline`)とlitematica/malilibのprobe対象は 26.2 版jarをjavapで再確認済み、変更なし。

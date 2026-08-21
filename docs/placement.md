@@ -7,7 +7,8 @@
 - 別modではなくPeriScanの一機能として実装する
 - litematicaはsoft depend
 	- fabric.mod.json: depends には入れず suggests: { "litematica": "*" } 程度
-	- gradle: modCompileOnly(litematica + malilib) + modLocalRuntime(開発時動作確認用)
+	- gradle: compileOnly(litematica + malilib) + localRuntime(開発時動作確認用)
+	  ※26.2以降は難読化が無くなりremapが不要なため mod* 付きconfigurationではなく素のものを使う
 - 実行時判定はバージョン文字列比較ではなく、reflectionによる能力チェック(probe)
 	- isModLoaded("litematica") && 実際に使うクラス/メソッドの存在確認、を初回に1度だけ
 	- probe失敗時はクラッシュさせず機能無効化+警告ログ(scan機能は影響を受けずに動く)
@@ -15,8 +16,9 @@
 	- LitematicaIntegration … 常時ロードOKの入口。litematicaの型をimportしない
 	- LitematicaPlacer … litematicaを直接触る本体。isAvailable() 通過後にのみクラス参照
 	- ロジック側(座標計算・テーブル)にlitematicaの型を漏らさない
-- 対象litematicaビルド: sakura-ryoko fork litematica-fabric-1.21.11-0.26.11 (決定 2026-07-07)
-	- Modrinth mavenから取得: maven.modrinth:litematica:0.26.11 (バージョンID R9maucI8) + maven.modrinth:malilib:0.27.16
+- 対象litematicaビルド: sakura-ryoko fork (決定 2026-07-07 / 1.21.11では 0.26.11)
+	- 26.2ブランチ: maven.modrinth:litematica:0.28.5 + maven.modrinth:malilib:0.29.4 (2026-08-22)
+	- 1.21.11ブランチ: maven.modrinth:litematica:0.26.11 (バージョンID R9maucI8) + maven.modrinth:malilib:0.27.16
 	- probe方式なのでmasa本家でも動く想定だが、コンパイル・検証はsakura fork基準
 
 [peri profile (決定) 2026-07-07]
@@ -93,7 +95,8 @@ schematics /
 - schematicsベースパス: 固定パスではなくlitematicaのconfig(DataManager経由)から実パスを解決する
 - 成功時チャット出力: 何を・どこに・何placement作ったかの要約を表示
 
-[probe対象 (確定 2026-07-07 / sakura fork 0.26.11のremap済みjarをjavapで確認)]
+[probe対象 (確定 2026-07-07 / sakura fork 0.26.11のremap済みjarをjavapで確認。
+ 2026-08-22に litematica 0.28.5 + malilib 0.29.4 でjavap再確認、下表に変更なし)]
 ここが「このmodが依存するlitematica内部APIの全リスト」。MCバージョン更新時はこの表だけ確認すればよい。
 クラスはすべて fi.dy.masa.litematica 配下、MinecraftクラスはmojmapNames。
 | クラス | メンバ | 用途 |

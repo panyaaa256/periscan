@@ -86,10 +86,10 @@ public final class ZoneLayout {
 	}
 
 	public static ZoneLayout of(ChunkPos cornerA, ChunkPos cornerB, PeriScanConfig config) {
-		int minX = Math.min(cornerA.x, cornerB.x) * 16;
-		int minZ = Math.min(cornerA.z, cornerB.z) * 16;
-		int maxX = Math.max(cornerA.x, cornerB.x) * 16 + 15;
-		int maxZ = Math.max(cornerA.z, cornerB.z) * 16 + 15;
+		int minX = Math.min(cornerA.x(), cornerB.x()) * 16;
+		int minZ = Math.min(cornerA.z(), cornerB.z()) * 16;
+		int maxX = Math.max(cornerA.x(), cornerB.x()) * 16 + 15;
+		int maxZ = Math.max(cornerA.z(), cornerB.z()) * 16 + 15;
 
 		int ns = config.northSouthWidth; // thickness along Z
 		int ew = config.eastWestWidth;   // thickness along X

@@ -27,10 +27,10 @@ public class PeriScanClient implements ClientModInitializer {
 		// Screens cannot be opened directly from a command (the chat screen closes
 		// afterwards and would override it), so open scheduled screens next tick.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (scheduledScreen != null && client.screen == null) {
+			if (scheduledScreen != null && client.gui.screen() == null) {
 				Screen screen = scheduledScreen.get();
 				scheduledScreen = null;
-				client.setScreen(screen);
+				client.gui.setScreen(screen);
 			}
 		});
 	}

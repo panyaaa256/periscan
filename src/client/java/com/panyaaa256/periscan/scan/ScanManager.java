@@ -145,7 +145,7 @@ public class ScanManager {
 		dirtyFallingLines.clear();
 		pendingChunks.clear();
 		for (ChunkPos chunk : layout.chunks()) {
-			pendingChunks.add(chunk.toLong());
+			pendingChunks.add(chunk.pack());
 		}
 
 		// Scan whatever is already loaded; the rest is picked up by CHUNK_LOAD.
@@ -185,7 +185,7 @@ public class ScanManager {
 			this.cornerB = b;
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null) {
-				client.player.displayClientMessage(Component.translatable("periscan.msg.all_disabled"), false);
+				client.player.sendSystemMessage(Component.translatable("periscan.msg.all_disabled"));
 			}
 			return List.of();
 		}
@@ -212,7 +212,7 @@ public class ScanManager {
 		if (layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
 			return;
 		}
-		pendingChunks.remove(chunk.getPos().toLong());
+		pendingChunks.remove(chunk.getPos().pack());
 		// Remove stale highlights from this chunk before rescanning it (covers
 		// changes that happened while the chunk was unloaded).
 		clearChunkHighlights(chunk.getPos());
@@ -222,7 +222,7 @@ public class ScanManager {
 
 	private void clearChunkHighlights(ChunkPos pos) {
 		for (LongOpenHashSet set : highlights.values()) {
-			set.removeIf(key -> (BlockPos.getX(key) >> 4) == pos.x && (BlockPos.getZ(key) >> 4) == pos.z);
+			set.removeIf(key -> (BlockPos.getX(key) >> 4) == pos.x() && (BlockPos.getZ(key) >> 4) == pos.z());
 		}
 		clearChunkFalling(fallingAlongX, true, pos);
 		clearChunkFalling(fallingAlongZ, false, pos);
@@ -235,7 +235,7 @@ public class ScanManager {
 	 */
 	private void clearChunkFalling(LongOpenHashSet set, boolean alongX, ChunkPos pos) {
 		set.removeIf(key -> {
-			if ((BlockPos.getX(key) >> 4) != pos.x || (BlockPos.getZ(key) >> 4) != pos.z) {
+			if ((BlockPos.getX(key) >> 4) != pos.x() || (BlockPos.getZ(key) >> 4) != pos.z()) {
 				return false;
 			}
 			dirtyFallingLines.add(fallingLineKey(alongX,
@@ -467,7 +467,7 @@ public class ScanManager {
 		}
 		if (dormantNoticePending && client.player != null) {
 			dormantNoticePending = false;
-			client.player.displayClientMessage(Component.translatable("periscan.msg.region_available"), false);
+			client.player.sendSystemMessage(Component.translatable("periscan.msg.region_available"));
 		}
 		if (layout == null || client.level.dimension() != dimension) {
 			return;
@@ -482,8 +482,8 @@ public class ScanManager {
 		}
 
 		if (!pendingChunks.isEmpty() && tickCounter % 20 == 0 && client.player != null) {
-			client.player.displayClientMessage(
-					Component.translatable("periscan.msg.pending_chunks", pendingChunks.size()), true);
+			client.player.sendOverlayMessage(
+					Component.translatable("periscan.msg.pending_chunks", pendingChunks.size()));
 		}
 	}
 

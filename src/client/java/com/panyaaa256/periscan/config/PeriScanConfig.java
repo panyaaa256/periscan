@@ -1,10 +1,12 @@
 package com.panyaaa256.periscan.config;
 
+import com.panyaaa256.periscan.PeriScanClient;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
+import com.panyaaa256.periscan.PeriScanClient;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
+import com.panyaaa256.periscan.PeriScanClient;
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.Identifier;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -12,9 +14,9 @@ import java.util.List;
 
 public class PeriScanConfig {
 	public static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
-			.id(Identifier.fromNamespaceAndPath("periscan", "config"))
+			.id(PeriScanClient.id("config"))
 			.serializer(config -> GsonConfigSerializerBuilder.create(config)
-					.setPath(FabricLoader.getInstance().getConfigDir().resolve("periscan.json"))
+					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
 					.build())
 			.build();
 

@@ -1,5 +1,6 @@
 package com.panyaaa256.periscan.scan;
 
+import com.panyaaa256.periscan.PeriDimension;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.zone.Zone;
 import com.panyaaa256.periscan.zone.ZoneLayout;
@@ -29,6 +30,9 @@ import java.util.List;
 
 public class ScanManager {
 	public static final ScanManager INSTANCE = new ScanManager();
+
+	// Height of the bottom trench zone: the lowest scanned layers of the trench body.
+	private static final int BOTTOM_TRENCH_LAYERS = 2;
 
 	private ZoneLayout layout;
 	private ResourceKey<Level> dimension;
@@ -108,10 +112,7 @@ public class ScanManager {
 		PeriScanConfig config = PeriScanConfig.get();
 		if (!PeriScanConfig.anyZoneEnabled()) {
 			// Nothing to scan; keep the region so a later reload can start it.
-			deactivate();
-			this.dimension = dim;
-			this.cornerA = a;
-			this.cornerB = b;
+			deactivateKeepingRegion(dim, a, b);
 			return List.of();
 		}
 		this.dimension = dim;
@@ -127,13 +128,7 @@ public class ScanManager {
 			matchers.put(zone, zone.compileMatcher(config, layout, exclusions, invalidEntries));
 		}
 
-		for (LongOpenHashSet set : highlights.values()) {
-			set.clear();
-		}
-		fallingAlongX.clear();
-		fallingAlongZ.clear();
-		dirtyFallingLines.clear();
-		pendingChunks.clear();
+		clearScanResults();
 		for (ChunkPos chunk : layout.chunks()) {
 			pendingChunks.add(chunk.toLong());
 		}
@@ -166,13 +161,7 @@ public class ScanManager {
 		}
 		if (!PeriScanConfig.anyZoneEnabled()) {
 			// All zones were just disabled: stop scanning but keep the region dormant.
-			ResourceKey<Level> dim = dimension;
-			ChunkPos a = cornerA;
-			ChunkPos b = cornerB;
-			deactivate();
-			this.dimension = dim;
-			this.cornerA = a;
-			this.cornerB = b;
+			deactivateKeepingRegion(dimension, cornerA, cornerB);
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null) {
 				client.player.displayClientMessage(Component.translatable("periscan.msg.all_disabled"), false);
@@ -189,13 +178,25 @@ public class ScanManager {
 		cornerB = null;
 		dormantNoticePending = false;
 		matchers.clear();
-		pendingChunks.clear();
+		clearScanResults();
+	}
+
+	/** Stops scanning but remembers the region, so rescan/reload can restart it. */
+	private void deactivateKeepingRegion(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
+		deactivate();
+		this.dimension = dim;
+		this.cornerA = a;
+		this.cornerB = b;
+	}
+
+	private void clearScanResults() {
 		for (LongOpenHashSet set : highlights.values()) {
 			set.clear();
 		}
 		fallingAlongX.clear();
 		fallingAlongZ.clear();
 		dirtyFallingLines.clear();
+		pendingChunks.clear();
 	}
 
 	private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
@@ -252,11 +253,11 @@ public class ScanManager {
 			return;
 		}
 
-		int minY = Math.max(level.getMinY(), scanMinY(level));
-		int maxY = Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
-		// The bottom trench zone is the two lowest scanned layers; the trench inner
+		int minY = scanMinY(level);
+		int maxY = scanMaxY(level);
+		// The bottom trench zone is the lowest scanned layers; the trench inner
 		// zone starts above them.
-		int bottomTopY = minY + 1;
+		int bottomTopY = minY + BOTTOM_TRENCH_LAYERS - 1;
 		for (int y = minY; y <= maxY; y++) {
 			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
 			if (section.hasOnlyAir()) {
@@ -330,9 +331,9 @@ public class ScanManager {
 		ChunkPos cp = chunk.getPos();
 		int chunkMinX = cp.getMinBlockX();
 		int chunkMinZ = cp.getMinBlockZ();
-		// The two lowest layers belong to the bottom trench zone, not the trench inner.
-		int minY = Math.max(level.getMinY(), scanMinY(level)) + 2;
-		int maxY = Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
+		// The lowest layers belong to the bottom trench zone, not the trench inner.
+		int minY = scanMinY(level) + BOTTOM_TRENCH_LAYERS;
+		int maxY = scanMaxY(level);
 		for (ZoneLayout.TrenchStrip strip : strips) {
 			ZoneLayout.Rect rect = strip.rect();
 			int x0 = Math.max(rect.minX(), chunkMinX);
@@ -440,15 +441,15 @@ public class ScanManager {
 		run.clear();
 	}
 
-	/** Skips the bedrock floor: overworld scans only y > -59, the nether only y > 5. */
+	/** Lowest scanned Y (inclusive): the bedrock floor is skipped where it is known. */
 	public static int scanMinY(ClientLevel level) {
-		if (level.dimension() == Level.OVERWORLD) {
-			return -59;
-		}
-		if (level.dimension() == Level.NETHER) {
-			return 5;
-		}
-		return level.getMinY();
+		PeriDimension dimension = PeriDimension.of(level.dimension());
+		return dimension == null ? level.getMinY() : Math.max(level.getMinY(), dimension.scanFloorY());
+	}
+
+	/** Highest scanned Y (inclusive), from the config. */
+	public static int scanMaxY(ClientLevel level) {
+		return Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
 	}
 
 	private void onTick(Minecraft client) {

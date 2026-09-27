@@ -9,6 +9,7 @@ import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.integration.iris.IrisIntegration;
 import com.panyaaa256.periscan.scan.ScanManager;
@@ -24,7 +25,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -39,7 +39,7 @@ public final class HighlightRenderer {
 	private static final double PENDING_RENDER_DISTANCE = 2048.0;
 
 	private static final RenderPipeline FILL_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-			.withLocation(Identifier.fromNamespaceAndPath("periscan", "pipeline/highlight_fill"))
+			.withLocation(PeriScanClient.id("pipeline/highlight_fill"))
 			.withVertexShader("core/position_color")
 			.withFragmentShader("core/position_color")
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
@@ -50,7 +50,7 @@ public final class HighlightRenderer {
 			.build());
 
 	private static final RenderPipeline LINE_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-			.withLocation(Identifier.fromNamespaceAndPath("periscan", "pipeline/highlight_lines"))
+			.withLocation(PeriScanClient.id("pipeline/highlight_lines"))
 			.withVertexShader("core/position_color")
 			.withFragmentShader("core/position_color")
 			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))

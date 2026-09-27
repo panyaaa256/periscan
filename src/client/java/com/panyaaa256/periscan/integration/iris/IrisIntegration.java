@@ -1,9 +1,8 @@
 package com.panyaaa256.periscan.integration.iris;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.panyaaa256.periscan.PeriScanClient;
 import net.fabricmc.loader.api.FabricLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Entry point of the Iris integration. This class never references Iris types,
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
  * API restores rendering.
  */
 public final class IrisIntegration {
-	private static final Logger LOGGER = LoggerFactory.getLogger("periscan");
 	private static Boolean available;
 
 	private IrisIntegration() {
@@ -54,7 +52,7 @@ public final class IrisIntegration {
 			api.getMethod("assignPipeline", RenderPipeline.class, program);
 			return true;
 		} catch (ReflectiveOperationException | LinkageError e) {
-			LOGGER.warn("PeriScan: iris is present but incompatible, highlights will not render "
+			PeriScanClient.LOGGER.warn("PeriScan: iris is present but incompatible, highlights will not render "
 					+ "while a shader pack is active: {}", e.toString());
 			return false;
 		}

@@ -1,11 +1,10 @@
 package com.panyaaa256.periscan.integration.litematica;
 
+import com.panyaaa256.periscan.PeriScanClient;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.List;
  * after {@link #isAvailable()} passed.
  */
 public final class LitematicaIntegration {
-	private static final Logger LOGGER = LoggerFactory.getLogger("periscan");
 	private static Boolean available;
 
 	/** One placement to create: a schematic file plus where and how to place it. */
@@ -91,7 +89,7 @@ public final class LitematicaIntegration {
 			manager.getMethod("removeSchematicPlacement", placement);
 			return true;
 		} catch (ReflectiveOperationException | LinkageError e) {
-			LOGGER.warn("PeriScan: litematica is present but incompatible, schematic placement disabled: {}",
+			PeriScanClient.LOGGER.warn("PeriScan: litematica is present but incompatible, schematic placement disabled: {}",
 					e.toString());
 			return false;
 		}

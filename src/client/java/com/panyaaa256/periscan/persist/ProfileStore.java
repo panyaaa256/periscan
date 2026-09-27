@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.scan.ScanManager;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -187,7 +188,7 @@ public final class ProfileStore {
 		if (key == null) {
 			return null;
 		}
-		return FabricLoader.getInstance().getConfigDir().resolve("periscan").resolve("worlds").resolve(key + ".json");
+		return FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("worlds").resolve(key + ".json");
 	}
 
 	private static String worldKey() {

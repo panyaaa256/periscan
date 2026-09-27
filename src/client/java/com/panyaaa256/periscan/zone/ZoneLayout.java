@@ -221,6 +221,11 @@ public final class ZoneLayout {
 		return trenchStrips;
 	}
 
+	/** The specified region (outermost perimeter rectangle) in block coordinates. */
+	public Rect region() {
+		return new Rect(regionMinX, regionMinZ, regionMaxX, regionMaxZ);
+	}
+
 	public int regionMinX() {
 		return regionMinX;
 	}

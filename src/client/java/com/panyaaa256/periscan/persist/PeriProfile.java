@@ -27,6 +27,24 @@ public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, S
 		return new ChunkPos(maxX, maxZ);
 	}
 
+	// Block coordinates of the outermost corner columns (bounds inclusive).
+
+	public int minBlockX() {
+		return minX * 16;
+	}
+
+	public int minBlockZ() {
+		return minZ * 16;
+	}
+
+	public int maxBlockX() {
+		return maxX * 16 + 15;
+	}
+
+	public int maxBlockZ() {
+		return maxZ * 16 + 15;
+	}
+
 	public int sizeBlocksX() {
 		return (maxX - minX + 1) * 16;
 	}

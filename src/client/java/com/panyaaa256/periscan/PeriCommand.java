@@ -16,7 +16,6 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Mirror;
@@ -43,17 +42,6 @@ public final class PeriCommand {
 	}
 
 	private static final String SCHEMATIC_EXTENSION = ".litematic";
-
-	// Placement Y of the schematic origin: the schematic files are saved with
-	// their origin at this height (see docs/placement.md). Dimensions without an
-	// entry are unsupported for placement.
-	private static final Map<String, Integer> ORIGIN_Y = Map.of(
-			"minecraft:overworld", -59,
-			"minecraft:the_nether", 5);
-	// Schematic set folder used when the dir argument is omitted.
-	private static final Map<String, String> DEFAULT_SET_DIR = Map.of(
-			"minecraft:overworld", "ow",
-			"minecraft:the_nether", "nether");
 
 	// Suggest the chunk the player is currently standing in.
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
@@ -129,6 +117,28 @@ public final class PeriCommand {
 		return false;
 	}
 
+	/** The named profile, or null after sending the "no such profile" error. */
+	private static PeriProfile findProfile(FabricClientCommandSource source, String name) {
+		PeriProfile profile = ProfileStore.get(name);
+		if (profile == null) {
+			source.sendError(Component.translatable("periscan.msg.no_profile", name));
+		}
+		return profile;
+	}
+
+	/** Profiles only work in the dimension they were created in. */
+	private static boolean rejectOtherDimension(FabricClientCommandSource source, PeriProfile profile) {
+		if (!profile.dimension().equals(dimensionId(source))) {
+			source.sendError(Component.translatable("periscan.msg.wrong_dimension", profile.name(), profile.dimension()));
+			return true;
+		}
+		return false;
+	}
+
+	private static String dimensionId(FabricClientCommandSource source) {
+		return source.getWorld().dimension().identifier().toString();
+	}
+
 	private static int add(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
 		if (rejectEnd(source)) {
@@ -142,7 +152,7 @@ public final class PeriCommand {
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 		// The profile is bound to the dimension the command was run in.
-		PeriProfile profile = PeriProfile.of(name, a, b, source.getWorld().dimension().identifier().toString());
+		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source));
 		ProfileStore.put(profile);
 		source.sendFeedback(Component.translatable("periscan.msg.profile_added",
 				name, profile.sizeBlocksX(), profile.sizeBlocksZ()));
@@ -152,8 +162,7 @@ public final class PeriCommand {
 	private static int remove(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
 		String name = StringArgumentType.getString(ctx, "name");
-		if (ProfileStore.get(name) == null) {
-			source.sendError(Component.translatable("periscan.msg.no_profile", name));
+		if (findProfile(source, name) == null) {
 			return 0;
 		}
 		if (name.equals(ProfileStore.lastScanned())) {
@@ -194,9 +203,8 @@ public final class PeriCommand {
 	private static int scanStart(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
 		String name = StringArgumentType.getString(ctx, "name");
-		PeriProfile profile = ProfileStore.get(name);
+		PeriProfile profile = findProfile(source, name);
 		if (profile == null) {
-			source.sendError(Component.translatable("periscan.msg.no_profile", name));
 			return 0;
 		}
 		if (startScan(source, profile)) {
@@ -242,13 +250,11 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.all_disabled"));
 			return false;
 		}
-		ResourceKey<Level> dimension = source.getWorld().dimension();
-		if (!profile.dimension().equals(dimension.identifier().toString())) {
-			source.sendError(Component.translatable("periscan.msg.wrong_dimension",
-					profile.name(), profile.dimension()));
+		if (rejectOtherDimension(source, profile)) {
 			return false;
 		}
-		List<String> invalidEntries = ScanManager.INSTANCE.activate(dimension, profile.minChunk(), profile.maxChunk());
+		List<String> invalidEntries = ScanManager.INSTANCE.activate(
+				source.getWorld().dimension(), profile.minChunk(), profile.maxChunk());
 		for (String entry : invalidEntries) {
 			source.sendFeedback(Component.translatable("periscan.msg.invalid_entry", entry));
 		}
@@ -272,22 +278,18 @@ public final class PeriCommand {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
-		PeriProfile profile = ProfileStore.get(name);
-		if (profile == null) {
-			source.sendError(Component.translatable("periscan.msg.no_profile", name));
+		PeriProfile profile = findProfile(source, name);
+		if (profile == null || rejectOtherDimension(source, profile)) {
 			return 0;
 		}
-		if (!profile.dimension().equals(source.getWorld().dimension().identifier().toString())) {
-			source.sendError(Component.translatable("periscan.msg.wrong_dimension", name, profile.dimension()));
-			return 0;
-		}
-		Integer originY = ORIGIN_Y.get(profile.dimension());
-		if (originY == null) {
+		PeriDimension dimension = PeriDimension.of(profile.dimension());
+		if (dimension == null) {
 			source.sendError(Component.translatable("periscan.msg.unsupported_dimension", profile.dimension()));
 			return 0;
 		}
+		int originY = dimension.schematicOriginY();
 
-		String dir = dirArg != null ? dirArg : DEFAULT_SET_DIR.get(profile.dimension());
+		String dir = dirArg != null ? dirArg : dimension.defaultSetDir();
 		Path setDir = periRoot().resolve(dir);
 		if (!Files.isDirectory(setDir)) {
 			source.sendError(Component.translatable("periscan.msg.schem_dir_missing", setDir.toString()));
@@ -299,7 +301,7 @@ public final class PeriCommand {
 		// opposite edge copy must be mirrored, never rotated 180deg (a rotation
 		// reverses the launch direction). Which axis flips cannot be derived from
 		// the file, so nether sets pre-assign it via the mx / mz subfolders.
-		boolean nether = profile.dimension().equals("minecraft:the_nether");
+		boolean nether = dimension == PeriDimension.NETHER;
 		List<String> allFiles = listSchematics(allDir);
 		List<String> edgeFiles = nether ? List.of() : listSchematics(edgeDir);
 		List<String> edgeMxFiles = nether ? listSchematics(edgeDir.resolve("mx")) : List.of();
@@ -314,10 +316,10 @@ public final class PeriCommand {
 		}
 
 		// The four corner blocks of the perimeter at the origin height.
-		int minBlockX = profile.minX() * 16;
-		int minBlockZ = profile.minZ() * 16;
-		int maxBlockX = profile.maxX() * 16 + 15;
-		int maxBlockZ = profile.maxZ() * 16 + 15;
+		int minBlockX = profile.minBlockX();
+		int minBlockZ = profile.minBlockZ();
+		int maxBlockX = profile.maxBlockX();
+		int maxBlockZ = profile.maxBlockZ();
 		BlockPos minCorner = new BlockPos(minBlockX, originY, minBlockZ);
 		String prefix = placementPrefix(name);
 		List<PlannedPlacement> plan = new ArrayList<>();

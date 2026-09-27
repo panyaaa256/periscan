@@ -100,16 +100,30 @@ public final class ZoneMatcher {
 		}
 
 		/**
-		 * A piston cannot move this block: it either refuses the push outright or
-		 * carries a block entity (chests, spawners, sculk sensors, ...), which
-		 * pistons never move. Bedrock is exempt: it is terrain (nether ceiling/floor),
-		 * not an obstruction anyone placed.
+		 * A piston cannot push this block. Mirrors the state-only checks of vanilla
+		 * PistonBaseBlock.isPushable: obsidian, crying obsidian, respawn anchors and
+		 * reinforced deepslate (hard-coded there, not a push reaction), extended
+		 * (but not retracted) pistons, unbreakable blocks, blocks refusing the
+		 * push, and blocks with a block entity (chests, spawners, sculk sensors,
+		 * ...). Bedrock is exempt: it is terrain (nether ceiling/floor), not an
+		 * obstruction anyone placed.
 		 */
 		private static boolean isImmovable(BlockState state) {
 			if (state.is(Blocks.BEDROCK)) {
 				return false;
 			}
-			return state.getPistonPushReaction() == PushReaction.BLOCK || state.hasBlockEntity();
+			if (state.is(Blocks.OBSIDIAN) || state.is(Blocks.CRYING_OBSIDIAN)
+					|| state.is(Blocks.RESPAWN_ANCHOR) || state.is(Blocks.REINFORCED_DEEPSLATE)) {
+				return true;
+			}
+			if (state.is(Blocks.PISTON) || state.is(Blocks.STICKY_PISTON)) {
+				// Pistons refuse pushes by push reaction, but vanilla lets retracted
+				// ones move (and they carry no block entity).
+				return state.getValue(BlockStateProperties.EXTENDED);
+			}
+			return state.getBlock().defaultDestroyTime() == -1.0F
+					|| state.getPistonPushReaction() == PushReaction.BLOCK
+					|| state.hasBlockEntity();
 		}
 
 		/**

@@ -34,9 +34,9 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 /**
- * The /peri command: peri profiles (add/remove/list) and scanning bound to
- * them (scan start/clear/reload). Schematic placement will join as
- * /peri schematic once the litematica integration lands.
+ * The /peri command: peri profiles (add/remove/list), scanning bound to them
+ * (scan start/clear/reload), litematica schematic placement (schematic) and
+ * the config screen (config).
  */
 public final class PeriCommand {
 	private PeriCommand() {

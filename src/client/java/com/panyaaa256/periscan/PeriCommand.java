@@ -12,19 +12,17 @@ import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration.Resu
 import com.panyaaa256.periscan.persist.PeriProfile;
 import com.panyaaa256.periscan.persist.ProfileStore;
 import com.panyaaa256.periscan.scan.ScanManager;
+import com.panyaaa256.periscan.schematic.SchematicPlanner;
+import com.panyaaa256.periscan.schematic.SchematicPlanner.SetFiles;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -40,8 +38,6 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 public final class PeriCommand {
 	private PeriCommand() {
 	}
-
-	private static final String SCHEMATIC_EXTENSION = ".litematic";
 
 	// Suggest the chunk the player is currently standing in.
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
@@ -171,7 +167,7 @@ public final class PeriCommand {
 		ProfileStore.remove(name);
 		source.sendFeedback(Component.translatable("periscan.msg.profile_removed", name));
 		if (LitematicaIntegration.isAvailable()) {
-			int removed = LitematicaIntegration.removePlacements(placementPrefix(name));
+			int removed = LitematicaIntegration.removePlacements(SchematicPlanner.placementPrefix(name));
 			if (removed > 0) {
 				source.sendFeedback(Component.translatable("periscan.msg.placements_removed", removed));
 			}
@@ -262,11 +258,9 @@ public final class PeriCommand {
 	}
 
 	/**
-	 * Creates litematica placements for every schematic of a set directory:
-	 * all/ files once at the min corner, edge/ files as a pair on the corner
-	 * pair chosen in the config (unrotated + 180deg, or X-mirror + Z-mirror).
-	 * Existing placements of the profile are replaced; a broken file aborts
-	 * before anything is touched.
+	 * Creates litematica placements for every schematic of a set directory (see
+	 * SchematicPlanner). Existing placements of the profile are replaced; a
+	 * broken file aborts before anything is touched.
 	 */
 	private static int schematic(CommandContext<FabricClientCommandSource> ctx, String dirArg) {
 		FabricClientCommandSource source = ctx.getSource();
@@ -287,7 +281,6 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.unsupported_dimension", profile.dimension()));
 			return 0;
 		}
-		int originY = dimension.schematicOriginY();
 
 		String dir = dirArg != null ? dirArg : dimension.defaultSetDir();
 		Path setDir = periRoot().resolve(dir);
@@ -295,109 +288,32 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.schem_dir_missing", setDir.toString()));
 			return 0;
 		}
-		Path allDir = setDir.resolve("all");
-		Path edgeDir = setDir.resolve("edge");
-		// Nether trenchers always launch from a fixed compass direction, so the
-		// opposite edge copy must be mirrored, never rotated 180deg (a rotation
-		// reverses the launch direction). Which axis flips cannot be derived from
-		// the file, so nether sets pre-assign it via the mx / mz subfolders.
-		boolean nether = dimension == PeriDimension.NETHER;
-		List<String> allFiles = listSchematics(allDir);
-		List<String> edgeFiles = nether ? List.of() : listSchematics(edgeDir);
-		List<String> edgeMxFiles = nether ? listSchematics(edgeDir.resolve("mx")) : List.of();
-		List<String> edgeMzFiles = nether ? listSchematics(edgeDir.resolve("mz")) : List.of();
-		if (nether && !listSchematics(edgeDir).isEmpty()) {
-			source.sendError(Component.translatable("periscan.msg.schem_edge_unsorted", edgeDir.toString()));
+		SetFiles files = SetFiles.list(setDir, dimension.presortedMirrorEdges());
+		if (dimension.presortedMirrorEdges() && !files.edge().isEmpty()) {
+			source.sendError(Component.translatable("periscan.msg.schem_edge_unsorted", files.edgeDir().toString()));
 			return 0;
 		}
-		if (allFiles.isEmpty() && edgeFiles.isEmpty() && edgeMxFiles.isEmpty() && edgeMzFiles.isEmpty()) {
+		if (files.fileCount() == 0) {
 			source.sendError(Component.translatable("periscan.msg.schem_no_files", setDir.toString()));
 			return 0;
 		}
 
-		// The four corner blocks of the perimeter at the origin height.
-		int minBlockX = profile.minBlockX();
-		int minBlockZ = profile.minBlockZ();
-		int maxBlockX = profile.maxBlockX();
-		int maxBlockZ = profile.maxBlockZ();
-		BlockPos minCorner = new BlockPos(minBlockX, originY, minBlockZ);
-		String prefix = placementPrefix(name);
-		List<PlannedPlacement> plan = new ArrayList<>();
-		for (String file : allFiles) {
-			plan.add(new PlannedPlacement(allDir, file,
-					prefix + "all/" + stripExtension(file), minCorner, Rotation.NONE, Mirror.NONE));
-		}
-		// Mirrored content extends away from its corner: FRONT_BACK flips X so it
-		// covers -x/+z from the +x/-z corner, LEFT_RIGHT flips Z covering +x/-z
-		// from the -x/+z corner.
-		for (String file : edgeMxFiles) {
-			String base = prefix + "edge/mx/" + stripExtension(file);
-			plan.add(new PlannedPlacement(edgeDir.resolve("mx"), file, base, minCorner, Rotation.NONE, Mirror.NONE));
-			plan.add(new PlannedPlacement(edgeDir.resolve("mx"), file, base + "@mx",
-					new BlockPos(maxBlockX, originY, minBlockZ), Rotation.NONE, Mirror.FRONT_BACK));
-		}
-		for (String file : edgeMzFiles) {
-			String base = prefix + "edge/mz/" + stripExtension(file);
-			plan.add(new PlannedPlacement(edgeDir.resolve("mz"), file, base, minCorner, Rotation.NONE, Mirror.NONE));
-			plan.add(new PlannedPlacement(edgeDir.resolve("mz"), file, base + "@mz",
-					new BlockPos(minBlockX, originY, maxBlockZ), Rotation.NONE, Mirror.LEFT_RIGHT));
-		}
-		for (String file : edgeFiles) {
-			String base = prefix + "edge/" + stripExtension(file);
-			if (PeriScanConfig.get().edgeCorners == PeriScanConfig.EdgeCorners.PM_MP) {
-				// Mirrors, not 90/270 rotations: a rotation would swap the NS/EW
-				// trench widths.
-				plan.add(new PlannedPlacement(edgeDir, file, base + "@mx",
-						new BlockPos(maxBlockX, originY, minBlockZ), Rotation.NONE, Mirror.FRONT_BACK));
-				plan.add(new PlannedPlacement(edgeDir, file, base + "@mz",
-						new BlockPos(minBlockX, originY, maxBlockZ), Rotation.NONE, Mirror.LEFT_RIGHT));
-			} else {
-				plan.add(new PlannedPlacement(edgeDir, file, base, minCorner, Rotation.NONE, Mirror.NONE));
-				plan.add(new PlannedPlacement(edgeDir, file, base + "@180",
-						new BlockPos(maxBlockX, originY, maxBlockZ), Rotation.CLOCKWISE_180, Mirror.NONE));
-			}
-		}
-
-		Result result = LitematicaIntegration.place(plan, prefix);
+		List<PlannedPlacement> plan = SchematicPlanner.plan(files, profile,
+				dimension.schematicOriginY(), PeriScanConfig.get().edgeCorners);
+		Result result = LitematicaIntegration.place(plan, SchematicPlanner.placementPrefix(name));
 		if (result.failedFile() != null) {
 			source.sendError(Component.translatable("periscan.msg.schem_load_failed", result.failedFile()));
 			return 0;
 		}
-		source.sendFeedback(Component.translatable("periscan.msg.schem_done",
-				name, result.created(),
-				allFiles.size() + edgeFiles.size() + edgeMxFiles.size() + edgeMzFiles.size()));
+		source.sendFeedback(Component.translatable("periscan.msg.schem_done", name, result.created(), files.fileCount()));
 		if (result.removed() > 0) {
 			source.sendFeedback(Component.translatable("periscan.msg.schem_replaced", result.removed()));
 		}
 		return 1;
 	}
 
-	/** All placements of a profile share this name prefix; replacement and removal match on it. */
-	private static String placementPrefix(String profileName) {
-		return "peri/" + profileName + "/";
-	}
-
 	private static Path periRoot() {
 		return LitematicaIntegration.schematicsBaseDirectory().resolve(PeriScanConfig.get().schematicsFolder);
-	}
-
-	private static List<String> listSchematics(Path dir) {
-		if (!Files.isDirectory(dir)) {
-			return List.of();
-		}
-		try (Stream<Path> files = Files.list(dir)) {
-			return files.filter(Files::isRegularFile)
-					.map(file -> file.getFileName().toString())
-					.filter(fileName -> fileName.endsWith(SCHEMATIC_EXTENSION))
-					.sorted()
-					.toList();
-		} catch (IOException e) {
-			return List.of();
-		}
-	}
-
-	private static String stripExtension(String fileName) {
-		return fileName.substring(0, fileName.length() - SCHEMATIC_EXTENSION.length());
 	}
 
 	private static int openConfig() {

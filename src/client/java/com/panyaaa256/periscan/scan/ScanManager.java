@@ -5,7 +5,6 @@ import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.zone.Zone;
 import com.panyaaa256.periscan.zone.ZoneLayout;
 import com.panyaaa256.periscan.zone.ZoneMatcher;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
@@ -18,11 +17,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Fallable;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.material.PushReaction;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -40,12 +37,7 @@ public class ScanManager {
 	private ChunkPos cornerB;
 	private final EnumMap<Zone, ZoneMatcher> matchers = new EnumMap<>(Zone.class);
 	private final EnumMap<Zone, LongOpenHashSet> highlights = new EnumMap<>(Zone.class);
-	// Falling-block runs in the trench body, split by run direction so that a corner
-	// position qualifying in one direction is not clobbered by a recompute of the other.
-	private final LongOpenHashSet fallingAlongX = new LongOpenHashSet();
-	private final LongOpenHashSet fallingAlongZ = new LongOpenHashSet();
-	// Lines (direction + cross coordinate + y) whose falling runs need recomputing.
-	private final LongOpenHashSet dirtyFallingLines = new LongOpenHashSet();
+	private final FallingRunTracker fallingRuns = new FallingRunTracker();
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
 	private int tickCounter = 0;
 	private boolean dormantNoticePending = false;
@@ -86,12 +78,12 @@ public class ScanManager {
 
 	/** Falling-block run highlights with runs along the X axis. Do not modify. */
 	public LongOpenHashSet fallingAlongX() {
-		return fallingAlongX;
+		return fallingRuns.alongX();
 	}
 
 	/** Falling-block run highlights with runs along the Z axis. Do not modify. */
 	public LongOpenHashSet fallingAlongZ() {
-		return fallingAlongZ;
+		return fallingRuns.alongZ();
 	}
 
 	public int pendingChunkCount() {
@@ -193,9 +185,7 @@ public class ScanManager {
 		for (LongOpenHashSet set : highlights.values()) {
 			set.clear();
 		}
-		fallingAlongX.clear();
-		fallingAlongZ.clear();
-		dirtyFallingLines.clear();
+		fallingRuns.clear();
 		pendingChunks.clear();
 	}
 
@@ -215,24 +205,7 @@ public class ScanManager {
 		for (LongOpenHashSet set : highlights.values()) {
 			set.removeIf(key -> (BlockPos.getX(key) >> 4) == pos.x() && (BlockPos.getZ(key) >> 4) == pos.z());
 		}
-		clearChunkFalling(fallingAlongX, true, pos);
-		clearChunkFalling(fallingAlongZ, false, pos);
-	}
-
-	/**
-	 * Runs span chunks, so a run may have been cut by changes made while this chunk
-	 * was unloaded: mark the lines of its cleared highlights dirty so the parts in
-	 * neighboring chunks are re-evaluated after the rescan.
-	 */
-	private void clearChunkFalling(LongOpenHashSet set, boolean alongX, ChunkPos pos) {
-		set.removeIf(key -> {
-			if ((BlockPos.getX(key) >> 4) != pos.x() || (BlockPos.getZ(key) >> 4) != pos.z()) {
-				return false;
-			}
-			dirtyFallingLines.add(fallingLineKey(alongX,
-					alongX ? BlockPos.getZ(key) : BlockPos.getX(key), BlockPos.getY(key)));
-			return true;
-		});
+		fallingRuns.clearChunk(pos.x(), pos.z());
 	}
 
 	private void scanChunk(ClientLevel level, LevelChunk chunk) {
@@ -291,154 +264,40 @@ public class ScanManager {
 			}
 		}
 
-		collectFallingLines(level, chunk);
-	}
-
-	// ---- Falling-block runs in the trench body ----
-	//
-	// A run is a straight horizontal line of blocks along the trencher's direction
-	// of travel (the strip's long axis). Falling blocks count toward the run; air,
-	// liquids and blocks destroyed by a piston push are skipped (they neither count
-	// nor break the run); only other blocks end it. Runs with at least
-	// config.trenchInner.fallingRunLength falling blocks get all their falling blocks
-	// highlighted. Runs can span chunks, so chunk scans only mark affected lines
-	// dirty and whole lines are recomputed afterwards.
-
-	private static boolean countsInFallingRun(BlockState state) {
-		return state.getBlock() instanceof Fallable && state.getPistonPushReaction() != PushReaction.DESTROY;
-	}
-
-	private static boolean skipsFallingRun(BlockState state) {
-		// Liquids have PushReaction.DESTROY, so they are covered here too.
-		return state.isAir() || state.getPistonPushReaction() == PushReaction.DESTROY;
-	}
-
-	private static boolean breaksFallingRun(BlockState state) {
-		return !countsInFallingRun(state) && !skipsFallingRun(state);
-	}
-
-	// direction flag (1 bit) | y (12 bits, offset) | cross coordinate (high 32 bits)
-	private static long fallingLineKey(boolean alongX, int cross, int y) {
-		return ((long) cross << 32) | ((long) (y + 2048) << 1) | (alongX ? 1L : 0L);
-	}
-
-	/** Marks every falling-run line that this chunk might affect as dirty. */
-	private void collectFallingLines(ClientLevel level, LevelChunk chunk) {
-		List<ZoneLayout.TrenchStrip> strips = layout.trenchStrips();
-		if (strips.isEmpty()) {
-			return;
-		}
-		ChunkPos cp = chunk.getPos();
-		int chunkMinX = cp.getMinBlockX();
-		int chunkMinZ = cp.getMinBlockZ();
 		// The lowest layers belong to the bottom trench zone, not the trench inner.
-		int minY = scanMinY(level) + BOTTOM_TRENCH_LAYERS;
-		int maxY = scanMaxY(level);
-		for (ZoneLayout.TrenchStrip strip : strips) {
-			ZoneLayout.Rect rect = strip.rect();
-			int x0 = Math.max(rect.minX(), chunkMinX);
-			int x1 = Math.min(rect.maxX(), chunkMinX + 15);
-			int z0 = Math.max(rect.minZ(), chunkMinZ);
-			int z1 = Math.min(rect.maxZ(), chunkMinZ + 15);
-			if (x0 > x1 || z0 > z1) {
-				continue;
-			}
-			for (int y = minY; y <= maxY; y++) {
-				LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-				if (section.hasOnlyAir()) {
-					// Air is skipped by runs, so it can bridge runs of neighboring
-					// chunks across this one: every line here needs a recompute.
-					int sectionEnd = Math.min(maxY, (((y >> 4) + 1) << 4) - 1);
-					for (; y <= sectionEnd; y++) {
-						for (int cross = strip.alongX() ? z0 : x0, max = strip.alongX() ? z1 : x1; cross <= max; cross++) {
-							dirtyFallingLines.add(fallingLineKey(strip.alongX(), cross, y));
-						}
-					}
-					y--; // the outer loop increments again
-					continue;
-				}
-				int localY = y & 15;
-				for (int x = x0; x <= x1; x++) {
-					for (int z = z0; z <= z1; z++) {
-						BlockState state = section.getBlockState(x & 15, localY, z & 15);
-						// Skipped blocks matter too: they can bridge runs across this chunk.
-						if (!breaksFallingRun(state)) {
-							dirtyFallingLines.add(fallingLineKey(strip.alongX(), strip.alongX() ? z : x, y));
-						}
-					}
-				}
-			}
-		}
+		fallingRuns.markChunk(layout.trenchStrips(), cp.x(), cp.z(),
+				minY + BOTTOM_TRENCH_LAYERS, maxY, blockView(level));
 	}
 
 	private void flushFallingLines(ClientLevel level) {
-		if (dirtyFallingLines.isEmpty()) {
-			return;
-		}
-		if (layout != null) {
-			LongIterator it = dirtyFallingLines.iterator();
-			while (it.hasNext()) {
-				long key = it.nextLong();
-				recomputeFallingLine(level, (key & 1) != 0, (int) (key >> 32), (int) ((key >>> 1) & 0xFFF) - 2048);
-			}
-		}
-		dirtyFallingLines.clear();
+		fallingRuns.flush(blockView(level), layout.region(), PeriScanConfig.get().trenchInner.fallingRunLength);
 	}
 
 	/**
-	 * Recomputes the falling runs of one whole line (trench strips span the full
-	 * region length on their axis). Loaded parts of the line are brought up to
-	 * date; highlights in unloaded chunks are left as cached.
+	 * Classifies blocks for the falling-run tracker straight from chunk sections.
+	 * Caches the last chunk, as the tracker walks lines block by block.
 	 */
-	private void recomputeFallingLine(ClientLevel level, boolean alongX, int cross, int y) {
-		LongOpenHashSet target = alongX ? fallingAlongX : fallingAlongZ;
-		int threshold = Math.max(1, PeriScanConfig.get().trenchInner.fallingRunLength);
-		int from = alongX ? layout.regionMinX() : layout.regionMinZ();
-		int to = alongX ? layout.regionMaxX() : layout.regionMaxZ();
-		int fixedChunk = cross >> 4;
-		LongArrayList run = new LongArrayList();
-		int pos = from;
-		while (pos <= to) {
-			int stretchEnd = Math.min(to, pos | 15);
-			LevelChunk chunk = level.getChunkSource().getChunkNow(
-					alongX ? pos >> 4 : fixedChunk, alongX ? fixedChunk : pos >> 4);
-			if (chunk == null) {
-				// Unknown territory: end the run and keep whatever is cached there.
-				endFallingRun(target, run, threshold);
-				pos = stretchEnd + 1;
-				continue;
-			}
-			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-			boolean airOnly = section.hasOnlyAir();
-			for (; pos <= stretchEnd; pos++) {
-				int x = alongX ? pos : cross;
-				int z = alongX ? cross : pos;
-				long key = BlockPos.asLong(x, y, z);
-				BlockState state = airOnly ? null : section.getBlockState(x & 15, y & 15, z & 15);
-				if (state != null && countsInFallingRun(state)) {
-					run.add(key);
-				} else {
-					target.remove(key);
-					// A null state means an all-air section: skipped like any air.
-					if (state != null && breaksFallingRun(state)) {
-						endFallingRun(target, run, threshold);
-					}
-				}
-			}
-		}
-		endFallingRun(target, run, threshold);
-	}
+	private static FallingRunTracker.BlockView blockView(ClientLevel level) {
+		return new FallingRunTracker.BlockView() {
+			private int chunkX = Integer.MIN_VALUE;
+			private int chunkZ = Integer.MIN_VALUE;
+			private LevelChunk chunk;
 
-	private static void endFallingRun(LongOpenHashSet target, LongArrayList run, int threshold) {
-		boolean qualifies = run.size() >= threshold;
-		for (int i = 0; i < run.size(); i++) {
-			if (qualifies) {
-				target.add(run.getLong(i));
-			} else {
-				target.remove(run.getLong(i));
+			@Override
+			public FallingRunTracker.RunBlock at(int x, int y, int z) {
+				if (x >> 4 != chunkX || z >> 4 != chunkZ) {
+					chunkX = x >> 4;
+					chunkZ = z >> 4;
+					chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+				}
+				if (chunk == null) {
+					return null;
+				}
+				LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+				return section.hasOnlyAir() ? FallingRunTracker.RunBlock.SKIPS
+						: FallingRunTracker.RunBlock.of(section.getBlockState(x & 15, y & 15, z & 15));
 			}
-		}
-		run.clear();
+		};
 	}
 
 	/** Lowest scanned Y (inclusive): the bedrock floor is skipped where it is known. */
@@ -496,26 +355,10 @@ public class ScanManager {
 		validateFallingHighlights(level);
 	}
 
-	/**
-	 * Re-checks highlighted falling blocks; a replaced one may split its run, so
-	 * the whole line is recomputed rather than just the block removed.
-	 */
+	/** Re-checks highlighted falling blocks and recomputes the lines of replaced ones. */
 	private void validateFallingHighlights(ClientLevel level) {
-		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		for (boolean alongX : new boolean[] { true, false }) {
-			LongOpenHashSet set = alongX ? fallingAlongX : fallingAlongZ;
-			LongIterator it = set.iterator();
-			while (it.hasNext()) {
-				long key = it.nextLong();
-				pos.set(BlockPos.getX(key), BlockPos.getY(key), BlockPos.getZ(key));
-				if (!level.getChunkSource().hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
-					continue; // keep cached highlights for unloaded chunks
-				}
-				if (!countsInFallingRun(level.getBlockState(pos))) {
-					dirtyFallingLines.add(fallingLineKey(alongX, alongX ? pos.getZ() : pos.getX(), pos.getY()));
-				}
-			}
-		}
+		fallingRuns.markChangedHighlights(blockView(level));
 		flushFallingLines(level);
 	}
+
 }

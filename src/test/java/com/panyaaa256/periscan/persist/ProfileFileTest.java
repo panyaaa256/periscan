@@ -87,6 +87,49 @@ class ProfileFileTest {
 	}
 
 	@Nested
+	class InvalidEntries {
+		private static final String VALID = "{\"minX\":0,\"minZ\":0,\"maxX\":1,\"maxZ\":1,"
+				+ "\"dimension\":\"minecraft:overworld\",\"createdAt\":\"2026-01-01\"}";
+
+		private Data readWithProfile(String invalid) throws IOException {
+			writeRaw("{\"profiles\":{\"ok\":" + VALID + ",\"bad\":" + invalid + "}}");
+			return ProfileFile.read(file(), TODAY);
+		}
+
+		@Test
+		void invalidEntriesAreSkippedAndTheRestIsKept() throws IOException {
+			String[] invalid = {
+					"null",
+					"\"text\"",
+					"{\"minX\":0,\"minZ\":0,\"maxX\":1,\"maxZ\":1}",
+					"{\"minX\":0,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":null}",
+					"{\"minX\":0,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":3}",
+					"{\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
+					"{\"minX\":\"0\",\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
+					"{\"minX\":1.5,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
+					"{\"minX\":3000000000,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
+			};
+			for (String entry : invalid) {
+				Data data = readWithProfile(entry);
+				assertEquals(List.of("ok"), List.copyOf(data.profiles.keySet()), entry);
+				assertTrue(Files.exists(file()), "a skipped entry must not mark the file broken: " + entry);
+			}
+		}
+
+		@Test
+		void missingCreatedAtIsAllowed() throws IOException {
+			Data data = readWithProfile("{\"minX\":-1,\"minZ\":2,\"maxX\":3,\"maxZ\":4,\"dimension\":\"minecraft:the_nether\"}");
+			assertEquals(new SavedProfile(-1, 2, 3, 4, "minecraft:the_nether", null), data.profiles.get("bad"));
+		}
+
+		@Test
+		void wholeNumbersWrittenAsDecimalsAreAccepted() throws IOException {
+			Data data = readWithProfile("{\"minX\":2.0,\"minZ\":0,\"maxX\":3,\"maxZ\":4,\"dimension\":\"minecraft:overworld\"}");
+			assertEquals(2, data.profiles.get("bad").minX());
+		}
+	}
+
+	@Nested
 	class Legacy {
 		@Test
 		void oldestSingleRegionBecomesOverworldProfile() throws IOException {

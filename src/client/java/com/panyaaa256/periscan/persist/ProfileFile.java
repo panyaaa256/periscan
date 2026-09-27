@@ -112,12 +112,43 @@ final class ProfileFile {
 	private static Data fromJson(JsonObject root) {
 		Data data = new Data();
 		for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("profiles").entrySet()) {
-			data.profiles.put(entry.getKey(), GSON.fromJson(entry.getValue(), SavedProfile.class));
+			if (isValidProfile(entry.getValue())) {
+				data.profiles.put(entry.getKey(), GSON.fromJson(entry.getValue(), SavedProfile.class));
+			} else {
+				// Only possible through hand edits; the rest of the file stays usable.
+				PeriScanClient.LOGGER.warn("PeriScan: skipping invalid profile '{}': {}", entry.getKey(), entry.getValue());
+			}
 		}
 		if (root.has("lastScanned") && !root.get("lastScanned").isJsonNull()) {
 			data.lastScanned = root.get("lastScanned").getAsString();
 		}
 		return data;
+	}
+
+	/**
+	 * A profile needs its four chunk coordinates and its dimension; the commands
+	 * rely on them. createdAt is informational and may be missing.
+	 */
+	private static boolean isValidProfile(JsonElement element) {
+		if (!element.isJsonObject()) {
+			return false;
+		}
+		JsonObject profile = element.getAsJsonObject();
+		for (String field : new String[] { "minX", "minZ", "maxX", "maxZ" }) {
+			if (!isInt(profile.get(field))) {
+				return false;
+			}
+		}
+		JsonElement dimension = profile.get("dimension");
+		return dimension != null && dimension.isJsonPrimitive() && dimension.getAsJsonPrimitive().isString();
+	}
+
+	private static boolean isInt(JsonElement element) {
+		if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+			return false;
+		}
+		double value = element.getAsDouble();
+		return value == Math.floor(value) && value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE;
 	}
 
 	private static JsonObject toJson(Data data) {

@@ -92,11 +92,11 @@ public final class HighlightRenderer {
 		// All fills first, then all lines: BufferSource batches by RenderType and
 		// ends the previous batch when a different type is requested.
 		// Falling-block runs belong to the trench inner zone and use its color.
-		int fallingRgb = Zone.TRENCH_INNER.color(config).getRGB() & 0xFFFFFF;
+		int fallingRgb = config.trenchInner.color.getRGB() & 0xFFFFFF;
 
 		VertexConsumer fill = consumers.getBuffer(FILL_TYPE);
 		for (Zone zone : Zone.VALUES) {
-			int color = (FILL_ALPHA << 24) | (zone.color(config).getRGB() & 0xFFFFFF);
+			int color = (FILL_ALPHA << 24) | (zone.settings(config).color.getRGB() & 0xFFFFFF);
 			LongIterator it = scan.highlights(zone).iterator();
 			while (it.hasNext()) {
 				addBoxFaces(fill, pose, camera, it.nextLong(), color);
@@ -115,7 +115,7 @@ public final class HighlightRenderer {
 
 		VertexConsumer lines = consumers.getBuffer(LINE_TYPE);
 		for (Zone zone : Zone.VALUES) {
-			int color = 0xFF000000 | (zone.color(config).getRGB() & 0xFFFFFF);
+			int color = 0xFF000000 | (zone.settings(config).color.getRGB() & 0xFFFFFF);
 			LongIterator it = scan.highlights(zone).iterator();
 			while (it.hasNext()) {
 				addBoxEdges(lines, pose, camera, it.nextLong(), color);

@@ -124,17 +124,7 @@ public class ScanManager {
 				config.waterloggedBlacklist, config.waterloggedExcludePushDestroy, invalidEntries);
 		matchers.clear();
 		for (Zone zone : Zone.VALUES) {
-			if (zone == Zone.TRENCH_INNER) {
-				// Walls/fences only matter in specific trench columns (index % 3 == 2 from the edge).
-				matchers.put(zone, ZoneMatcher.compile(zone.blockEntries(config),
-						config.trenchInnerFenceBlocks, layout::fenceLaneMatters,
-						zone.includeWaterlogged(config), exclusions, invalidEntries));
-			} else if (zone == Zone.BOTTOM_TRENCH) {
-				matchers.put(zone, ZoneMatcher.everythingButLiquids());
-			} else {
-				matchers.put(zone, ZoneMatcher.compile(zone.blockEntries(config),
-						zone.includeWaterlogged(config), exclusions, invalidEntries));
-			}
+			matchers.put(zone, zone.compileMatcher(config, layout, exclusions, invalidEntries));
 		}
 
 		for (LongOpenHashSet set : highlights.values()) {
@@ -309,7 +299,7 @@ public class ScanManager {
 	// of travel (the strip's long axis). Falling blocks count toward the run; air,
 	// liquids and blocks destroyed by a piston push are skipped (they neither count
 	// nor break the run); only other blocks end it. Runs with at least
-	// config.trenchFallingRunLength falling blocks get all their falling blocks
+	// config.trenchInner.fallingRunLength falling blocks get all their falling blocks
 	// highlighted. Runs can span chunks, so chunk scans only mark affected lines
 	// dirty and whole lines are recomputed afterwards.
 
@@ -401,7 +391,7 @@ public class ScanManager {
 	 */
 	private void recomputeFallingLine(ClientLevel level, boolean alongX, int cross, int y) {
 		LongOpenHashSet target = alongX ? fallingAlongX : fallingAlongZ;
-		int threshold = Math.max(1, PeriScanConfig.get().trenchFallingRunLength);
+		int threshold = Math.max(1, PeriScanConfig.get().trenchInner.fallingRunLength);
 		int from = alongX ? layout.regionMinX() : layout.regionMinZ();
 		int to = alongX ? layout.regionMaxX() : layout.regionMaxZ();
 		int fixedChunk = cross >> 4;

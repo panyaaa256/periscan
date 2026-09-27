@@ -45,6 +45,24 @@ public final class ZoneLayout {
 	}
 
 	/**
+	 * The config values the layout depends on. Kept separate from PeriScanConfig
+	 * so layouts can be built without loading the config (e.g. in tests).
+	 *
+	 * @param northSouthWidth trench thickness along Z
+	 * @param eastWestWidth   trench thickness along X
+	 */
+	public record Settings(int northSouthWidth, int eastWestWidth,
+			boolean trenchOuter, boolean trenchInner, boolean bottomTrench,
+			boolean eater, boolean eaterIncludeTrench) {
+
+		public static Settings from(PeriScanConfig config) {
+			return new Settings(config.northSouthWidth, config.eastWestWidth,
+					config.trenchOuter.enabled, config.trenchInner.enabled, config.bottomTrench.enabled,
+					config.eater.enabled, config.eater.includeTrench);
+		}
+	}
+
+	/**
 	 * One trench body strip. {@code alongX} is the trencher's direction of travel
 	 * (the strip's long axis): strips at the Z ends run along X and vice versa.
 	 */
@@ -85,14 +103,14 @@ public final class ZoneLayout {
 		this.stripXMax = stripXMax;
 	}
 
-	public static ZoneLayout of(ChunkPos cornerA, ChunkPos cornerB, PeriScanConfig config) {
+	public static ZoneLayout of(ChunkPos cornerA, ChunkPos cornerB, Settings settings) {
 		int minX = Math.min(cornerA.x(), cornerB.x()) * 16;
 		int minZ = Math.min(cornerA.z(), cornerB.z()) * 16;
 		int maxX = Math.max(cornerA.x(), cornerB.x()) * 16 + 15;
 		int maxZ = Math.max(cornerA.z(), cornerB.z()) * 16 + 15;
 
-		int ns = config.northSouthWidth; // thickness along Z
-		int ew = config.eastWestWidth;   // thickness along X
+		int ns = settings.northSouthWidth(); // thickness along Z
+		int ew = settings.eastWestWidth();   // thickness along X
 
 		// A region too narrow for two opposite strips holds a single trench, anchored
 		// at the edge farther from the origin (ties go to the max side).
@@ -103,12 +121,12 @@ public final class ZoneLayout {
 		boolean stripXMax = twoX || Math.abs(maxX) >= Math.abs(minX);
 		boolean stripXMin = twoX || !stripXMax;
 
-		ZoneLayout layout = new ZoneLayout(config.trenchInner.enabled, minX, minZ, maxX, maxZ, ns, ew,
+		ZoneLayout layout = new ZoneLayout(settings.trenchInner(), minX, minZ, maxX, maxZ, ns, ew,
 				stripZMin, stripZMax, stripXMin, stripXMax);
 
-		boolean inner = config.trenchInner.enabled;
-		boolean outer = config.trenchOuter.enabled;
-		boolean bottom = config.bottomTrench.enabled;
+		boolean inner = settings.trenchInner();
+		boolean outer = settings.trenchOuter();
+		boolean bottom = settings.bottomTrench();
 
 		// Trench body strips (Z ends span the full X length, X ends the full Z length),
 		// each with its one-block "outside the trench" lines on both sides. The bottom
@@ -142,8 +160,8 @@ public final class ZoneLayout {
 			}
 		}
 
-		if (config.eater.enabled) {
-			if (config.eater.includeTrench) {
+		if (settings.eater()) {
+			if (settings.eaterIncludeTrench()) {
 				layout.add(Zone.EATER, new Rect(minX, minZ, maxX, maxZ));
 			} else {
 				// The interior with the trenches removed (regardless of whether the

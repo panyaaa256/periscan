@@ -28,6 +28,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
+import java.awt.Color;
+
 /**
  * Draws highlighted blocks as translucent filled boxes with outlines, visible
  * through terrain (depth test always passes).
@@ -38,34 +40,36 @@ public final class HighlightRenderer {
 	// Pending chunk boxes are only drawn within this horizontal distance of the camera.
 	private static final double PENDING_RENDER_DISTANCE = 2048.0;
 
-	private static final RenderPipeline FILL_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-			.withLocation(PeriScanClient.id("pipeline/highlight_fill"))
-			.withVertexShader("core/position_color")
-			.withFragmentShader("core/position_color")
-			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-			.withCull(false)
-			.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
-			.withPrimitiveTopology(PrimitiveTopology.QUADS)
-			.build());
-
-	private static final RenderPipeline LINE_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-			.withLocation(PeriScanClient.id("pipeline/highlight_lines"))
-			.withVertexShader("core/position_color")
-			.withFragmentShader("core/position_color")
-			.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-			.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-			.withCull(false)
-			.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
-			.withPrimitiveTopology(PrimitiveTopology.DEBUG_LINES)
-			.build());
+	private static final RenderPipeline FILL_PIPELINE = pipeline("pipeline/highlight_fill", PrimitiveTopology.QUADS);
+	private static final RenderPipeline LINE_PIPELINE = pipeline("pipeline/highlight_lines", PrimitiveTopology.DEBUG_LINES);
 
 	private static final RenderType FILL_TYPE = RenderType.create("periscan_highlight_fill",
 			RenderSetup.builder(FILL_PIPELINE).createRenderSetup());
 	private static final RenderType LINE_TYPE = RenderType.create("periscan_highlight_lines",
 			RenderSetup.builder(LINE_PIPELINE).createRenderSetup());
 
+	/** Emits one axis-aligned box (camera-relative coordinates) as faces or edges. */
+	@FunctionalInterface
+	private interface BoxDrawer {
+		void draw(VertexConsumer buffer, PoseStack.Pose pose, int color,
+				float x0, float y0, float z0, float x1, float y1, float z1);
+	}
+
 	private HighlightRenderer() {
+	}
+
+	/** Translucent position+color pipeline that draws through terrain. */
+	private static RenderPipeline pipeline(String path, PrimitiveTopology topology) {
+		return RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+				.withLocation(PeriScanClient.id(path))
+				.withVertexShader("core/position_color")
+				.withFragmentShader("core/position_color")
+				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+				.withCull(false)
+				.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+				.withPrimitiveTopology(topology)
+				.build());
 	}
 
 	public static void init() {
@@ -86,59 +90,53 @@ public final class HighlightRenderer {
 		if (level == null || level.dimension() != scan.dimension()) {
 			return;
 		}
-		PeriScanConfig config = PeriScanConfig.get();
 		Vec3 camera = context.levelState().cameraRenderState.pos;
 		PoseStack poseStack = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();
 
-		// Falling-block runs belong to the trench inner zone and use its color.
-		int fallingRgb = config.trenchInner.color.getRGB() & 0xFFFFFF;
-
 		// One submit per render type: all fills in one batch, all lines in another.
-		collector.submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) -> {
-			for (Zone zone : Zone.VALUES) {
-				int color = (FILL_ALPHA << 24) | (zone.settings(config).color.getRGB() & 0xFFFFFF);
-				LongIterator it = scan.highlights(zone).iterator();
-				while (it.hasNext()) {
-					addBoxFaces(fill, pose, camera, it.nextLong(), color);
-				}
-			}
-			for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
-				LongIterator it = set.iterator();
-				while (it.hasNext()) {
-					addBoxFaces(fill, pose, camera, it.nextLong(), (FILL_ALPHA << 24) | fallingRgb);
-				}
-			}
-			if (config.showPendingChunks) {
-				addPendingChunkBoxes(fill, pose, camera, false,
-						(PENDING_FILL_ALPHA << 24) | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
-			}
-		});
+		collector.submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) ->
+				addAllBoxes(fill, pose, camera, HighlightRenderer::boxFaces, FILL_ALPHA, PENDING_FILL_ALPHA));
+		collector.submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) ->
+				addAllBoxes(lines, pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF));
+	}
 
-		collector.submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) -> {
-			for (Zone zone : Zone.VALUES) {
-				int color = 0xFF000000 | (zone.settings(config).color.getRGB() & 0xFFFFFF);
-				LongIterator it = scan.highlights(zone).iterator();
-				while (it.hasNext()) {
-					addBoxEdges(lines, pose, camera, it.nextLong(), color);
-				}
-			}
-			for (LongOpenHashSet set : new LongOpenHashSet[] { scan.fallingAlongX(), scan.fallingAlongZ() }) {
-				LongIterator it = set.iterator();
-				while (it.hasNext()) {
-					addBoxEdges(lines, pose, camera, it.nextLong(), 0xFF000000 | fallingRgb);
-				}
-			}
-			if (config.showPendingChunks) {
-				addPendingChunkBoxes(lines, pose, camera, true,
-						0xFF000000 | (config.pendingChunkColor.getRGB() & 0xFFFFFF));
-			}
-		});
+	private static void addAllBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,
+			int alpha, int pendingAlpha) {
+		ScanManager scan = ScanManager.INSTANCE;
+		PeriScanConfig config = PeriScanConfig.get();
+		for (Zone zone : Zone.VALUES) {
+			addBlockBoxes(buffer, pose, camera, drawer, scan.highlights(zone), argb(alpha, zone.settings(config).color));
+		}
+		// Falling-block runs belong to the trench inner zone and use its color.
+		int fallingColor = argb(alpha, config.trenchInner.color);
+		addBlockBoxes(buffer, pose, camera, drawer, scan.fallingAlongX(), fallingColor);
+		addBlockBoxes(buffer, pose, camera, drawer, scan.fallingAlongZ(), fallingColor);
+		if (config.showPendingChunks) {
+			addPendingChunkBoxes(buffer, pose, camera, drawer, argb(pendingAlpha, config.pendingChunkColor));
+		}
+	}
+
+	private static int argb(int alpha, Color color) {
+		return (alpha << 24) | (color.getRGB() & 0xFFFFFF);
+	}
+
+	/** Draws a one-block box at every position (BlockPos longs) in the set. */
+	private static void addBlockBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,
+			LongOpenHashSet positions, int color) {
+		LongIterator it = positions.iterator();
+		while (it.hasNext()) {
+			long key = it.nextLong();
+			float x0 = (float) (BlockPos.getX(key) - camera.x);
+			float y0 = (float) (BlockPos.getY(key) - camera.y);
+			float z0 = (float) (BlockPos.getZ(key) - camera.z);
+			drawer.draw(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
+		}
 	}
 
 	/** Draws one box over each unscanned chunk near the camera, spanning the scan's Y range. */
 	private static void addPendingChunkBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera,
-			boolean edges, int color) {
+			BoxDrawer drawer, int color) {
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null) {
 			return;
@@ -160,19 +158,8 @@ public final class HighlightRenderer {
 			}
 			float x0 = (float) (blockX - camera.x);
 			float z0 = (float) (blockZ - camera.z);
-			if (edges) {
-				boxEdges(buffer, pose, color, x0, y0, z0, x0 + 16, y1, z0 + 16);
-			} else {
-				boxFaces(buffer, pose, color, x0, y0, z0, x0 + 16, y1, z0 + 16);
-			}
+			drawer.draw(buffer, pose, color, x0, y0, z0, x0 + 16, y1, z0 + 16);
 		}
-	}
-
-	private static void addBoxFaces(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, long posKey, int color) {
-		float x0 = (float) (BlockPos.getX(posKey) - camera.x);
-		float y0 = (float) (BlockPos.getY(posKey) - camera.y);
-		float z0 = (float) (BlockPos.getZ(posKey) - camera.z);
-		boxFaces(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
 	}
 
 	private static void boxFaces(VertexConsumer buffer, PoseStack.Pose pose, int color,
@@ -192,13 +179,6 @@ public final class HighlightRenderer {
 		buffer.addVertex(pose, bx, by, bz).setColor(color);
 		buffer.addVertex(pose, cx, cy, cz).setColor(color);
 		buffer.addVertex(pose, dx, dy, dz).setColor(color);
-	}
-
-	private static void addBoxEdges(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, long posKey, int color) {
-		float x0 = (float) (BlockPos.getX(posKey) - camera.x);
-		float y0 = (float) (BlockPos.getY(posKey) - camera.y);
-		float z0 = (float) (BlockPos.getZ(posKey) - camera.z);
-		boxEdges(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
 	}
 
 	private static void boxEdges(VertexConsumer buffer, PoseStack.Pose pose, int color,

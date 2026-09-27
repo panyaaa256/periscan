@@ -83,6 +83,11 @@ sourceSets {
 
 test {
 	useJUnitPlatform()
+	// Minecraft's logging config writes logs/latest.log relative to the working
+	// directory; keep it out of the project root.
+	def testRunDir = layout.buildDirectory.dir("test-run").get().asFile
+	workingDir = testRunDir
+	doFirst { testRunDir.mkdirs() }
 }
 
 processResources {

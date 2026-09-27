@@ -36,7 +36,8 @@ public class PeriScanConfig {
 	@SerialEntry
 	public int eastWestWidth = 3;
 
-	// Upper Y bound of the scan (inclusive). The scan always starts at the world bottom.
+	// Upper Y bound of the scan (inclusive). The lower bound is fixed per
+	// dimension just above the bedrock floor (see ScanManager.scanMinY).
 	@SerialEntry
 	public int scanMaxY = 128;
 

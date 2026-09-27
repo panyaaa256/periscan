@@ -7,7 +7,7 @@ import java.time.LocalDate;
 /**
  * A named perimeter: its chunk range (normalized to min/max corners), the
  * dimension it was created in, and the creation date. Profiles are the unit
- * both scanning and (later) schematic placement operate on.
+ * both scanning and schematic placement operate on.
  */
 public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, String dimension, String createdAt) {
 

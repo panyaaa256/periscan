@@ -118,7 +118,7 @@ public class ScanManager {
 		this.dimension = dim;
 		this.cornerA = a;
 		this.cornerB = b;
-		this.layout = ZoneLayout.of(a, b, config);
+		this.layout = ZoneLayout.of(a, b, ZoneLayout.Settings.from(config));
 
 		List<String> invalidEntries = new ArrayList<>();
 		ZoneMatcher.WaterloggedExclusions exclusions = ZoneMatcher.WaterloggedExclusions.compile(

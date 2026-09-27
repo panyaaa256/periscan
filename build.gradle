@@ -62,6 +62,24 @@ dependencies {
 	// Iris: soft dependency, compile-only (runtime would also require Sodium).
 	// Used to tell Iris which shader program draws the highlight pipelines.
 	modCompileOnly "maven.modrinth:iris:${project.iris_version}"
+
+	// Unit tests (JUnit)
+	testImplementation platform("org.junit:junit-bom:${project.junit_version}")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+// The mod code lives in the client source set (splitEnvironmentSourceSets), so
+// the tests compile and run against it and its Minecraft classpath.
+sourceSets {
+	test {
+		compileClasspath += sourceSets.client.output + sourceSets.client.compileClasspath
+		runtimeClasspath += sourceSets.client.output + sourceSets.client.runtimeClasspath
+	}
+}
+
+test {
+	useJUnitPlatform()
 }
 
 processResources {

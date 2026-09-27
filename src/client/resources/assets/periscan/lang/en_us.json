@@ -6,7 +6,7 @@
 	"periscan.config.ew_width": "East-west trench width",
 	"periscan.config.ew_width.desc": "Width in columns of the trenches at both X ends of the perimeter.",
 	"periscan.config.scan_max_y": "Maximum scanned Y",
-	"periscan.config.scan_max_y.desc": "Scan up to this Y (inclusive). The scan always starts at the world bottom.",
+	"periscan.config.scan_max_y.desc": "Scan up to this Y (inclusive). The scan starts just above the bedrock floor (Y = -59 in the Overworld, Y = 5 in the Nether).",
 	"periscan.config.schematics_folder": "Peri schematics folder",
 	"periscan.config.schematics_folder.desc": "Folder under litematica's schematics directory holding the peri schematic sets. Each set is a subfolder (e.g. \"ow\") containing \"all\" (placed once at the min corner) and \"edge\" (placed as a point-symmetric pair on the corners chosen below).",
 	"periscan.config.edge_corners": "Edge placement corners",

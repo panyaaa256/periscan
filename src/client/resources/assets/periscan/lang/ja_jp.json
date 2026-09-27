@@ -6,7 +6,7 @@
 	"periscan.config.ew_width": "東西トレンチの幅",
 	"periscan.config.ew_width.desc": "ペリメータのX軸方向両端にあるトレンチの幅(列数)。",
 	"periscan.config.scan_max_y": "スキャンする最大Y",
-	"periscan.config.scan_max_y.desc": "このY(含む)までを走査対象にします。走査はワールド最下端から始まります。",
+	"periscan.config.scan_max_y.desc": "このY(含む)までを走査対象にします。走査は岩盤の層のすぐ上から始まります(オーバーワールドは Y=-59、ネザーは Y=5)。",
 	"periscan.config.schematics_folder": "periスキマティックのフォルダ名",
 	"periscan.config.schematics_folder.desc": "litematicaのschematicsフォルダ直下にある、periスキマティックのセットを入れるフォルダ名。セットごとのサブフォルダ(例: ow)の中に all(min角に1回設置)と edge(下の設定の角に点対称ペアで設置)を置きます。",
 	"periscan.config.edge_corners": "edgeを設置する角",

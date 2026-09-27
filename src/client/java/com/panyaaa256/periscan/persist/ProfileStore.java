@@ -16,6 +16,7 @@ import net.minecraft.world.level.Level;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,13 +38,22 @@ public final class ProfileStore {
 	private static final class Data {
 		LinkedHashMap<String, SavedProfile> profiles = new LinkedHashMap<>();
 		String lastScanned;
+		// False when the file on disk could not be read nor backed up: saving
+		// would overwrite the user's profiles with this (empty) data.
+		boolean writable = true;
 	}
+
+	// Data of the current world/server, so commands and tab completion don't
+	// re-read the file on every call. Reloaded when the world file changes.
+	private static Path cachedFile;
+	private static Data cachedData;
 
 	private ProfileStore() {
 	}
 
 	public static void init() {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			invalidate();
 			Data data = load();
 			if (data.lastScanned != null && data.profiles.containsKey(data.lastScanned)) {
 				// The profile stays dormant: scanning only starts when the user
@@ -51,6 +61,12 @@ public final class ProfileStore {
 				ScanManager.INSTANCE.showDormantNotice();
 			}
 		});
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> invalidate());
+	}
+
+	private static void invalidate() {
+		cachedFile = null;
+		cachedData = null;
 	}
 
 	/** All profiles of the current world/server, in insertion order. */
@@ -113,7 +129,18 @@ public final class ProfileStore {
 
 	private static Data load() {
 		Path file = currentFile();
-		if (file == null || !Files.exists(file)) {
+		if (file == null) {
+			return new Data();
+		}
+		if (!file.equals(cachedFile)) {
+			cachedData = read(file);
+			cachedFile = file;
+		}
+		return cachedData;
+	}
+
+	private static Data read(Path file) {
+		if (!Files.exists(file)) {
 			return new Data();
 		}
 		try {
@@ -130,11 +157,29 @@ public final class ProfileStore {
 			}
 			// Legacy pre-profile formats: convert once and write back.
 			Data data = migrateLegacy(root);
-			save(data);
+			write(file, data);
 			return data;
 		} catch (Exception e) {
-			return new Data();
+			return recoverFromBrokenFile(file, e);
 		}
+	}
+
+	/**
+	 * Moves an unreadable file aside so the next save does not silently
+	 * overwrite it. If even that fails, the returned data is not saved at all.
+	 */
+	private static Data recoverFromBrokenFile(Path file, Exception cause) {
+		Data data = new Data();
+		Path backup = file.resolveSibling(file.getFileName() + ".broken");
+		try {
+			Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
+			PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, cause.toString());
+		} catch (IOException e) {
+			data.writable = false;
+			PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up; "
+					+ "profile changes will not be saved: {}", file, cause.toString());
+		}
+		return data;
 	}
 
 	private static Data migrateLegacy(JsonObject root) {
@@ -165,7 +210,13 @@ public final class ProfileStore {
 
 	private static void save(Data data) {
 		Path file = currentFile();
-		if (file == null) {
+		if (file != null) {
+			write(file, data);
+		}
+	}
+
+	private static void write(Path file, Data data) {
+		if (!data.writable) {
 			return;
 		}
 		JsonObject root = new JsonObject();

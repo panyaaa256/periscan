@@ -143,9 +143,8 @@ public final class HighlightRenderer {
 		if (level == null) {
 			return;
 		}
-		PeriScanConfig config = PeriScanConfig.get();
-		float y0 = (float) (Math.max(level.getMinY(), ScanManager.scanMinY(level)) - camera.y);
-		float y1 = (float) (Math.min(level.getMaxY(), config.scanMaxY) + 1 - camera.y);
+		float y0 = (float) (ScanManager.scanMinY(level) - camera.y);
+		float y1 = (float) (ScanManager.scanMaxY(level) + 1 - camera.y);
 		if (y1 <= y0) {
 			return;
 		}

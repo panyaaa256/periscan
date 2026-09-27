@@ -92,12 +92,12 @@ public final class HighlightRenderer {
 		SubmitNodeCollector collector = context.submitNodeCollector();
 
 		// Falling-block runs belong to the trench inner zone and use its color.
-		int fallingRgb = Zone.TRENCH_INNER.color(config).getRGB() & 0xFFFFFF;
+		int fallingRgb = config.trenchInner.color.getRGB() & 0xFFFFFF;
 
 		// One submit per render type: all fills in one batch, all lines in another.
 		collector.submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) -> {
 			for (Zone zone : Zone.VALUES) {
-				int color = (FILL_ALPHA << 24) | (zone.color(config).getRGB() & 0xFFFFFF);
+				int color = (FILL_ALPHA << 24) | (zone.settings(config).color.getRGB() & 0xFFFFFF);
 				LongIterator it = scan.highlights(zone).iterator();
 				while (it.hasNext()) {
 					addBoxFaces(fill, pose, camera, it.nextLong(), color);
@@ -117,7 +117,7 @@ public final class HighlightRenderer {
 
 		collector.submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) -> {
 			for (Zone zone : Zone.VALUES) {
-				int color = 0xFF000000 | (zone.color(config).getRGB() & 0xFFFFFF);
+				int color = 0xFF000000 | (zone.settings(config).color.getRGB() & 0xFFFFFF);
 				LongIterator it = scan.highlights(zone).iterator();
 				while (it.hasNext()) {
 					addBoxEdges(lines, pose, camera, it.nextLong(), color);

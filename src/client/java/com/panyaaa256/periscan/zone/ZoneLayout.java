@@ -103,12 +103,12 @@ public final class ZoneLayout {
 		boolean stripXMax = twoX || Math.abs(maxX) >= Math.abs(minX);
 		boolean stripXMin = twoX || !stripXMax;
 
-		ZoneLayout layout = new ZoneLayout(config.trenchInnerEnabled, minX, minZ, maxX, maxZ, ns, ew,
+		ZoneLayout layout = new ZoneLayout(config.trenchInner.enabled, minX, minZ, maxX, maxZ, ns, ew,
 				stripZMin, stripZMax, stripXMin, stripXMax);
 
-		boolean inner = config.trenchInnerEnabled;
-		boolean outer = config.trenchOuterEnabled;
-		boolean bottom = config.bottomTrenchEnabled;
+		boolean inner = config.trenchInner.enabled;
+		boolean outer = config.trenchOuter.enabled;
+		boolean bottom = config.bottomTrench.enabled;
 
 		// Trench body strips (Z ends span the full X length, X ends the full Z length),
 		// each with its one-block "outside the trench" lines on both sides. The bottom
@@ -142,8 +142,8 @@ public final class ZoneLayout {
 			}
 		}
 
-		if (config.eaterEnabled) {
-			if (config.eaterIncludeTrench) {
+		if (config.eater.enabled) {
+			if (config.eater.includeTrench) {
 				layout.add(Zone.EATER, new Rect(minX, minZ, maxX, maxZ));
 			} else {
 				// The interior with the trenches removed (regardless of whether the

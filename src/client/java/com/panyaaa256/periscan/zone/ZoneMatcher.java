@@ -4,11 +4,31 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.AbstractSkullBlock;
+import net.minecraft.world.level.block.BellBlock;
+import net.minecraft.world.level.block.BigDripleafBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CopperBulbBlock;
+import net.minecraft.world.level.block.CrafterBlock;
 import net.minecraft.world.level.block.CrossCollisionBlock;
+import net.minecraft.world.level.block.DiodeBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.NoteBlock;
+import net.minecraft.world.level.block.PoweredRailBlock;
+import net.minecraft.world.level.block.RailBlock;
+import net.minecraft.world.level.block.RedStoneWireBlock;
+import net.minecraft.world.level.block.RedstoneLampBlock;
+import net.minecraft.world.level.block.RedstoneTorchBlock;
+import net.minecraft.world.level.block.ShelfBlock;
+import net.minecraft.world.level.block.TntBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.PushReaction;
@@ -146,16 +166,35 @@ public final class ZoneMatcher {
 		}
 
 		/**
-		 * The block has a state property driven by redstone signals: powered
-		 * (doors, trapdoors, fence gates, copper bulbs, observers, note blocks),
-		 * extended (pistons), triggered (dispensers/droppers) or enabled (hoppers).
+		 * The block's state changes when it receives a redstone signal (vanilla
+		 * reads the signal in neighborChanged/tick and updates the state). Blocks
+		 * that only emit a signal (buttons, levers, pressure plates, tripwires,
+		 * observers, lecterns) or keep the reaction in a block entity (command and
+		 * structure blocks) are not included. Rails switch shape at T-junctions
+		 * and TNT turns into an entity.
 		 */
 		private static boolean isRedstoneReactive(BlockState state) {
-			return state.hasProperty(BlockStateProperties.POWERED)
-					|| state.hasProperty(BlockStateProperties.OPEN)
-					|| state.hasProperty(BlockStateProperties.EXTENDED)
-					|| state.hasProperty(BlockStateProperties.TRIGGERED)
-					|| state.hasProperty(BlockStateProperties.ENABLED);
+			Block block = state.getBlock();
+			return block instanceof DoorBlock
+					|| block instanceof TrapDoorBlock
+					|| block instanceof FenceGateBlock
+					|| block instanceof CopperBulbBlock
+					|| block instanceof PistonBaseBlock
+					|| block instanceof DiodeBlock // repeaters, comparators
+					|| block instanceof RedStoneWireBlock
+					|| block instanceof RedstoneTorchBlock // includes wall torches
+					|| block instanceof RedstoneLampBlock
+					|| block instanceof DispenserBlock // includes droppers
+					|| block instanceof CrafterBlock
+					|| block instanceof HopperBlock
+					|| block instanceof NoteBlock
+					|| block instanceof BellBlock
+					|| block instanceof AbstractSkullBlock // heads animate while powered
+					|| block instanceof ShelfBlock
+					|| block instanceof BigDripleafBlock // a signal resets the tilt
+					|| block instanceof RailBlock
+					|| block instanceof PoweredRailBlock // includes activator rails
+					|| block instanceof TntBlock;
 		}
 	}
 

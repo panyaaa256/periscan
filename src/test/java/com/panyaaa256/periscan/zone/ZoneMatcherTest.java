@@ -93,6 +93,10 @@ class ZoneMatcherTest {
 					.setValue(BlockStateProperties.EXTENDED, true), 0, 0), "extended piston");
 			assertFalse(matches(matcher, Blocks.PISTON), "retracted piston moves");
 			assertFalse(matches(matcher, Blocks.BEDROCK), "terrain, not an obstruction");
+			// Push reaction wins over the block entity, as in vanilla.
+			assertFalse(matches(matcher, Blocks.BELL), "destroyed by the push");
+			assertFalse(matches(matcher, Blocks.COMPARATOR), "destroyed by the push");
+			assertFalse(matches(matcher, Blocks.SKELETON_SKULL), "destroyed by the push");
 			assertFalse(matches(matcher, Blocks.STONE));
 			assertFalse(matches(matcher, Blocks.SAND));
 		}

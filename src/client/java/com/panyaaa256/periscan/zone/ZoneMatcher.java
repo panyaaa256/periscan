@@ -101,12 +101,15 @@ public final class ZoneMatcher {
 
 		/**
 		 * A piston cannot push this block. Mirrors the state-only checks of vanilla
-		 * PistonBaseBlock.isPushable: obsidian, crying obsidian, respawn anchors and
-		 * reinforced deepslate (hard-coded there, not a push reaction), extended
-		 * (but not retracted) pistons, unbreakable blocks, blocks refusing the
-		 * push, and blocks with a block entity (chests, spawners, sculk sensors,
-		 * ...). Bedrock is exempt: it is terrain (nether ceiling/floor), not an
-		 * obstruction anyone placed.
+		 * PistonBaseBlock.isPushable, in the same order: obsidian, crying obsidian,
+		 * respawn anchors and reinforced deepslate (hard-coded there, not a push
+		 * reaction), extended (but not retracted) pistons, unbreakable blocks,
+		 * blocks refusing the push, and blocks with a block entity (chests,
+		 * spawners, sculk sensors, ...). The push reaction is decided before the
+		 * block entity, so blocks a push destroys (bells, comparators, heads,
+		 * decorated pots, ...) are not immovable even with a block entity. Bedrock
+		 * is exempt: it is terrain (nether ceiling/floor), not an obstruction
+		 * anyone placed.
 		 */
 		private static boolean isImmovable(BlockState state) {
 			if (state.is(Blocks.BEDROCK)) {
@@ -121,9 +124,15 @@ public final class ZoneMatcher {
 				// ones move (and they carry no block entity).
 				return state.getValue(BlockStateProperties.EXTENDED);
 			}
-			return state.getBlock().defaultDestroyTime() == -1.0F
-					|| state.getPistonPushReaction() == PushReaction.BLOCK
-					|| state.hasBlockEntity();
+			if (state.getBlock().defaultDestroyTime() == -1.0F) {
+				return true;
+			}
+			return switch (state.getPistonPushReaction()) {
+				case BLOCK -> true;
+				// Destroyed by the push, or pushable in one direction (glazed terracotta).
+				case DESTROY, PUSH_ONLY -> false;
+				default -> state.hasBlockEntity();
+			};
 		}
 
 		/**

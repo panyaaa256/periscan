@@ -169,7 +169,7 @@ Put one of these on each line:
 |---|---|
 | `#periscan:immovable` | Every block pistons cannot push (except bedrock) |
 | `#periscan:connecting` | Walls, fences, glass panes, iron bars and other blocks that connect to their neighbors |
-| `#periscan:redstone_reactive` | Doors, trapdoors, fence gates, copper bulbs, pistons, dispensers, hoppers, observers and other blocks that change with a redstone signal |
+| `#periscan:redstone_reactive` | Doors, trapdoors, fence gates, copper bulbs, pistons, redstone dust/torches/lamps, dispensers, hoppers and other blocks whose state changes when they receive a redstone signal (signal sources such as buttons and levers are not included) |
 
 Mistyped entries, such as IDs that do not exist, are ignored. When you start scanning, the chat shows "ignored invalid config entry" for each of them.
 

@@ -113,16 +113,28 @@ class ZoneMatcherTest {
 		}
 
 		@Test
-		void redstoneReactiveCoversPoweredOpenExtendedTriggeredEnabled() {
+		void redstoneReactiveCoversBlocksChangedByAnIncomingSignal() {
 			ZoneMatcher matcher = matcher("#periscan:redstone_reactive");
 			assertTrue(matches(matcher, Blocks.OAK_DOOR));
 			assertTrue(matches(matcher, Blocks.OAK_TRAPDOOR));
 			assertTrue(matches(matcher, Blocks.PISTON));
 			assertTrue(matches(matcher, Blocks.DISPENSER));
 			assertTrue(matches(matcher, Blocks.HOPPER));
+			assertTrue(matches(matcher, Blocks.REDSTONE_LAMP));
+			assertTrue(matches(matcher, Blocks.REDSTONE_WIRE));
+			assertTrue(matches(matcher, Blocks.REDSTONE_WALL_TORCH));
+			assertTrue(matches(matcher, Blocks.BIG_DRIPLEAF));
+			assertTrue(matches(matcher, Blocks.RAIL));
+			assertTrue(matches(matcher, Blocks.TNT));
 			assertFalse(matches(matcher, Blocks.STONE));
-			// Only has "lit", which is why the default config lists it by id.
-			assertFalse(matches(matcher, Blocks.REDSTONE_LAMP));
+			// Signal sources only: their state changes without an incoming signal.
+			assertFalse(matches(matcher, Blocks.STONE_BUTTON));
+			assertFalse(matches(matcher, Blocks.LEVER));
+			assertFalse(matches(matcher, Blocks.OAK_PRESSURE_PLATE));
+			assertFalse(matches(matcher, Blocks.TRIPWIRE_HOOK));
+			assertFalse(matches(matcher, Blocks.OBSERVER));
+			assertFalse(matches(matcher, Blocks.LECTERN));
+			assertFalse(matches(matcher, Blocks.DETECTOR_RAIL));
 		}
 	}
 

@@ -98,11 +98,10 @@ public class PeriScanConfig {
 		// Blocks whose state can change under the trencher (neighbor-connecting shapes
 		// and redstone-reactive blocks) only obstruct it in specific columns (1-based
 		// from the perimeter edge, index % 3 == 2); entries here are only highlighted
-		// there. The redstone lamp only has the "lit" property, so it is listed by id.
+		// there.
 		public List<String> fenceBlocks = new ArrayList<>(List.of(
 				"#periscan:connecting",
-				"#periscan:redstone_reactive",
-				"minecraft:redstone_lamp"));
+				"#periscan:redstone_reactive"));
 		// Highlight runs of at least this many falling blocks (sand, gravel, ...) along
 		// the trencher's direction of travel inside the trench body. Air, liquids and
 		// blocks destroyed by a piston push don't count but don't interrupt the run

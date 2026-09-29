@@ -8,7 +8,7 @@ on:
     tags:
       - 'v*'
       # The per-branch tags this workflow creates must not start it again.
-      - '!v*+*'
+      - '!v*\+*'
 
 permissions:
   contents: write

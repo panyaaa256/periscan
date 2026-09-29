@@ -14,10 +14,10 @@
 
 ## 必要なもの
 
-- Minecraft 1.20.5〜1.21.4
+- Minecraft 1.19.4、1.20、1.20.1、1.20.3、1.20.4
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 以降
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.6.6 以降（1.21 以降は 3.8.2 以降）
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.1.1 以降（1.20 以降は 3.6.6 以降）
 - 任意: [Litematica](https://modrinth.com/mod/litematica)（スケマティックの配置に使います）
 
 PeriScan は自分のゲームに入れるだけで使えます。PeriScan が入っていないサーバーでも動きます。
@@ -28,17 +28,17 @@ PeriScan の jar を、Fabric API・YACL と一緒に Fabric 環境の `mods` �
 
 ## ソースからのビルド
 
-JDK 21 以降が必要です。
+JDK 17 以降が必要です。
 
 ```sh
-git clone -b mc/1.20.5-1.21.4 https://github.com/panyaaa256/periscan.git
+git clone -b mc/1.19.4-1.20.4 https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew buildAndCollect
 ```
 
 Windows では `./gradlew buildAndCollect` の代わりに `gradlew.bat buildAndCollect` を使ってください。
 
-これで Minecraft 1.20.5〜1.21.4 の全バージョンがビルドされます。
+これで Minecraft 1.19.4〜1.20.4 の全バージョンがビルドされます（1.20.2 は YACL に beta 版しかないため対象外です）。
 
 mod は `build/libs/<バージョン>/periscan-<バージョン>+<Minecraftのバージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
 

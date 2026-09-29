@@ -47,7 +47,7 @@ Windows では `./gradlew build` の代わりに `gradlew.bat build` を使っ�
 
 これで Minecraft 26.2 版がビルドされます。ほかのバージョンは、そのブランチを clone してください（例: `git clone -b 1.21.11 …`）。
 
-mod は `build/libs/periscan-<バージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
+mod は `build/libs/periscan-<バージョン>+<Minecraftのバージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
 
 ## ライセンス
 

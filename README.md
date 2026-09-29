@@ -47,7 +47,7 @@ On Windows, use `gradlew.bat build` instead of `./gradlew build`.
 
 This builds the Minecraft 26.2 version. For another Minecraft version, clone its branch instead, for example `git clone -b 1.21.11 …`.
 
-The mod is built to `build/libs/periscan-<version>.jar` (the file ending in `-sources.jar` is not the mod).
+The mod is built to `build/libs/periscan-<version>+<Minecraft version>.jar` (the file ending in `-sources.jar` is not the mod).
 
 ## License
 

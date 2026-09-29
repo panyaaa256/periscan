@@ -3,7 +3,8 @@ plugins {
 	id 'maven-publish'
 }
 
-version = project.mod_version
+// The Minecraft version is appended as build metadata, e.g. 0.3.0+26.2.
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 repositories {

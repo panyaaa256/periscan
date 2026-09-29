@@ -12,6 +12,13 @@
 
 使い方は **[使い方ガイド](docs/usage.ja.md)** を見てください。
 
+## 対応する Minecraft のバージョン
+
+| Minecraft | ブランチ |
+|---|---|
+| 26.2 | `main` |
+| 1.21.11 | [`1.21.11`](https://github.com/panyaaa256/periscan/tree/1.21.11) |
+
 ## 必要なもの
 
 - Minecraft 26.2
@@ -31,12 +38,14 @@ PeriScan の jar を、Fabric API・YACL と一緒に Fabric 環境の `mods` �
 JDK 25 が必要です。
 
 ```sh
-git clone -b 26.2 https://github.com/panyaaa256/periscan.git
+git clone https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew build
 ```
 
 Windows では `./gradlew build` の代わりに `gradlew.bat build` を使ってください。
+
+これで Minecraft 26.2 版がビルドされます。ほかのバージョンは、そのブランチを clone してください（例: `git clone -b 1.21.11 …`）。
 
 mod は `build/libs/periscan-<バージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
 

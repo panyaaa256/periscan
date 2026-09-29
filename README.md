@@ -12,6 +12,13 @@ A Fabric mod that highlights the blocks you need to clear out before running a w
 
 See **[the usage guide](docs/usage.md)** for how to use it.
 
+## Minecraft versions
+
+| Minecraft | Branch |
+|---|---|
+| 26.2 | `main` |
+| 1.21.11 | [`1.21.11`](https://github.com/panyaaa256/periscan/tree/1.21.11) |
+
 ## Requirements
 
 - Minecraft 26.2
@@ -31,12 +38,14 @@ Put the PeriScan jar, together with Fabric API and YACL, into the `mods` folder 
 You need JDK 25.
 
 ```sh
-git clone -b 26.2 https://github.com/panyaaa256/periscan.git
+git clone https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew build
 ```
 
 On Windows, use `gradlew.bat build` instead of `./gradlew build`.
+
+This builds the Minecraft 26.2 version. For another Minecraft version, clone its branch instead, for example `git clone -b 1.21.11 …`.
 
 The mod is built to `build/libs/periscan-<version>.jar` (the file ending in `-sources.jar` is not the mod).
 

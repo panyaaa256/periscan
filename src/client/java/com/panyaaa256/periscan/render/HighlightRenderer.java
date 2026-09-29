@@ -4,9 +4,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.config.PeriScanConfig;
@@ -20,8 +17,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -42,10 +37,8 @@ public final class HighlightRenderer {
 	private static final RenderPipeline FILL_PIPELINE = pipeline("pipeline/highlight_fill", false);
 	private static final RenderPipeline LINE_PIPELINE = pipeline("pipeline/highlight_lines", true);
 
-	private static final RenderType FILL_TYPE = RenderType.create("periscan_highlight_fill",
-			RenderSetup.builder(FILL_PIPELINE).createRenderSetup());
-	private static final RenderType LINE_TYPE = RenderType.create("periscan_highlight_lines",
-			RenderSetup.builder(LINE_PIPELINE).createRenderSetup());
+	private static final RenderType FILL_TYPE = renderType("periscan_highlight_fill", FILL_PIPELINE);
+	private static final RenderType LINE_TYPE = renderType("periscan_highlight_lines", LINE_PIPELINE);
 
 	/** Emits one axis-aligned box (camera-relative coordinates) as faces or edges. */
 	@FunctionalInterface
@@ -67,9 +60,17 @@ public final class HighlightRenderer {
 				.withLocation(PeriScanClient.id(path))
 				.withVertexShader("core/position_color")
 				.withFragmentShader("core/position_color")
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 				.withCull(false);
+		// 26.1 grouped blending and depth settings into target/stencil states.
+		//? if >=26.1 {
+		builder.withColorTargetState(new com.mojang.renderpearl.api.pipeline.ColorTargetState(BlendFunction.TRANSLUCENT))
+				.withDepthStencilState(new com.mojang.renderpearl.api.pipeline.DepthStencilState(
+						com.mojang.renderpearl.api.pipeline.CompareOp.ALWAYS_PASS, false));
+		//?} else {
+		/*builder.withBlend(BlendFunction.TRANSLUCENT)
+				.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
+				.withDepthWrite(false);
+		*///?}
 		// 26.2 split the vertex format into a vertex binding and a primitive topology.
 		//? if >=26.2 {
 		builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
@@ -84,12 +85,30 @@ public final class HighlightRenderer {
 		return RenderPipelines.register(builder.build());
 	}
 
+	private static RenderType renderType(String name, RenderPipeline pipeline) {
+		// 1.21.11 replaced RenderType's composite state with RenderSetup. On
+		// 1.21.x the geometry goes through a shared BufferSource, whose default
+		// buffer is too small for large scans.
+		//? if >=26.1 {
+		return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
+				.createRenderSetup());
+		//?} elif >=1.21.11 {
+		/*return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
+				.bufferSize(1 << 20).createRenderSetup());
+		*///?} else {
+		/*return RenderType.create(name, 1 << 20, pipeline, RenderType.CompositeState.builder().createCompositeState(false));
+		*///?}
+	}
+
 	public static void init() {
 		// Iris only draws pipelines it can map to a shader-pack program; without
 		// this the highlights are invisible whenever a shader pack is active.
 		IrisIntegration.assignBasicPipeline(FILL_PIPELINE);
 		IrisIntegration.assignBasicPipeline(LINE_PIPELINE);
+		//? if >=26.1 {
 		LevelRenderEvents.COLLECT_SUBMITS.register(HighlightRenderer::render);
+		//?} else
+		//LevelRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
 	}
 
 	private static void render(LevelRenderContext context) {
@@ -102,15 +121,25 @@ public final class HighlightRenderer {
 		if (level == null || level.dimension() != scan.dimension()) {
 			return;
 		}
+		//? if >=26.1 {
 		Vec3 camera = context.levelState().cameraRenderState.pos;
 		PoseStack poseStack = context.poseStack();
-		SubmitNodeCollector collector = context.submitNodeCollector();
 
 		// One submit per render type: all fills in one batch, all lines in another.
-		collector.submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) ->
+		context.submitNodeCollector().submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) ->
 				addAllBoxes(fill, pose, camera, HighlightRenderer::boxFaces, FILL_ALPHA, PENDING_FILL_ALPHA));
-		collector.submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) ->
+		context.submitNodeCollector().submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) ->
 				addAllBoxes(lines, pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF));
+		//?} else {
+		/*Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+		PoseStack.Pose pose = context.matrices().last();
+
+		// All fills first, then all lines: BufferSource batches by RenderType and
+		// ends the previous batch when a different type is requested.
+		addAllBoxes(context.consumers().getBuffer(FILL_TYPE), pose, camera, HighlightRenderer::boxFaces,
+				FILL_ALPHA, PENDING_FILL_ALPHA);
+		addAllBoxes(context.consumers().getBuffer(LINE_TYPE), pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF);
+		*///?}
 	}
 
 	private static void addAllBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,

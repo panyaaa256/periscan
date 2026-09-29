@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration;
@@ -42,13 +43,13 @@ public final class PeriCommand {
 	// Suggest the chunk the player is currently standing in.
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
 		if (ctx.getSource().getPlayer() != null) {
-			builder.suggest(ctx.getSource().getPlayer().chunkPosition().x());
+			builder.suggest(VersionCompat.chunkX(ctx.getSource().getPlayer().chunkPosition()));
 		}
 		return builder.buildFuture();
 	};
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_Z = (ctx, builder) -> {
 		if (ctx.getSource().getPlayer() != null) {
-			builder.suggest(ctx.getSource().getPlayer().chunkPosition().z());
+			builder.suggest(VersionCompat.chunkZ(ctx.getSource().getPlayer().chunkPosition()));
 		}
 		return builder.buildFuture();
 	};

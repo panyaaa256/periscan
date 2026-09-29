@@ -1,6 +1,7 @@
 package com.panyaaa256.periscan.scan;
 
 import com.panyaaa256.periscan.PeriDimension;
+import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.zone.Zone;
 import com.panyaaa256.periscan.zone.ZoneLayout;
@@ -122,7 +123,7 @@ public class ScanManager {
 
 		clearScanResults();
 		for (ChunkPos chunk : layout.chunks()) {
-			pendingChunks.add(chunk.pack());
+			pendingChunks.add(VersionCompat.chunkKey(chunk));
 		}
 
 		// Scan whatever is already loaded; the rest is picked up by CHUNK_LOAD.
@@ -156,7 +157,7 @@ public class ScanManager {
 			deactivateKeepingRegion(dimension, cornerA, cornerB);
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null) {
-				client.player.sendSystemMessage(Component.translatable("periscan.msg.all_disabled"));
+				VersionCompat.sendChat(client.player, Component.translatable("periscan.msg.all_disabled"));
 			}
 			return List.of();
 		}
@@ -193,7 +194,7 @@ public class ScanManager {
 		if (layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
 			return;
 		}
-		pendingChunks.remove(chunk.getPos().pack());
+		pendingChunks.remove(VersionCompat.chunkKey(chunk.getPos()));
 		// Remove stale highlights from this chunk before rescanning it (covers
 		// changes that happened while the chunk was unloaded).
 		clearChunkHighlights(chunk.getPos());
@@ -203,9 +204,9 @@ public class ScanManager {
 
 	private void clearChunkHighlights(ChunkPos pos) {
 		for (LongOpenHashSet set : highlights.values()) {
-			set.removeIf(key -> (BlockPos.getX(key) >> 4) == pos.x() && (BlockPos.getZ(key) >> 4) == pos.z());
+			set.removeIf(key -> (BlockPos.getX(key) >> 4) == VersionCompat.chunkX(pos) && (BlockPos.getZ(key) >> 4) == VersionCompat.chunkZ(pos));
 		}
-		fallingRuns.clearChunk(pos.x(), pos.z());
+		fallingRuns.clearChunk(VersionCompat.chunkX(pos), VersionCompat.chunkZ(pos));
 	}
 
 	private void scanChunk(ClientLevel level, LevelChunk chunk) {
@@ -265,7 +266,7 @@ public class ScanManager {
 		}
 
 		// The lowest layers belong to the bottom trench zone, not the trench inner.
-		fallingRuns.markChunk(layout.trenchStrips(), cp.x(), cp.z(),
+		fallingRuns.markChunk(layout.trenchStrips(), VersionCompat.chunkX(cp), VersionCompat.chunkZ(cp),
 				minY + BOTTOM_TRENCH_LAYERS, maxY, blockView(level));
 	}
 
@@ -317,7 +318,7 @@ public class ScanManager {
 		}
 		if (dormantNoticePending && client.player != null) {
 			dormantNoticePending = false;
-			client.player.sendSystemMessage(Component.translatable("periscan.msg.region_available"));
+			VersionCompat.sendChat(client.player, Component.translatable("periscan.msg.region_available"));
 		}
 		if (layout == null || client.level.dimension() != dimension) {
 			return;
@@ -332,7 +333,7 @@ public class ScanManager {
 		}
 
 		if (!pendingChunks.isEmpty() && tickCounter % 20 == 0 && client.player != null) {
-			client.player.sendOverlayMessage(
+			VersionCompat.sendOverlay(client.player,
 					Component.translatable("periscan.msg.pending_chunks", pendingChunks.size()));
 		}
 	}

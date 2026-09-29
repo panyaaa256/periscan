@@ -8,8 +8,6 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 	plugins {
-		// This branch builds only unobfuscated versions, so it uses the non-remapping Loom.
-		id("net.fabricmc.fabric-loom") version "1.17.19"
 		// Only the dependency lookup module is used.
 		// https://stonecutter.kikugie.dev/wiki/v2/reference/fletching-table/dependencies
 		id("dev.kikugie.fletching-table.dependency") version "0.2.0-alpha.9"
@@ -19,15 +17,19 @@ pluginManagement {
 plugins {
 	// https://stonecutter.kikugie.dev/wiki/v2/guides/start/project-setup
 	id("dev.kikugie.stonecutter") version "0.9.8"
+	// Picks the remapping Loom for obfuscated versions (<26.1) and the plain one
+	// for unobfuscated versions, and aliases the mod* configurations and jar tasks.
+	// https://stonecutter.kikugie.dev/wiki/v2/guides/tips/loom-back-compat
+	id("dev.kikugie.loom-back-compat") version "0.4.2"
 	// Lets Gradle download the Java version each Minecraft version needs.
 	id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 stonecutter {
 	create(rootProject) {
-		// This branch covers the unobfuscated releases (26.1+).
-		// Older ranges live on the mc/<range> branches.
-		versions("26.1.2", "26.2", "26.3")
+		// This branch covers 1.21.9 and newer. Older ranges live on the
+		// mc/<range> branches.
+		versions("1.21.10", "1.21.11", "26.1.2", "26.2", "26.3")
 		vcsVersion = "26.3"
 	}
 }

@@ -11,6 +11,23 @@ stonecutter active "26.3"
 // https://stonecutter.kikugie.dev/wiki/v2/reference/syntax/replacements
 stonecutter parameters {
 	replacements {
+		// 1.21.11: ResourceLocation was renamed to Identifier, and RenderType
+		// moved to its own package.
+		string(current.parsed >= "1.21.11") {
+			replace("ResourceLocation", "Identifier")
+			replace(".location()", ".identifier()")
+			replace("net.minecraft.client.renderer.RenderType;", "net.minecraft.client.renderer.rendertype.RenderType;")
+		}
+		// 26.1 (unobfuscated): Fabric API took Mojang's names, and access
+		// wideners use the official namespace.
+		string(current.parsed >= "26.1") {
+			replace("ClientCommandManager", "ClientCommands")
+			replace("source.getWorld()", "source.getLevel()")
+			replace("rendering.v1.world.", "rendering.v1.level.")
+			replace("WorldRenderEvents", "LevelRenderEvents")
+			replace("WorldRenderContext", "LevelRenderContext")
+			replace("accessWidener v2 named", "classTweaker v1 official")
+		}
 		// 26.2: the current screen moved from Minecraft to Gui.
 		string(current.parsed >= "26.2") {
 			replace("client.screen", "client.gui.screen()")

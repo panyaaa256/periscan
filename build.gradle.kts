@@ -1,5 +1,6 @@
 plugins {
-	id("net.fabricmc.fabric-loom")
+	// Applies the Loom variant matching this Minecraft version (see settings.gradle.kts).
+	id("dev.kikugie.loom-back-compat")
 	id("dev.kikugie.fletching-table.dependency")
 	id("maven-publish")
 }
@@ -34,6 +35,10 @@ loom {
 		}
 	}
 
+	// The access widener has version conditions, so Stonecutter processes it first.
+	// https://stonecutter.kikugie.dev/wiki/legacy/config/build (AccessWidener processing)
+	accessWidenerPath = sc.process(rootProject.file("src/main/resources/periscan.accesswidener"), "build/processed.accesswidener")
+
 	runConfigs.all {
 		// Share one run directory (worlds, options) between Minecraft versions.
 		runDirectory = rootProject.file("run")
@@ -49,24 +54,27 @@ dependencies {
 		requireNotNull(fletchingTable.modrinth(slug)) { "No $slug release on Modrinth for Minecraft ${sc.current.version}" }
 
 	minecraft("com.mojang:minecraft:${sc.current.version}")
-	implementation("net.fabricmc:fabric-loader:${sc.properties.get<String>("deps.fabric_loader")}")
+	// Mojang mappings on obfuscated versions; a no-op on unobfuscated ones.
+	loomx.applyMojangMappings()
+	// mod* configurations also work on unobfuscated versions (aliased by loom-back-compat).
+	modImplementation("net.fabricmc:fabric-loader:${sc.properties.get<String>("deps.fabric_loader")}")
 
 	// Fabric API comes from Fabric's maven: the Modrinth jar nests its modules, so their
 	// classes and access wideners would not be visible at compile time.
-	implementation("net.fabricmc.fabric-api:fabric-api:${sc.properties.get<String>("deps.fabric_api")}")
+	modImplementation("net.fabricmc.fabric-api:fabric-api:${sc.properties.get<String>("deps.fabric_api")}")
 
 	// YetAnotherConfigLib (config screens)
-	implementation(modrinth("yacl"))
+	modImplementation(modrinth("yacl"))
 
 	// Litematica + MaLiLib: soft dependency (placement feature is disabled at runtime when absent)
-	compileOnly(modrinth("litematica"))
-	compileOnly(modrinth("malilib"))
-	localRuntime(modrinth("litematica"))
-	localRuntime(modrinth("malilib"))
+	modCompileOnly(modrinth("litematica"))
+	modCompileOnly(modrinth("malilib"))
+	modLocalRuntime(modrinth("litematica"))
+	modLocalRuntime(modrinth("malilib"))
 
 	// Iris: soft dependency, compile-only (runtime would also require Sodium).
 	// Used to tell Iris which shader program draws the highlight pipelines.
-	compileOnly(modrinth("iris"))
+	modCompileOnly(modrinth("iris"))
 
 	// Unit tests (JUnit)
 	testImplementation(platform("org.junit:junit-bom:${sc.properties.get<String>("deps.junit")}"))
@@ -131,7 +139,8 @@ tasks {
 		description = "Builds mod jars and copies them to build/libs/{mod version}/"
 		val modVersion = sc.properties.get<String>("mod.version")
 		inputs.property("version", modVersion)
-		from(jar.flatMap { it.archiveFile }, named<Jar>("sourcesJar").flatMap { it.archiveFile })
+		// loomx.modJar / modSourcesJar point to remapJar or jar, whichever this Loom variant uses.
+		from(loomx.modJar.flatMap { it.archiveFile }, loomx.modSourcesJar.flatMap { it.archiveFile })
 		into(rootProject.layout.buildDirectory.dir("libs/$modVersion"))
 	}
 }

@@ -14,10 +14,10 @@ See **[the usage guide](docs/usage.md)** for how to use it.
 
 ## Requirements
 
-- Minecraft 1.21.5 to 1.21.8
+- Minecraft 1.20.5 to 1.21.4
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.8.2 or newer
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.6.6 or newer (3.8.2 or newer on 1.21 and later)
 - Optional: [Litematica](https://modrinth.com/mod/litematica), for placing schematics
 
 PeriScan only needs to be installed on your own game. It also works on servers that do not have it.
@@ -31,14 +31,14 @@ Put the PeriScan jar, together with Fabric API and YACL, into the `mods` folder 
 You need JDK 21 or newer.
 
 ```sh
-git clone -b mc/1.21.5-1.21.8 https://github.com/panyaaa256/periscan.git
+git clone -b mc/1.20.5-1.21.4 https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew buildAndCollect
 ```
 
 On Windows, use `gradlew.bat buildAndCollect` instead of `./gradlew buildAndCollect`.
 
-This builds every Minecraft version from 1.21.5 to 1.21.8.
+This builds every Minecraft version from 1.20.5 to 1.21.4.
 
 The mods are built to `build/libs/<version>/periscan-<version>+<Minecraft version>.jar` (the file ending in `-sources.jar` is not the mod).
 

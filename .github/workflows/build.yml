@@ -21,8 +21,9 @@ jobs:
           distribution: 'microsoft'
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
+      # Builds and tests every Minecraft version, then copies all jars to build/libs/<mod version>/.
       - name: build
-        run: ./gradlew build
+        run: ./gradlew build buildAndCollect
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:

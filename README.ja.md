@@ -31,7 +31,7 @@ PeriScan の jar を、Fabric API・YACL と一緒に Fabric 環境の `mods` �
 JDK 25 が必要です。
 
 ```sh
-git clone https://github.com/panyaaa256/periscan.git
+git clone -b 26.2 https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew build
 ```

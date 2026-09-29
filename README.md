@@ -31,7 +31,7 @@ Put the PeriScan jar, together with Fabric API and YACL, into the `mods` folder 
 You need JDK 25.
 
 ```sh
-git clone https://github.com/panyaaa256/periscan.git
+git clone -b 26.2 https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew build
 ```

@@ -15,7 +15,8 @@ import java.util.List;
 
 public class PeriScanConfig {
 	// YACL for 1.19.4 (3.1) predates the config v2 API; its GsonConfigInstance
-	// is the older equivalent (@SerialEntry, getConfig(), load(), save()).
+	// is the older equivalent (ConfigEntry annotations instead of SerialEntry).
+	// Written without "@" so the Stonecutter replacement leaves it alone.
 	//? if >=1.20 {
 	public static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
 			.id(PeriScanClient.id("config"))

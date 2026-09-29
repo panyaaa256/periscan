@@ -1,0 +1,12 @@
+#
+# https://help.github.com/articles/dealing-with-line-endings/
+#
+# Normalize text files to lf everywhere (avoids CRLF-only diffs on Windows/WSL)
+* text=auto eol=lf
+
+# Linux start script should use lf
+/gradlew        text eol=lf
+
+# These are Windows script files and should use crlf
+*.bat           text eol=crlf
+

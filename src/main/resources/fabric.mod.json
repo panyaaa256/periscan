@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "periscan",
+	"version": "${version}",
+	"name": "PeriScan",
+	"description": "Highlights blocks that must be removed before running a trencher / world eater, from chunk coordinates and config only.",
+	"authors": [
+		"panyaaa256"
+	],
+	"contact": {},
+	"license": "MIT",
+	"icon": "assets/periscan/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.panyaaa256.periscan.PeriScanClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*",
+		"yet_another_config_lib_v3": ">=3.9.4"
+	},
+	"suggests": {
+		"litematica": "*"
+	}
+}

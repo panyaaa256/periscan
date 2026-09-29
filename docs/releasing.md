@@ -40,7 +40,7 @@
 2. **変更点を確定する**: `CHANGELOG.md` を見直し、`CHANGELOG.ja.md` の「未リリース」をバージョン見出しに変える。
 3. **ビルドと確認**: 各ブランチで `./gradlew build` を実行し、テストが通ることと、ゲーム内の動作を確かめる。
 4. **タグ**: 各ブランチのリリース用コミットに `v<バージョン>+<Minecraft>` のタグを付け、main には `v<バージョン>` のタグも付けて push する。
-5. **リリース**: `v<バージョン>` で GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。本文は「ダウンロード表 + `CHANGELOG.md`」にする。
+5. **リリース**: `v<バージョン>` のタグで GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`（mod 名や Minecraft のバージョンは付けない）。本文は「ダウンロード表 + `CHANGELOG.md`」にする。
 
    ```markdown
    | Minecraft | File | Source |

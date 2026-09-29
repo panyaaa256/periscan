@@ -14,10 +14,10 @@
 
 ## 必要なもの
 
-- Minecraft 26.2
+- Minecraft 1.21.11
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 以降
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.9.4 以降
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) 3.8.2 以降
 - 任意: [Litematica](https://modrinth.com/mod/litematica)（スケマティックの配置に使います）
 
 PeriScan は自分のゲームに入れるだけで使えます。PeriScan が入っていないサーバーでも動きます。
@@ -28,10 +28,10 @@ PeriScan の jar を、Fabric API・YACL と一緒に Fabric 環境の `mods` �
 
 ## ソースからのビルド
 
-JDK 25 が必要です。
+JDK 21 以降が必要です。
 
 ```sh
-git clone https://github.com/panyaaa256/periscan.git
+git clone -b 1.21.11 https://github.com/panyaaa256/periscan.git
 cd periscan
 ./gradlew build
 ```

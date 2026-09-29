@@ -8,7 +8,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +31,10 @@ public class PeriScanClient implements ClientModInitializer {
 		// Screens cannot be opened directly from a command (the chat screen closes
 		// afterwards and would override it), so open scheduled screens next tick.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (scheduledScreen != null && client.gui.screen() == null) {
+			if (scheduledScreen != null && client.screen == null) {
 				Screen screen = scheduledScreen.get();
 				scheduledScreen = null;
-				client.gui.setScreen(screen);
+				client.setScreen(screen);
 			}
 		});
 	}
@@ -44,8 +44,8 @@ public class PeriScanClient implements ClientModInitializer {
 	}
 
 	/** An identifier in this mod's namespace. */
-	public static Identifier id(String path) {
-		return Identifier.fromNamespaceAndPath(MOD_ID, path);
+	public static ResourceLocation id(String path) {
+		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
 	}
 
 	public static Minecraft client() {

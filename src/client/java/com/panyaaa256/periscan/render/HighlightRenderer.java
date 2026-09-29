@@ -3,8 +3,8 @@ package com.panyaaa256.periscan.render;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.integration.iris.IrisIntegration;
@@ -12,12 +12,12 @@ import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
@@ -63,25 +63,25 @@ public final class HighlightRenderer {
 				.withCull(false);
 		// 26.1 grouped blending and depth settings into target/stencil states.
 		//? if >=26.1 {
-		builder.withColorTargetState(new com.mojang.renderpearl.api.pipeline.ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new com.mojang.renderpearl.api.pipeline.DepthStencilState(
-						com.mojang.renderpearl.api.pipeline.CompareOp.ALWAYS_PASS, false));
-		//?} else {
-		/*builder.withBlend(BlendFunction.TRANSLUCENT)
+		/*builder.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(BlendFunction.TRANSLUCENT))
+				.withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(
+						com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
+		*///?} else {
+		builder.withBlend(BlendFunction.TRANSLUCENT)
 				.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
 				.withDepthWrite(false);
-		*///?}
+		//?}
 		// 26.2 split the vertex format into a vertex binding and a primitive topology.
 		//? if >=26.2 {
-		builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+		/*builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
 				.withPrimitiveTopology(lines
-						? com.mojang.renderpearl.api.pipeline.PrimitiveTopology.DEBUG_LINES
-						: com.mojang.renderpearl.api.pipeline.PrimitiveTopology.QUADS);
-		//?} else {
-		/*builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, lines
+						? com.mojang.blaze3d.PrimitiveTopology.DEBUG_LINES
+						: com.mojang.blaze3d.PrimitiveTopology.QUADS);
+		*///?} else {
+		builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, lines
 				? com.mojang.blaze3d.vertex.VertexFormat.Mode.DEBUG_LINES
 				: com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS);
-		*///?}
+		//?}
 		return RenderPipelines.register(builder.build());
 	}
 
@@ -90,14 +90,14 @@ public final class HighlightRenderer {
 		// 1.21.x the geometry goes through a shared BufferSource, whose default
 		// buffer is too small for large scans.
 		//? if >=26.1 {
-		return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
+		/*return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
 				.createRenderSetup());
-		//?} elif >=1.21.11 {
+		*///?} elif >=1.21.11 {
 		/*return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
 				.bufferSize(1 << 20).createRenderSetup());
 		*///?} else {
-		/*return RenderType.create(name, 1 << 20, pipeline, RenderType.CompositeState.builder().createCompositeState(false));
-		*///?}
+		return RenderType.create(name, 1 << 20, pipeline, RenderType.CompositeState.builder().createCompositeState(false));
+		//?}
 	}
 
 	public static void init() {
@@ -106,12 +106,12 @@ public final class HighlightRenderer {
 		IrisIntegration.assignBasicPipeline(FILL_PIPELINE);
 		IrisIntegration.assignBasicPipeline(LINE_PIPELINE);
 		//? if >=26.1 {
-		LevelRenderEvents.COLLECT_SUBMITS.register(HighlightRenderer::render);
-		//?} else
-		//LevelRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
+		/*WorldRenderEvents.COLLECT_SUBMITS.register(HighlightRenderer::render);
+		*///?} else
+		WorldRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
 	}
 
-	private static void render(LevelRenderContext context) {
+	private static void render(WorldRenderContext context) {
 		ScanManager scan = ScanManager.INSTANCE;
 		if (!scan.isActive()) {
 			return;
@@ -122,7 +122,7 @@ public final class HighlightRenderer {
 			return;
 		}
 		//? if >=26.1 {
-		Vec3 camera = context.levelState().cameraRenderState.pos;
+		/*Vec3 camera = context.levelState().cameraRenderState.pos;
 		PoseStack poseStack = context.poseStack();
 
 		// One submit per render type: all fills in one batch, all lines in another.
@@ -130,16 +130,16 @@ public final class HighlightRenderer {
 				addAllBoxes(fill, pose, camera, HighlightRenderer::boxFaces, FILL_ALPHA, PENDING_FILL_ALPHA));
 		context.submitNodeCollector().submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) ->
 				addAllBoxes(lines, pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF));
-		//?} else {
-		/*Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().position();
-		PoseStack.Pose pose = context.matrices().last();
+		*///?} else {
+		Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+		PoseStack.Pose pose = context.matrixStack().last();
 
 		// All fills first, then all lines: BufferSource batches by RenderType and
 		// ends the previous batch when a different type is requested.
 		addAllBoxes(context.consumers().getBuffer(FILL_TYPE), pose, camera, HighlightRenderer::boxFaces,
 				FILL_ALPHA, PENDING_FILL_ALPHA);
 		addAllBoxes(context.consumers().getBuffer(LINE_TYPE), pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF);
-		*///?}
+		//?}
 	}
 
 	private static void addAllBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,

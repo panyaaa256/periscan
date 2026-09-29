@@ -40,7 +40,7 @@ public enum PeriDimension {
 	/** The entry for a dimension id ("minecraft:overworld"), or null if it has none. */
 	public static PeriDimension of(String id) {
 		for (PeriDimension dimension : values()) {
-			if (dimension.key.identifier().toString().equals(id)) {
+			if (dimension.key.location().toString().equals(id)) {
 				return dimension;
 			}
 		}

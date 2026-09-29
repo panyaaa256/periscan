@@ -2,7 +2,7 @@ plugins {
 	id("dev.kikugie.stonecutter")
 }
 
-stonecutter active "26.3"
+stonecutter active "1.21.8"
 
 // Sources are written against the newest version (26.3). These string
 // replacements rename things back for older versions, so renames need no
@@ -11,6 +11,11 @@ stonecutter active "26.3"
 // https://stonecutter.kikugie.dev/wiki/v2/reference/syntax/replacements
 stonecutter parameters {
 	replacements {
+		// 1.21.6 reworked uniforms; the matrices+fog snippet replaced the
+		// matrices+color one that vanilla's position_color pipelines use in 1.21.5.
+		string(current.parsed >= "1.21.6") {
+			replace("RenderPipelines.MATRICES_COLOR_SNIPPET", "RenderPipelines.MATRICES_FOG_SNIPPET")
+		}
 		// 1.21.11: ResourceLocation was renamed to Identifier, and RenderType
 		// moved to its own package.
 		string(current.parsed >= "1.21.11") {

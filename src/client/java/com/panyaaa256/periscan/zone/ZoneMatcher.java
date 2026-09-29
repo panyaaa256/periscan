@@ -2,7 +2,7 @@ package com.panyaaa256.periscan.zone;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.AbstractSkullBlock;
 import net.minecraft.world.level.block.BellBlock;
@@ -21,10 +21,9 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.NoteBlock;
 import net.minecraft.world.level.block.PoweredRailBlock;
 import net.minecraft.world.level.block.RailBlock;
-import net.minecraft.world.level.block.RedstoneWireBlock;
+import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.RedstoneTorchBlock;
-import net.minecraft.world.level.block.ShelfBlock;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.WallBlock;
@@ -79,7 +78,7 @@ public final class ZoneMatcher {
 				} else if (entry.equals(REDSTONE_REACTIVE_ENTRY)) {
 					set.redstoneReactive = true;
 				} else if (entry.startsWith("#")) {
-					Identifier id = Identifier.tryParse(entry.substring(1));
+					ResourceLocation id = ResourceLocation.tryParse(entry.substring(1));
 					if (id == null) {
 						invalidEntries.add(raw);
 					} else {
@@ -87,7 +86,7 @@ public final class ZoneMatcher {
 						set.tags.add(TagKey.create(Registries.BLOCK, id));
 					}
 				} else {
-					Identifier id = Identifier.tryParse(entry);
+					ResourceLocation id = ResourceLocation.tryParse(entry);
 					if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
 						invalidEntries.add(raw);
 					} else {
@@ -148,9 +147,9 @@ public final class ZoneMatcher {
 				return true;
 			}
 			return switch (state.getPistonPushReaction()) {
-				case IMMOVEABLE -> true;
+				case BLOCK -> true;
 				// Destroyed by the push, or pushable in one direction (glazed terracotta).
-				case POPPED, PUSH -> false;
+				case DESTROY, PUSH_ONLY -> false;
 				default -> state.hasBlockEntity();
 			};
 		}
@@ -181,7 +180,7 @@ public final class ZoneMatcher {
 					|| block instanceof CopperBulbBlock
 					|| block instanceof PistonBaseBlock
 					|| block instanceof DiodeBlock // repeaters, comparators
-					|| block instanceof RedstoneWireBlock
+					|| block instanceof RedStoneWireBlock
 					|| block instanceof RedstoneTorchBlock // includes wall torches
 					|| block instanceof RedstoneLampBlock
 					|| block instanceof DispenserBlock // includes droppers
@@ -190,7 +189,6 @@ public final class ZoneMatcher {
 					|| block instanceof NoteBlock
 					|| block instanceof BellBlock
 					|| block instanceof AbstractSkullBlock // heads animate while powered
-					|| block instanceof ShelfBlock
 					|| block instanceof BigDripleafBlock // a signal resets the tilt
 					|| block instanceof RailBlock
 					|| block instanceof PoweredRailBlock // includes activator rails
@@ -218,7 +216,7 @@ public final class ZoneMatcher {
 		}
 
 		boolean excludes(BlockState state) {
-			if (excludePushDestroy && state.getPistonPushReaction() == PushReaction.POPPED) {
+			if (excludePushDestroy && state.getPistonPushReaction() == PushReaction.DESTROY) {
 				return true;
 			}
 			return blacklist.matches(state);

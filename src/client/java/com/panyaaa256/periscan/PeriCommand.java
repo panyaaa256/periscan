@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 /**
  * The /peri command: peri profiles (add/remove/list), scanning bound to them
@@ -107,7 +107,7 @@ public final class PeriCommand {
 
 	/** Peris are never built in the end; fail fast so the mistake is obvious. */
 	private static boolean rejectEnd(FabricClientCommandSource source) {
-		if (source.getLevel().dimension() == Level.END) {
+		if (source.getWorld().dimension() == Level.END) {
 			source.sendError(Component.translatable("periscan.msg.end_not_supported"));
 			return true;
 		}
@@ -133,7 +133,7 @@ public final class PeriCommand {
 	}
 
 	private static String dimensionId(FabricClientCommandSource source) {
-		return source.getLevel().dimension().identifier().toString();
+		return source.getWorld().dimension().location().toString();
 	}
 
 	private static int add(CommandContext<FabricClientCommandSource> ctx) {
@@ -251,7 +251,7 @@ public final class PeriCommand {
 			return false;
 		}
 		List<String> invalidEntries = ScanManager.INSTANCE.activate(
-				source.getLevel().dimension(), profile.minChunk(), profile.maxChunk());
+				source.getWorld().dimension(), profile.minChunk(), profile.maxChunk());
 		for (String entry : invalidEntries) {
 			source.sendFeedback(Component.translatable("periscan.msg.invalid_entry", entry));
 		}

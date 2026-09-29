@@ -29,11 +29,11 @@ public final class FallingRunTracker {
 		COUNTS, SKIPS, BREAKS;
 
 		public static RunBlock of(BlockState state) {
-			if (state.getBlock() instanceof Fallable && state.getPistonPushReaction() != PushReaction.POPPED) {
+			if (state.getBlock() instanceof Fallable && state.getPistonPushReaction() != PushReaction.DESTROY) {
 				return COUNTS;
 			}
-			// Liquids have PushReaction.POPPED, so they are covered here too.
-			if (state.isAir() || state.getPistonPushReaction() == PushReaction.POPPED) {
+			// Liquids have PushReaction.DESTROY, so they are covered here too.
+			if (state.isAir() || state.getPistonPushReaction() == PushReaction.DESTROY) {
 				return SKIPS;
 			}
 			return BREAKS;

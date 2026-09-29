@@ -16,40 +16,40 @@ public final class VersionCompat {
 	/** Chunk X coordinate; ChunkPos became a record in 26.1. */
 	public static int chunkX(ChunkPos pos) {
 		//? if >=26.1 {
-		return pos.x();
-		//?} else
-		//return pos.x;
+		/*return pos.x();
+		*///?} else
+		return pos.x;
 	}
 
 	/** Chunk Z coordinate; ChunkPos became a record in 26.1. */
 	public static int chunkZ(ChunkPos pos) {
 		//? if >=26.1 {
-		return pos.z();
-		//?} else
-		//return pos.z;
+		/*return pos.z();
+		*///?} else
+		return pos.z;
 	}
 
 	/** The chunk position packed into a long, as used by ChunkPos.getX/getZ(long). */
 	public static long chunkKey(ChunkPos pos) {
 		//? if >=26.1 {
-		return pos.pack();
-		//?} else
-		//return pos.toLong();
+		/*return pos.pack();
+		*///?} else
+		return pos.toLong();
 	}
 
 	/** Shows a message in the chat. */
 	public static void sendChat(LocalPlayer player, Component message) {
 		//? if >=26.1 {
-		player.sendSystemMessage(message);
-		//?} else
-		//player.displayClientMessage(message, false);
+		/*player.sendSystemMessage(message);
+		*///?} else
+		player.displayClientMessage(message, false);
 	}
 
 	/** Shows a message above the hotbar. */
 	public static void sendOverlay(LocalPlayer player, Component message) {
 		//? if >=26.1 {
-		player.sendOverlayMessage(message);
-		//?} else
-		//player.displayClientMessage(message, true);
+		/*player.sendOverlayMessage(message);
+		*///?} else
+		player.displayClientMessage(message, true);
 	}
 }

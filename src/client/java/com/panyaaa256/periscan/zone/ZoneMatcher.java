@@ -9,8 +9,11 @@ import net.minecraft.world.level.block.BellBlock;
 import net.minecraft.world.level.block.BigDripleafBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+// Copper bulbs and crafters were added in 1.20.3.
+//? if >=1.20.3 {
 import net.minecraft.world.level.block.CopperBulbBlock;
 import net.minecraft.world.level.block.CrafterBlock;
+//?}
 import net.minecraft.world.level.block.CrossCollisionBlock;
 import net.minecraft.world.level.block.DiodeBlock;
 import net.minecraft.world.level.block.DispenserBlock;
@@ -90,7 +93,7 @@ public final class ZoneMatcher {
 					if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
 						invalidEntries.add(raw);
 					} else {
-						set.blocks.add(BuiltInRegistries.BLOCK.getValue(id));
+						set.blocks.add(BuiltInRegistries.BLOCK.get(id));
 					}
 				}
 			}
@@ -177,6 +180,7 @@ public final class ZoneMatcher {
 			return block instanceof DoorBlock
 					|| block instanceof TrapDoorBlock
 					|| block instanceof FenceGateBlock
+					//? if >=1.20.3
 					|| block instanceof CopperBulbBlock
 					|| block instanceof PistonBaseBlock
 					|| block instanceof DiodeBlock // repeaters, comparators
@@ -184,6 +188,7 @@ public final class ZoneMatcher {
 					|| block instanceof RedstoneTorchBlock // includes wall torches
 					|| block instanceof RedstoneLampBlock
 					|| block instanceof DispenserBlock // includes droppers
+					//? if >=1.20.3
 					|| block instanceof CrafterBlock
 					|| block instanceof HopperBlock
 					|| block instanceof NoteBlock

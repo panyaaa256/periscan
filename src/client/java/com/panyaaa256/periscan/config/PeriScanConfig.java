@@ -2,12 +2,14 @@ package com.panyaaa256.periscan.config;
 
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.zone.Zone;
+//? if >=1.20
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.zone.Zone;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.zone.Zone;
+//? if >=1.20
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -16,12 +18,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PeriScanConfig {
+	// YACL for 1.19.4 (3.1) predates the config v2 API; its GsonConfigInstance
+	// is the older equivalent (@SerialEntry, getConfig(), load(), save()).
+	//? if >=1.20 {
 	public static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
 			.id(PeriScanClient.id("config"))
 			.serializer(config -> GsonConfigSerializerBuilder.create(config)
 					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
 					.build())
 			.build();
+	//?} else {
+	/*public static final dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> HANDLER =
+			dev.isxander.yacl3.config.GsonConfigInstance.createBuilder(PeriScanConfig.class)
+					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
+					.build();
+	*///?}
 
 	public static PeriScanConfig get() {
 		return HANDLER.instance();

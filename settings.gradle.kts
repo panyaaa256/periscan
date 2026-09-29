@@ -27,11 +27,10 @@ plugins {
 
 stonecutter {
 	create(rootProject) {
-		// This branch covers 1.20.5 to 1.21.4 (Java 21, before RenderPipelines).
-		// Newer versions live on main and mc/1.21.5-1.21.8, older ones on
-		// mc/1.19.4-1.20.4.
-		versions("1.20.6", "1.21.1", "1.21.3", "1.21.4")
-		vcsVersion = "1.21.4"
+		// This branch covers 1.19.4 to 1.20.4 (Java 17). YACL 3 starts at 1.19.4.
+		// Newer versions live on main and the other mc/<range> branches.
+		versions("1.19.4", "1.20.1", "1.20.4")
+		vcsVersion = "1.20.4"
 	}
 }
 

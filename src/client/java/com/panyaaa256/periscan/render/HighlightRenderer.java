@@ -161,10 +161,10 @@ public final class HighlightRenderer {
 	private static void quad(VertexConsumer buffer, PoseStack.Pose pose, int color,
 			float ax, float ay, float az, float bx, float by, float bz,
 			float cx, float cy, float cz, float dx, float dy, float dz) {
-		buffer.addVertex(pose, ax, ay, az).setColor(color);
-		buffer.addVertex(pose, bx, by, bz).setColor(color);
-		buffer.addVertex(pose, cx, cy, cz).setColor(color);
-		buffer.addVertex(pose, dx, dy, dz).setColor(color);
+		buffer.vertex(pose.pose(), ax, ay, az).color(color).endVertex();
+		buffer.vertex(pose.pose(), bx, by, bz).color(color).endVertex();
+		buffer.vertex(pose.pose(), cx, cy, cz).color(color).endVertex();
+		buffer.vertex(pose.pose(), dx, dy, dz).color(color).endVertex();
 	}
 
 	private static void boxEdges(VertexConsumer buffer, PoseStack.Pose pose, int color,
@@ -188,7 +188,7 @@ public final class HighlightRenderer {
 
 	private static void line(VertexConsumer buffer, PoseStack.Pose pose, int color,
 			float ax, float ay, float az, float bx, float by, float bz) {
-		buffer.addVertex(pose, ax, ay, az).setColor(color);
-		buffer.addVertex(pose, bx, by, bz).setColor(color);
+		buffer.vertex(pose.pose(), ax, ay, az).color(color).endVertex();
+		buffer.vertex(pose.pose(), bx, by, bz).color(color).endVertex();
 	}
 }

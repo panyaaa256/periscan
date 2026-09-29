@@ -304,12 +304,12 @@ public class ScanManager {
 	/** Lowest scanned Y (inclusive): the bedrock floor is skipped where it is known. */
 	public static int scanMinY(ClientLevel level) {
 		PeriDimension dimension = PeriDimension.of(level.dimension());
-		return dimension == null ? level.getMinY() : Math.max(level.getMinY(), dimension.scanFloorY());
+		return dimension == null ? level.getMinBuildHeight() : Math.max(level.getMinBuildHeight(), dimension.scanFloorY());
 	}
 
 	/** Highest scanned Y (inclusive), from the config. */
 	public static int scanMaxY(ClientLevel level) {
-		return Math.min(level.getMaxY(), PeriScanConfig.get().scanMaxY);
+		return Math.min((level.getMaxBuildHeight() - 1), PeriScanConfig.get().scanMaxY);
 	}
 
 	private void onTick(Minecraft client) {

@@ -2,7 +2,7 @@ plugins {
 	id("dev.kikugie.stonecutter")
 }
 
-stonecutter active "1.21.4"
+stonecutter active "1.20.4"
 
 // Sources are written against the newest version (26.3). These string
 // replacements rename things back for older versions, so renames need no
@@ -11,6 +11,13 @@ stonecutter active "1.21.4"
 // https://stonecutter.kikugie.dev/wiki/v2/reference/syntax/replacements
 stonecutter parameters {
 	replacements {
+		// 1.20: YACL (3.3+) moved config serialization to the config v2 API.
+		string(current.parsed >= "1.20") {
+			replace("dev.isxander.yacl3.config.ConfigEntry;", "dev.isxander.yacl3.config.v2.api.SerialEntry;")
+			replace("@ConfigEntry", "@SerialEntry")
+			replace("HANDLER.getConfig()", "HANDLER.instance()")
+			replace(".valueFormatter(", ".formatValue(")
+		}
 		// 1.21: VertexConsumer methods were renamed and no longer need endVertex(),
 		// and ResourceLocation's constructor became private.
 		string(current.parsed >= "1.21") {

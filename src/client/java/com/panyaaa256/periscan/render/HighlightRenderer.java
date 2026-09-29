@@ -3,11 +3,8 @@ package com.panyaaa256.periscan.render;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.panyaaa256.periscan.PeriScanClient;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
-import com.panyaaa256.periscan.integration.iris.IrisIntegration;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -16,7 +13,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
@@ -26,7 +23,7 @@ import java.awt.Color;
 
 /**
  * Draws highlighted blocks as translucent filled boxes with outlines, visible
- * through terrain (depth test always passes).
+ * through terrain (depth test disabled).
  */
 public final class HighlightRenderer {
 	private static final int FILL_ALPHA = 0x40;
@@ -34,11 +31,8 @@ public final class HighlightRenderer {
 	// Pending chunk boxes are only drawn within this horizontal distance of the camera.
 	private static final double PENDING_RENDER_DISTANCE = 2048.0;
 
-	private static final RenderPipeline FILL_PIPELINE = pipeline("pipeline/highlight_fill", false);
-	private static final RenderPipeline LINE_PIPELINE = pipeline("pipeline/highlight_lines", true);
-
-	private static final RenderType FILL_TYPE = renderType("periscan_highlight_fill", FILL_PIPELINE);
-	private static final RenderType LINE_TYPE = renderType("periscan_highlight_lines", LINE_PIPELINE);
+	private static final RenderType FILL_TYPE = renderType("periscan_highlight_fill", VertexFormat.Mode.QUADS);
+	private static final RenderType LINE_TYPE = renderType("periscan_highlight_lines", VertexFormat.Mode.DEBUG_LINES);
 
 	/** Emits one axis-aligned box (camera-relative coordinates) as faces or edges. */
 	@FunctionalInterface
@@ -51,63 +45,25 @@ public final class HighlightRenderer {
 	}
 
 	/**
-	 * Translucent position+color pipeline that draws through terrain. The
+	 * Translucent position+color render type that draws through terrain. The
 	 * position_color shader applies no fog, so highlights beyond the render
-	 * distance keep their color (vanilla's line shader would fade them to fog).
+	 * distance keep their color. Iris maps vanilla shaders to shader-pack
+	 * programs by itself before 1.21.5, so no Iris integration is needed here.
 	 */
-	private static RenderPipeline pipeline(String path, boolean lines) {
-		RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-				.withLocation(PeriScanClient.id(path))
-				.withVertexShader("core/position_color")
-				.withFragmentShader("core/position_color")
-				.withCull(false);
-		// 26.1 grouped blending and depth settings into target/stencil states.
-		//? if >=26.1 {
-		/*builder.withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(BlendFunction.TRANSLUCENT))
-				.withDepthStencilState(new com.mojang.blaze3d.pipeline.DepthStencilState(
-						com.mojang.blaze3d.platform.CompareOp.ALWAYS_PASS, false));
-		*///?} else {
-		builder.withBlend(BlendFunction.TRANSLUCENT)
-				.withDepthTestFunction(com.mojang.blaze3d.platform.DepthTestFunction.NO_DEPTH_TEST)
-				.withDepthWrite(false);
-		//?}
-		// 26.2 split the vertex format into a vertex binding and a primitive topology.
-		//? if >=26.2 {
-		/*builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
-				.withPrimitiveTopology(lines
-						? com.mojang.blaze3d.PrimitiveTopology.DEBUG_LINES
-						: com.mojang.blaze3d.PrimitiveTopology.QUADS);
-		*///?} else {
-		builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, lines
-				? com.mojang.blaze3d.vertex.VertexFormat.Mode.DEBUG_LINES
-				: com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS);
-		//?}
-		return RenderPipelines.register(builder.build());
-	}
-
-	private static RenderType renderType(String name, RenderPipeline pipeline) {
-		// 1.21.11 replaced RenderType's composite state with RenderSetup. On
-		// 1.21.x the geometry goes through a shared BufferSource, whose default
-		// buffer is too small for large scans.
-		//? if >=26.1 {
-		/*return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
-				.createRenderSetup());
-		*///?} elif >=1.21.11 {
-		/*return RenderType.create(name, net.minecraft.client.renderer.rendertype.RenderSetup.builder(pipeline)
-				.bufferSize(1 << 20).createRenderSetup());
-		*///?} else {
-		return RenderType.create(name, 1 << 20, pipeline, RenderType.CompositeState.builder().createCompositeState(false));
-		//?}
+	private static RenderType renderType(String name, VertexFormat.Mode mode) {
+		// The BufferSource the geometry goes through has a small default buffer,
+		// too small for large scans.
+		return RenderType.create(name, DefaultVertexFormat.POSITION_COLOR, mode, 1 << 20,
+				RenderType.CompositeState.builder()
+						.setShaderState(RenderStateShard.POSITION_COLOR_SHADER)
+						.setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+						.setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
+						.setWriteMaskState(RenderStateShard.COLOR_WRITE)
+						.setCullState(RenderStateShard.NO_CULL)
+						.createCompositeState(false));
 	}
 
 	public static void init() {
-		// Iris only draws pipelines it can map to a shader-pack program; without
-		// this the highlights are invisible whenever a shader pack is active.
-		IrisIntegration.assignBasicPipeline(FILL_PIPELINE);
-		IrisIntegration.assignBasicPipeline(LINE_PIPELINE);
-		//? if >=26.1 {
-		/*WorldRenderEvents.COLLECT_SUBMITS.register(HighlightRenderer::render);
-		*///?} else
 		WorldRenderEvents.AFTER_ENTITIES.register(HighlightRenderer::render);
 	}
 
@@ -121,16 +77,6 @@ public final class HighlightRenderer {
 		if (level == null || level.dimension() != scan.dimension()) {
 			return;
 		}
-		//? if >=26.1 {
-		/*Vec3 camera = context.levelState().cameraRenderState.pos;
-		PoseStack poseStack = context.poseStack();
-
-		// One submit per render type: all fills in one batch, all lines in another.
-		context.submitNodeCollector().submitCustomGeometry(poseStack, FILL_TYPE, (pose, fill) ->
-				addAllBoxes(fill, pose, camera, HighlightRenderer::boxFaces, FILL_ALPHA, PENDING_FILL_ALPHA));
-		context.submitNodeCollector().submitCustomGeometry(poseStack, LINE_TYPE, (pose, lines) ->
-				addAllBoxes(lines, pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF));
-		*///?} else {
 		Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		PoseStack.Pose pose = context.matrixStack().last();
 
@@ -139,7 +85,6 @@ public final class HighlightRenderer {
 		addAllBoxes(context.consumers().getBuffer(FILL_TYPE), pose, camera, HighlightRenderer::boxFaces,
 				FILL_ALPHA, PENDING_FILL_ALPHA);
 		addAllBoxes(context.consumers().getBuffer(LINE_TYPE), pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF);
-		//?}
 	}
 
 	private static void addAllBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,

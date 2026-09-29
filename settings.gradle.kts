@@ -27,11 +27,11 @@ plugins {
 
 stonecutter {
 	create(rootProject) {
-		// This branch covers 1.21.5 to 1.21.8 (RenderPipelines, before the 1.21.9
-		// world rendering rework). Newer versions live on main, older ranges on
-		// the other mc/<range> branches.
-		versions("1.21.5", "1.21.8")
-		vcsVersion = "1.21.8"
+		// This branch covers 1.20.5 to 1.21.4 (Java 21, before RenderPipelines).
+		// Newer versions live on main and mc/1.21.5-1.21.8, older ones on
+		// mc/1.19.4-1.20.4.
+		versions("1.20.6", "1.21.1", "1.21.3", "1.21.4")
+		vcsVersion = "1.21.4"
 	}
 }
 

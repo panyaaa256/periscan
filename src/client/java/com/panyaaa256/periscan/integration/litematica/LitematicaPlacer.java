@@ -38,7 +38,8 @@ final class LitematicaPlacer {
 	}
 
 	static Path schematicsBaseDirectory() {
-		return DataManager.getSchematicsBaseDirectory();
+		// Litematica for these versions still works with java.io.File.
+		return DataManager.getSchematicsBaseDirectory().toPath();
 	}
 
 	static Result place(List<PlannedPlacement> plan, String removePrefix) {
@@ -48,7 +49,7 @@ final class LitematicaPlacer {
 		for (PlannedPlacement planned : plan) {
 			LitematicaSchematic schematic;
 			try {
-				schematic = LitematicaSchematic.createFromFile(planned.dir(), planned.fileName());
+				schematic = LitematicaSchematic.createFromFile(planned.dir().toFile(), planned.fileName());
 			} catch (Exception e) {
 				schematic = null;
 			}

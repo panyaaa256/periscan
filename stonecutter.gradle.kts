@@ -2,7 +2,7 @@ plugins {
 	id("dev.kikugie.stonecutter")
 }
 
-stonecutter active "1.21.8"
+stonecutter active "1.21.4"
 
 // Sources are written against the newest version (26.3). These string
 // replacements rename things back for older versions, so renames need no
@@ -11,6 +11,20 @@ stonecutter active "1.21.8"
 // https://stonecutter.kikugie.dev/wiki/v2/reference/syntax/replacements
 stonecutter parameters {
 	replacements {
+		// 1.21: VertexConsumer methods were renamed and no longer need endVertex(),
+		// and ResourceLocation's constructor became private.
+		string(current.parsed >= "1.21") {
+			replace("buffer.vertex(pose, ", "buffer.addVertex(pose, ")
+			replace(".color(color).endVertex();", ".setColor(color);")
+			replace("new ResourceLocation(", "ResourceLocation.fromNamespaceAndPath(")
+		}
+		// 1.21.2: registry lookups and world height accessors were renamed; the new
+		// getMaxY() is the highest block (inclusive), unlike getMaxBuildHeight().
+		string(current.parsed >= "1.21.2") {
+			replace("BuiltInRegistries.BLOCK.get(", "BuiltInRegistries.BLOCK.getValue(")
+			replace("level.getMinBuildHeight()", "level.getMinY()")
+			replace("(level.getMaxBuildHeight() - 1)", "level.getMaxY()")
+		}
 		// 1.21.6 reworked uniforms; the matrices+fog snippet replaced the
 		// matrices+color one that vanilla's position_color pipelines use in 1.21.5.
 		string(current.parsed >= "1.21.6") {

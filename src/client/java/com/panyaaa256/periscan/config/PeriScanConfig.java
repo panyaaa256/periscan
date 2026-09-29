@@ -4,11 +4,7 @@ import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.zone.Zone;
 //? if >=1.20
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
-import com.panyaaa256.periscan.PeriScanClient;
-import com.panyaaa256.periscan.zone.Zone;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
-import com.panyaaa256.periscan.PeriScanClient;
-import com.panyaaa256.periscan.zone.Zone;
 //? if >=1.20
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;

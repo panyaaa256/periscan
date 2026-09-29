@@ -38,7 +38,7 @@ cd periscan
 
 On Windows, use `gradlew.bat build` instead of `./gradlew build`.
 
-The mod is built to `build/libs/periscan-<version>.jar` (the file ending in `-sources.jar` is not the mod).
+The mod is built to `build/libs/periscan-<version>+<Minecraft version>.jar` (the file ending in `-sources.jar` is not the mod).
 
 ## License
 

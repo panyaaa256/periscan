@@ -38,7 +38,7 @@ cd periscan
 
 Windows では `./gradlew build` の代わりに `gradlew.bat build` を使ってください。
 
-mod は `build/libs/periscan-<バージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
+mod は `build/libs/periscan-<バージョン>+<Minecraftのバージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
 
 ## ライセンス
 

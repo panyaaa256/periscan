@@ -52,7 +52,7 @@ public enum PeriDimension {
 		return scanFloorY;
 	}
 
-	/** Placement Y of the schematic origin; the schematic files are saved with their origin at this height (see docs/placement.md). */
+	/** Placement Y of the schematic origin; the schematic files are saved with their origin at this height (see "Placing schematics" in docs/usage.md). */
 	public int schematicOriginY() {
 		return schematicOriginY;
 	}

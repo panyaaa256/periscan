@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 /**
  * Plans the litematica placements of a schematic set directory for a profile
- * (see docs/placement.md): all/ files once at the min corner, edge/ files as a
+ * (see "Placing schematics" in docs/usage.md): all/ files once at the min corner, edge/ files as a
  * pair on the corner pair chosen in the config (unrotated + 180deg, or X-mirror
  * + Z-mirror), and pre-sorted edge/mx, edge/mz files unmirrored + mirrored on
  * that axis. Does not touch litematica, so it can be used without it loaded.

@@ -68,7 +68,7 @@ public final class LitematicaIntegration {
 		}
 		// Capability probe instead of a version check: fork version schemes vary,
 		// so verify the exact classes and methods LitematicaPlacer uses. Keep in
-		// sync with the probe table in docs/placement.md.
+		// sync with the calls in LitematicaPlacer.
 		try {
 			Class<?> dataManager = Class.forName("fi.dy.masa.litematica.data.DataManager");
 			dataManager.getMethod("getSchematicPlacementManager");

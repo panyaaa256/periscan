@@ -36,8 +36,36 @@
 
 ## リリースの流れ
 
-1. **バージョンを上げる**: main と各保守用ブランチの `gradle.properties` の `mod_version` を変える。
+1. **バージョンを上げる**: main と各 `mc/*` ブランチの `stonecutter.properties.toml` の `mod.version` を変え、それぞれ push する。
 2. **変更点を確定する**: `CHANGELOG.md` を見直し、`CHANGELOG.ja.md` の「未リリース」をバージョン見出しに変える。
 3. **ビルドと確認**: 各ブランチで `./gradlew build` を実行し、テストが通ることと、ゲーム内の動作を確かめる。
-4. **タグ**: 各ブランチのリリース用コミットに `v<バージョン>+<Minecraft>` のタグを付け、main には `v<バージョン>` のタグも付けて push する。
-5. **リリース**: `v<バージョン>` のタグで GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`、本文は `CHANGELOG.md` をそのまま使う。
+4. **タグ**: main のリリース用コミットに `v<バージョン>` のタグを付けて push する。
+
+タグを push すると `.github/workflows/release.yml` が動き、次を行う。
+
+- 全ブランチで `mod.version` がタグと一致するか確かめる（一致しなければ止まる）。
+- 全ブランチの全 Minecraft バージョンをビルドする。main はタグのコミット、`mc/*` はブランチの先頭を使う。
+- ビルドしたコミットに `v<バージョン>+<範囲>` のタグを付ける（例: `v0.4.0+1.20.5-1.21.4`）。
+- `v<バージョン>` の GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`、本文は `CHANGELOG.md` をそのまま使う。
+
+## ブランチ
+
+| ブランチ | Minecraft |
+|---|---|
+| `main` | 1.21.9〜26.3 |
+| `mc/1.21.5-1.21.8` | 1.21.5〜1.21.8 |
+| `mc/1.20.5-1.21.4` | 1.20.5〜1.21.4 |
+| `mc/1.19.4-1.20.4` | 1.19.4〜1.20.4（1.20.2 を除く） |
+
+- 修正と機能は main で作り、各 `mc/*` ブランチへ `git cherry-pick -x` で持ち込む。
+- `CHANGELOG*` と `docs/releasing.md` は main にだけ置く。
+
+## Stonecutter での開発
+
+1つのブランチで複数の Minecraft バージョンをビルドする（main は 1.21.10 / 1.21.11 / 26.1.2 / 26.2 / 26.3）。
+
+- ソースは最新版（`stonecutter.gradle.kts` の `stonecutter active` と `settings.gradle.kts` の `vcsVersion`）に合わせて書く。
+- バージョン間の名前の違いは `stonecutter.gradle.kts` の replacements に書き、ソースには `//? if` を増やさない。呼び出し方が違うものは `compat/VersionCompat.java` にまとめる。
+- 別のバージョンで補完やビルドを確かめたいときは `./gradlew "Set active project to <バージョン>"` で切り替える。
+- **コミットの前に `./gradlew "Reset active project"` で最新版の状態に戻す。**
+- 全バージョンのビルドとテストは `./gradlew build`、jar を `build/libs/<バージョン>/` に集めるのは `./gradlew buildAndCollect`。

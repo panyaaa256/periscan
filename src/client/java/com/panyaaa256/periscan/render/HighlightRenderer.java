@@ -1,14 +1,13 @@
 package com.panyaaa256.periscan.render;
 
-import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.integration.iris.IrisIntegration;
@@ -40,8 +39,8 @@ public final class HighlightRenderer {
 	// Pending chunk boxes are only drawn within this horizontal distance of the camera.
 	private static final double PENDING_RENDER_DISTANCE = 2048.0;
 
-	private static final RenderPipeline FILL_PIPELINE = pipeline("pipeline/highlight_fill", PrimitiveTopology.QUADS);
-	private static final RenderPipeline LINE_PIPELINE = pipeline("pipeline/highlight_lines", PrimitiveTopology.DEBUG_LINES);
+	private static final RenderPipeline FILL_PIPELINE = pipeline("pipeline/highlight_fill", false);
+	private static final RenderPipeline LINE_PIPELINE = pipeline("pipeline/highlight_lines", true);
 
 	private static final RenderType FILL_TYPE = RenderType.create("periscan_highlight_fill",
 			RenderSetup.builder(FILL_PIPELINE).createRenderSetup());
@@ -58,18 +57,31 @@ public final class HighlightRenderer {
 	private HighlightRenderer() {
 	}
 
-	/** Translucent position+color pipeline that draws through terrain. */
-	private static RenderPipeline pipeline(String path, PrimitiveTopology topology) {
-		return RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+	/**
+	 * Translucent position+color pipeline that draws through terrain. The
+	 * position_color shader applies no fog, so highlights beyond the render
+	 * distance keep their color (vanilla's line shader would fade them to fog).
+	 */
+	private static RenderPipeline pipeline(String path, boolean lines) {
+		RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
 				.withLocation(PeriScanClient.id(path))
 				.withVertexShader("core/position_color")
 				.withFragmentShader("core/position_color")
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
-				.withCull(false)
-				.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
-				.withPrimitiveTopology(topology)
-				.build());
+				.withCull(false);
+		// 26.2 split the vertex format into a vertex binding and a primitive topology.
+		//? if >=26.2 {
+		builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+				.withPrimitiveTopology(lines
+						? com.mojang.renderpearl.api.pipeline.PrimitiveTopology.DEBUG_LINES
+						: com.mojang.renderpearl.api.pipeline.PrimitiveTopology.QUADS);
+		//?} else {
+		/*builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, lines
+				? com.mojang.blaze3d.vertex.VertexFormat.Mode.DEBUG_LINES
+				: com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS);
+		*///?}
+		return RenderPipelines.register(builder.build());
 	}
 
 	public static void init() {

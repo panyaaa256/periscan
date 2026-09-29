@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.integration.iris;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.panyaaa256.periscan.PeriScanClient;
 import net.fabricmc.loader.api.FabricLoader;
 

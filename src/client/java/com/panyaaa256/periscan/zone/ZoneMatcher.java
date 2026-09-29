@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.NoteBlock;
 import net.minecraft.world.level.block.PoweredRailBlock;
 import net.minecraft.world.level.block.RailBlock;
-import net.minecraft.world.level.block.RedStoneWireBlock;
+import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.RedstoneTorchBlock;
 import net.minecraft.world.level.block.ShelfBlock;
@@ -148,9 +148,9 @@ public final class ZoneMatcher {
 				return true;
 			}
 			return switch (state.getPistonPushReaction()) {
-				case BLOCK -> true;
+				case IMMOVEABLE -> true;
 				// Destroyed by the push, or pushable in one direction (glazed terracotta).
-				case DESTROY, PUSH_ONLY -> false;
+				case POPPED, PUSH -> false;
 				default -> state.hasBlockEntity();
 			};
 		}
@@ -181,7 +181,7 @@ public final class ZoneMatcher {
 					|| block instanceof CopperBulbBlock
 					|| block instanceof PistonBaseBlock
 					|| block instanceof DiodeBlock // repeaters, comparators
-					|| block instanceof RedStoneWireBlock
+					|| block instanceof RedstoneWireBlock
 					|| block instanceof RedstoneTorchBlock // includes wall torches
 					|| block instanceof RedstoneLampBlock
 					|| block instanceof DispenserBlock // includes droppers
@@ -218,7 +218,7 @@ public final class ZoneMatcher {
 		}
 
 		boolean excludes(BlockState state) {
-			if (excludePushDestroy && state.getPistonPushReaction() == PushReaction.DESTROY) {
+			if (excludePushDestroy && state.getPistonPushReaction() == PushReaction.POPPED) {
 				return true;
 			}
 			return blacklist.matches(state);

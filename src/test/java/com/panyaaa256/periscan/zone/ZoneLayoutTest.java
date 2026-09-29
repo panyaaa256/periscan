@@ -1,6 +1,9 @@
 package com.panyaaa256.periscan.zone;
 
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
 import net.minecraft.world.level.ChunkPos;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ZoneLayoutTest {
 	private static final int NS = 12;
 	private static final int EW = 3;
+
+	// In some versions (1.21.11, 26.1) loading ChunkPos touches the registries, so Minecraft must be
+	// booted first (https://docs.fabricmc.net/develop/automatic-testing).
+	@BeforeAll
+	static void bootstrap() {
+		SharedConstants.tryDetectVersion();
+		Bootstrap.bootStrap();
+	}
 
 	private static ZoneLayout.Settings allEnabled(int ns, int ew) {
 		return new ZoneLayout.Settings(ns, ew, true, true, true, true, false);

@@ -17,11 +17,11 @@
 		]
 	},
 	"depends": {
-		"fabricloader": ">=0.19.3",
-		"minecraft": "~26.2",
-		"java": ">=25",
+		"fabricloader": ">=${loader}",
+		"minecraft": "${minecraft}",
+		"java": ">=${java}",
 		"fabric-api": "*",
-		"yet_another_config_lib_v3": ">=3.9.4"
+		"yet_another_config_lib_v3": "${yacl}"
 	},
 	"suggests": {
 		"litematica": "*"

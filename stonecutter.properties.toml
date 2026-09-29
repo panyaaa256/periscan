@@ -1,0 +1,26 @@
+# Build parameters shared by every Minecraft version, plus per-version overrides.
+# https://stonecutter.kikugie.dev/wiki/v2/reference/gradle-api/structured-properties
+# Mod dependency versions are not listed here: Fletching Table looks up the
+# latest release for each Minecraft version on Modrinth (see build.gradle.kts).
+# Fabric API is the exception (deps.fabric_api), as it must come from Fabric's maven.
+mod.id = "periscan"
+mod.version = "0.3.0"
+mod.group = "com.panyaaa256"
+# YACL range written into fabric.mod.json
+mod.yacl_compat = ">=3.9.4"
+
+deps.fabric_loader = "0.19.3"
+deps.junit = "6.1.3"
+
+["26.1.2"]
+# Minecraft range written into fabric.mod.json
+mod.mc_compat = ">=26.1 <=26.1.2"
+deps.fabric_api = "0.155.3+26.1.2"
+
+["26.2"]
+mod.mc_compat = "~26.2"
+deps.fabric_api = "0.161.0+26.2"
+
+["26.3"]
+mod.mc_compat = "~26.3"
+deps.fabric_api = "0.161.0+26.3"

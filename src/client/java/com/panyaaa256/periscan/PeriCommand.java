@@ -114,6 +114,16 @@ public final class PeriCommand {
 		return false;
 	}
 
+	/** Rejects perimeters too large to scan; see {@link PeriProfile#MAX_SIDE_CHUNKS}. */
+	private static boolean rejectTooLarge(FabricClientCommandSource source, PeriProfile profile) {
+		if (profile.exceedsMaxSize()) {
+			source.sendError(Component.translatable("periscan.msg.region_too_large",
+					profile.sideChunksX(), profile.sideChunksZ(), PeriProfile.MAX_SIDE_CHUNKS));
+			return true;
+		}
+		return false;
+	}
+
 	/** The named profile, or null after sending the "no such profile" error. */
 	private static PeriProfile findProfile(FabricClientCommandSource source, String name) {
 		PeriProfile profile = ProfileStore.get(name);
@@ -150,6 +160,9 @@ public final class PeriCommand {
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 		// The profile is bound to the dimension the command was run in.
 		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source));
+		if (rejectTooLarge(source, profile)) {
+			return 0;
+		}
 		ProfileStore.put(profile);
 		source.sendFeedback(Component.translatable("periscan.msg.profile_added",
 				name, profile.sizeBlocksX(), profile.sizeBlocksZ()));
@@ -248,6 +261,10 @@ public final class PeriCommand {
 			return false;
 		}
 		if (rejectOtherDimension(source, profile)) {
+			return false;
+		}
+		// Profiles are checked on add, but files may have been edited by hand.
+		if (rejectTooLarge(source, profile)) {
 			return false;
 		}
 		List<String> invalidEntries = ScanManager.INSTANCE.activate(

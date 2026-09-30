@@ -19,6 +19,13 @@ jobs:
         with:
           java-version: '25'
           distribution: 'microsoft'
+      # Caches Gradle User Home: dependencies, and the Minecraft jars Loom
+      # downloads and remaps. By default only main writes the cache; mc/*
+      # branches write theirs too, as they build other Minecraft versions.
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref_name != 'main' && !startsWith(github.ref_name, 'mc/') }}
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       # Builds and tests every Minecraft version, then copies all jars to build/libs/<mod version>/.

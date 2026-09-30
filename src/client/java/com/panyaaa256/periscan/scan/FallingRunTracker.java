@@ -110,6 +110,22 @@ public final class FallingRunTracker {
 	}
 
 	/**
+	 * Marks the lines through a changed block, if it lies in a strip and between
+	 * minY and maxY. Whatever the block was or became (landed sand, a broken
+	 * block, a new breaking block), its lines may have new or split runs.
+	 */
+	public void markPosition(List<ZoneLayout.TrenchStrip> strips, int x, int y, int z, int minY, int maxY) {
+		if (y < minY || y > maxY) {
+			return;
+		}
+		for (ZoneLayout.TrenchStrip strip : strips) {
+			if (strip.rect().contains(x, z)) {
+				dirtyLines.add(lineKey(strip.alongX(), strip.alongX() ? z : x, y));
+			}
+		}
+	}
+
+	/**
 	 * Marks the lines of highlighted blocks that no longer count (a replaced
 	 * block may split its run, so the whole line is recomputed on the next
 	 * flush). Highlights in unloaded chunks are kept as cached.

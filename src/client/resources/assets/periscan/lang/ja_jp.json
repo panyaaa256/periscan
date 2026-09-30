@@ -64,6 +64,7 @@
 	"periscan.msg.reloaded": "PeriScan:「%s」を再スキャンしました",
 	"periscan.msg.region_available": "PeriScan: 保存されたprofileがあります。そのディメンションで /peri scan reload を実行すると走査を開始します。",
 	"periscan.msg.invalid_entry": "PeriScan: 不正なconfigエントリを無視しました: %s",
+	"periscan.msg.unknown_tag": "PeriScan: タグ %s はこのワールドにないため、何にも一致しません。綴りを確認してください。",
 	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます",
 	"periscan.msg.all_disabled": "PeriScan: すべてのゾーンが無効です。configで少なくとも1つのゾーンを有効にしてください。"
 }

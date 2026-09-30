@@ -36,6 +36,7 @@ import net.minecraft.world.level.material.PushReaction;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,6 +62,8 @@ public final class ZoneMatcher {
 
 		private final Set<Block> blocks = new HashSet<>();
 		private final List<TagKey<Block>> tags = new ArrayList<>();
+		// The config entry each tag came from, for messages.
+		private final List<String> tagEntries = new ArrayList<>();
 		private boolean immovable;
 		private boolean connecting;
 		private boolean redstoneReactive;
@@ -85,6 +88,7 @@ public final class ZoneMatcher {
 					} else {
 						// Tag contents are not statically known client side; unknown tags simply match nothing.
 						set.tags.add(TagKey.create(Registries.BLOCK, id));
+						set.tagEntries.add(entry);
 					}
 				} else {
 					Identifier id = Identifier.tryParse(entry);
@@ -96,6 +100,12 @@ public final class ZoneMatcher {
 				}
 			}
 			return set;
+		}
+
+		void collectTags(Map<TagKey<Block>, String> out) {
+			for (int i = 0; i < tags.size(); i++) {
+				out.putIfAbsent(tags.get(i), tagEntries.get(i));
+			}
 		}
 
 		boolean matches(BlockState state) {
@@ -217,6 +227,11 @@ public final class ZoneMatcher {
 			return new WaterloggedExclusions(BlockSet.compile(blacklist, invalidEntries), excludePushDestroy);
 		}
 
+		/** Adds the tags of the blacklist, each with the config entry it came from. */
+		public void collectTags(Map<TagKey<Block>, String> out) {
+			blacklist.collectTags(out);
+		}
+
 		boolean excludes(BlockState state) {
 			if (excludePushDestroy && state.getPistonPushReaction() == PushReaction.POPPED) {
 				return true;
@@ -267,6 +282,18 @@ public final class ZoneMatcher {
 	/** Matcher that highlights every block except air and liquids (trench bottom). */
 	public static ZoneMatcher everythingButLiquids() {
 		return new ZoneMatcher(new BlockSet(), null, null, false, null, true);
+	}
+
+	/**
+	 * Adds the tags this matcher looks for, each with the config entry it came
+	 * from. Whether a tag exists is only known in a world, where the server has
+	 * sent its tags.
+	 */
+	public void collectTags(Map<TagKey<Block>, String> out) {
+		main.collectTags(out);
+		if (laneRestricted != null) {
+			laneRestricted.collectTags(out);
+		}
 	}
 
 	public boolean matches(BlockState state, int x, int z) {

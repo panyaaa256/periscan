@@ -4,7 +4,7 @@
 # latest release for each Minecraft version on Modrinth (see build.gradle.kts).
 # Fabric API is the exception (deps.fabric_api), as it must come from Fabric's maven.
 mod.id = "periscan"
-mod.version = "0.3.0"
+mod.version = "0.4.0"
 mod.group = "com.panyaaa256"
 # YACL range written into fabric.mod.json
 mod.yacl_compat = ">=3.8.2"

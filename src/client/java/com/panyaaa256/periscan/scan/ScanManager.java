@@ -46,6 +46,8 @@ public class ScanManager {
 	private final EnumMap<Zone, ChunkIndexedPositions> highlights = new EnumMap<>(Zone.class);
 	private final FallingRunTracker fallingRuns = new FallingRunTracker();
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
+	// Positions (BlockPos longs) in the region whose block changed since the last tick.
+	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
 	private int tickCounter = 0;
 	private boolean dormantNoticePending = false;
 
@@ -223,6 +225,7 @@ public class ScanManager {
 		}
 		fallingRuns.clear();
 		pendingChunks.clear();
+		changedBlocks.clear();
 	}
 
 	private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
@@ -235,6 +238,60 @@ public class ScanManager {
 		clearChunkHighlights(chunk.getPos());
 		scanChunk(level, chunk);
 		flushFallingLines(level);
+	}
+
+	/**
+	 * Called for every block state change on the client (server updates and the
+	 * player's own predicted changes; see ClientLevelMixin). Only remembers the
+	 * position: a burst of changes (an explosion, a section update) is applied
+	 * once at the end of the tick, from the block states as they are then.
+	 */
+	public void onBlockChanged(ClientLevel level, BlockPos pos) {
+		if (layout == null || level.dimension() != dimension || !layout.region().contains(pos.getX(), pos.getZ())) {
+			return;
+		}
+		changedBlocks.add(pos.asLong());
+	}
+
+	/** Brings the highlights of the blocks changed this tick up to date. */
+	private void applyBlockChanges(ClientLevel level) {
+		if (changedBlocks.isEmpty()) {
+			return;
+		}
+		int minY = scanMinY(level);
+		int maxY = scanMaxY(level);
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		LongIterator it = changedBlocks.iterator();
+		while (it.hasNext()) {
+			long key = it.nextLong();
+			int x = BlockPos.getX(key);
+			int y = BlockPos.getY(key);
+			int z = BlockPos.getZ(key);
+			// A chunk that is not scanned yet gets all its blocks when it is.
+			if (pendingChunks.contains(VersionCompat.chunkKey(new ChunkPos(x >> 4, z >> 4)))
+					|| !level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
+				continue;
+			}
+			if (y >= minY && y <= maxY) {
+				updateHighlights(level, pos.set(x, y, z), minY);
+			}
+			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + BOTTOM_TRENCH_LAYERS, maxY);
+		}
+		changedBlocks.clear();
+		flushFallingLines(level);
+	}
+
+	/** Re-evaluates a single block for every zone, like scanChunk does for a whole chunk. */
+	private void updateHighlights(ClientLevel level, BlockPos pos, int minY) {
+		long key = pos.asLong();
+		for (ChunkIndexedPositions set : highlights.values()) {
+			set.remove(key);
+		}
+		int mask = layout.zoneMask(pos.getX(), pos.getZ());
+		BlockState state = level.getBlockState(pos);
+		if (mask != 0 && !state.isAir()) {
+			addMatchingZones(mask, pos.getX(), pos.getY(), pos.getZ(), state, minY + BOTTOM_TRENCH_LAYERS - 1);
+		}
 	}
 
 	private void clearChunkHighlights(ChunkPos pos) {
@@ -367,9 +424,11 @@ public class ScanManager {
 		}
 		tickCounter++;
 
-		// Drop highlights whose block has been replaced (by anyone) with something
-		// that no longer matches. Block updates reach the client, so re-checking the
-		// current state covers other players' changes too.
+		applyBlockChanges(client.level);
+
+		// Safety net for the removal side: drop highlights whose block no longer
+		// matches, in case a change bypassed onBlockChanged or the world's tags
+		// changed. Block changes normally update the highlights right away.
 		if (tickCounter % 10 == 0) {
 			validateHighlights(client.level);
 		}

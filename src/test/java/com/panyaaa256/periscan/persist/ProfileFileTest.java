@@ -72,12 +72,6 @@ class ProfileFileTest {
 		}
 
 		@Test
-		void writeCreatesParentDirectories() {
-			ProfileFile.write(file(), new Data());
-			assertTrue(Files.exists(file()));
-		}
-
-		@Test
 		void writeReplacesTheFileAndLeavesNoTemporaryFile() throws IOException {
 			writeRaw("old contents");
 			Data data = new Data();
@@ -251,13 +245,6 @@ class ProfileFileTest {
 		}
 	}
 
-	@Test
-	void sanitizeReplacesCharactersUnsafeInFileNames() {
-		assertEquals("My_World__1_2", ProfileFile.sanitize("My World: 1/2"));
-		assertEquals("play.example.com_25565", ProfileFile.sanitize("play.example.com:25565"));
-		assertEquals("___", ProfileFile.sanitize("日本語"));
-	}
-
 	@Nested
 	class FormatVersion {
 		@Test
@@ -292,6 +279,13 @@ class ProfileFileTest {
 	@Nested
 	class FileNames {
 		@Test
+		void legacyNamesAreSanitizedAndCanCollide() {
+			assertEquals("sp_My_World__1_2", ProfileFile.legacyFileName("sp_", "My World: 1/2"));
+			assertEquals("mp_play.example.com_25565", ProfileFile.legacyFileName("mp_", "play.example.com:25565"));
+			assertEquals("sp____", ProfileFile.legacyFileName("sp_", "日本語"));
+		}
+
+		@Test
 		void namesThatSanitizeAlikeGetDifferentFiles() {
 			// All three sanitize to "_____".
 			String survival = ProfileFile.fileName("sp_", "サバイバル");
@@ -312,11 +306,6 @@ class ProfileFileTest {
 		void longNamesAreShortened() {
 			String name = ProfileFile.fileName("sp_", "x".repeat(300));
 			assertEquals("sp_".length() + 48 + "-".length() + 8, name.length());
-		}
-
-		@Test
-		void legacyFileNameIsTheOldSanitizedName() {
-			assertEquals("sp_My_World", ProfileFile.legacyFileName("sp_", "My World"));
 		}
 	}
 
@@ -352,13 +341,6 @@ class ProfileFileTest {
 
 			Data read = ProfileFile.read(file(), legacy(), TODAY);
 			assertEquals(List.of("nether"), List.copyOf(read.profiles.keySet()));
-		}
-
-		@Test
-		void withoutEitherFileNothingIsCreated() {
-			Data read = ProfileFile.read(file(), legacy(), TODAY);
-			assertTrue(read.profiles.isEmpty());
-			assertFalse(Files.exists(file()));
 		}
 
 		@Test

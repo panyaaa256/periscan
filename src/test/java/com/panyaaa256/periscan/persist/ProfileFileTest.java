@@ -78,6 +78,19 @@ class ProfileFileTest {
 		}
 
 		@Test
+		void writeReplacesTheFileAndLeavesNoTemporaryFile() throws IOException {
+			writeRaw("old contents");
+			Data data = new Data();
+			data.profiles.put("ow", OW);
+			ProfileFile.write(file(), data);
+
+			assertEquals(OW, ProfileFile.read(file(), TODAY).profiles.get("ow"));
+			try (var files = Files.list(file().getParent())) {
+				assertEquals(List.of(file()), files.toList());
+			}
+		}
+
+		@Test
 		void nonWritableDataIsNeverWritten() throws IOException {
 			Path file = writeRaw("original");
 			Data data = new Data();

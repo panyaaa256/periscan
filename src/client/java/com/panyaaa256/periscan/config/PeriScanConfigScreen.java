@@ -24,6 +24,13 @@ import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.panyaaa256.periscan.config.PeriScanConfig.MAX_FALLING_RUN;
+import static com.panyaaa256.periscan.config.PeriScanConfig.MAX_SCAN_MAX_Y;
+import static com.panyaaa256.periscan.config.PeriScanConfig.MAX_TRENCH_WIDTH;
+import static com.panyaaa256.periscan.config.PeriScanConfig.MIN_FALLING_RUN;
+import static com.panyaaa256.periscan.config.PeriScanConfig.MIN_SCAN_MAX_Y;
+import static com.panyaaa256.periscan.config.PeriScanConfig.MIN_TRENCH_WIDTH;
+
 public final class PeriScanConfigScreen {
 	private static final String KEY = "periscan.config.";
 
@@ -35,13 +42,13 @@ public final class PeriScanConfigScreen {
 				.title(Component.translatable(KEY + "title"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable(KEY + "category.general"))
-						.option(slider("ns_width", "ns_width.desc", 3, 32, defaults.northSouthWidth,
+						.option(slider("ns_width", "ns_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.northSouthWidth,
 								() -> config.northSouthWidth, v -> config.northSouthWidth = v))
-						.option(slider("ew_width", "ew_width.desc", 3, 32, defaults.eastWestWidth,
+						.option(slider("ew_width", "ew_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.eastWestWidth,
 								() -> config.eastWestWidth, v -> config.eastWestWidth = v))
 						.option(option("scan_max_y", "scan_max_y.desc", defaults.scanMaxY,
 								() -> config.scanMaxY, v -> config.scanMaxY = v)
-								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-2032, 2031))
+								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(MIN_SCAN_MAX_Y, MAX_SCAN_MAX_Y))
 								.build())
 						.option(option("schematics_folder", "schematics_folder.desc", defaults.schematicsFolder,
 								() -> config.schematicsFolder, v -> config.schematicsFolder = v)
@@ -69,7 +76,8 @@ public final class PeriScanConfigScreen {
 				.category(blockZoneCategory("trench_outer", defaults.trenchOuter, () -> config.trenchOuter)
 						.build())
 				.category(blockZoneCategory("trench_inner", defaults.trenchInner, () -> config.trenchInner)
-						.option(slider("falling_run", "falling_run.desc", 2, 64, defaults.trenchInner.fallingRunLength,
+						.option(slider("falling_run", "falling_run.desc", MIN_FALLING_RUN, MAX_FALLING_RUN,
+								defaults.trenchInner.fallingRunLength,
 								() -> config.trenchInner.fallingRunLength, v -> config.trenchInner.fallingRunLength = v))
 						.group(blockList("zone.fence_blocks", "zone.fence_blocks.desc", defaults.trenchInner.fenceBlocks,
 								() -> config.trenchInner.fenceBlocks, v -> config.trenchInner.fenceBlocks = v))

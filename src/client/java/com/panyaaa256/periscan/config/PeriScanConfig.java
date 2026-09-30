@@ -14,25 +14,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PeriScanConfig {
-	// YACL for 1.19.4 (3.1) predates the config v2 API; its GsonConfigInstance
-	// is the older equivalent (ConfigEntry annotations instead of SerialEntry).
-	// Written without "@" so the Stonecutter replacement leaves it alone.
+	// Loads and saves the config file. The handler is created on first use, so a
+	// PeriScanConfig can be made (e.g. in tests) without YACL setting up its
+	// serializer. YACL for 1.19.4 (3.1) predates the config v2 API; its
+	// GsonConfigInstance is the older equivalent (ConfigEntry annotations
+	// instead of SerialEntry; written without "@" so the Stonecutter
+	// replacement leaves this comment alone).
 	//? if >=1.20 {
-	public static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
-			.id(PeriScanClient.id("config"))
-			.serializer(config -> GsonConfigSerializerBuilder.create(config)
-					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
-					.build())
-			.build();
+	public static ConfigClassHandler<PeriScanConfig> handler() {
+		return Holder.HANDLER;
+	}
+
+	private static final class Holder {
+		static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
+				.id(PeriScanClient.id("config"))
+				.serializer(config -> GsonConfigSerializerBuilder.create(config)
+						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
+						.build())
+				.build();
+	}
 	//?} else {
-	/*public static final dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> HANDLER =
-			dev.isxander.yacl3.config.GsonConfigInstance.createBuilder(PeriScanConfig.class)
-					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
-					.build();
+	/*public static dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> handler() {
+		return Holder.HANDLER;
+	}
+
+	private static final class Holder {
+		static final dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> HANDLER =
+				dev.isxander.yacl3.config.GsonConfigInstance.createBuilder(PeriScanConfig.class)
+						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
+						.build();
+	}
 	*///?}
 
 	public static PeriScanConfig get() {
-		return HANDLER.instance();
+		return handler().instance();
 	}
 
 	public static boolean anyZoneEnabled() {

@@ -15,7 +15,7 @@ stonecutter parameters {
 		string(current.parsed >= "1.20") {
 			replace("dev.isxander.yacl3.config.ConfigEntry;", "dev.isxander.yacl3.config.v2.api.SerialEntry;")
 			replace("@ConfigEntry", "@SerialEntry")
-			replace("HANDLER.getConfig()", "HANDLER.instance()")
+			replace("handler().getConfig()", "handler().instance()")
 			replace(".valueFormatter(", ".formatValue(")
 		}
 		// 1.21: VertexConsumer methods were renamed and no longer need endVertex(),

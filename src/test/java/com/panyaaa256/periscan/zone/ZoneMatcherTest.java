@@ -2,7 +2,7 @@ package com.panyaaa256.periscan.zone;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
@@ -78,7 +78,7 @@ class ZoneMatcherTest {
 		void tagsAreCollectedWithTheirEntries() {
 			Map<TagKey<Block>, String> tags = new LinkedHashMap<>();
 			matcher("minecraft:obsidian", " #minecraft:walls ", "#periscan:immovable").collectTags(tags);
-			assertEquals(Map.of(TagKey.create(Registries.BLOCK, Identifier.tryParse("minecraft:walls")), "#minecraft:walls"), tags);
+			assertEquals(Map.of(TagKey.create(Registries.BLOCK, ResourceLocation.tryParse("minecraft:walls")), "#minecraft:walls"), tags);
 		}
 
 		@Test

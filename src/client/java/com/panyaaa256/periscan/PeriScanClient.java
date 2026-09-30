@@ -22,7 +22,7 @@ public class PeriScanClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		PeriScanConfig.HANDLER.load();
+		PeriScanConfig.handler().load();
 		PeriCommand.register();
 		ScanManager.INSTANCE.init();
 		HighlightRenderer.init();

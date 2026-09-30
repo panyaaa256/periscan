@@ -50,6 +50,7 @@ Profiles are saved per world (or server). After logging out and back in, run `/p
 - Press Tab while typing a coordinate to get the chunk you are standing in as a suggestion.
 - The rectangle with the two chunks as its corners is the **outermost edge of the perimeter**. The corners can be given in either order.
 - The smallest possible area is one chunk (16 × 16 blocks).
+- The largest possible area is 512 chunks (8192 blocks) per side.
 
 ### Names
 

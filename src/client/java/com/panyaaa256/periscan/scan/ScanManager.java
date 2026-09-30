@@ -175,7 +175,7 @@ public class ScanManager {
 		Registry<Block> blocks = BuiltInRegistries.BLOCK;
 		List<String> unknown = new ArrayList<>();
 		tags.forEach((tag, entry) -> {
-			if (blocks.get(tag).isEmpty()) {
+			if (blocks.getTag(tag).isEmpty()) {
 				unknown.add(entry);
 			}
 		});

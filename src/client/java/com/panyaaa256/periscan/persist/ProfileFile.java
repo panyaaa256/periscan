@@ -9,6 +9,7 @@ import com.panyaaa256.periscan.PeriScanClient;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -147,16 +148,27 @@ final class ProfileFile {
 		}
 	}
 
-	/** Writes the data; does nothing for non-writable data. Failures are ignored (best effort). */
+	/**
+	 * Writes the data; does nothing for non-writable data. The data goes to a
+	 * temporary file that then replaces the file, so a crash mid-write cannot
+	 * leave a truncated file (which the next read would move aside). Failures
+	 * are logged; persistence is best effort and highlighting keeps working.
+	 */
 	static void write(Path file, Data data) {
 		if (!data.writable) {
 			return;
 		}
+		Path temp = file.resolveSibling(file.getFileName() + ".tmp");
 		try {
 			Files.createDirectories(file.getParent());
-			Files.writeString(file, GSON.toJson(toJson(data)));
+			Files.writeString(temp, GSON.toJson(toJson(data)));
+			try {
+				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+			}
 		} catch (IOException e) {
-			// Persistence is best effort; highlighting itself keeps working.
+			PeriScanClient.LOGGER.warn("PeriScan: could not save profiles to {}: {}", file, e.toString());
 		}
 	}
 

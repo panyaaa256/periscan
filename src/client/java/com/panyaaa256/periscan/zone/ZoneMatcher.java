@@ -52,16 +52,26 @@ public final class ZoneMatcher {
 		boolean test(int x, int z);
 	}
 
-	private static final class BlockSet {
-		// Pseudo-tags resolved from block properties instead of real data tags,
-		// because mod-provided tags are not synced when joining vanilla servers.
-		// Every block a piston cannot move.
-		private static final String IMMOVABLE_ENTRY = "#periscan:immovable";
-		// Blocks whose shape connects to horizontal neighbors (walls, fences, panes, bars).
-		private static final String CONNECTING_ENTRY = "#periscan:connecting";
-		// Blocks whose state reacts to redstone signals (bulbs, pistons, trapdoors, ...).
-		private static final String REDSTONE_REACTIVE_ENTRY = "#periscan:redstone_reactive";
+	// Pseudo-tags resolved from block properties instead of real data tags,
+	// because mod-provided tags are not synced when joining vanilla servers.
+	// Every block a piston cannot move.
+	public static final String IMMOVABLE_ENTRY = "#periscan:immovable";
+	// Blocks whose shape connects to horizontal neighbors (walls, fences, panes, bars).
+	public static final String CONNECTING_ENTRY = "#periscan:connecting";
+	// Blocks whose state reacts to redstone signals (bulbs, pistons, trapdoors, ...).
+	public static final String REDSTONE_REACTIVE_ENTRY = "#periscan:redstone_reactive";
+	/** All pseudo-tag entries, for suggestions. */
+	public static final List<String> PSEUDO_TAG_ENTRIES =
+			List.of(IMMOVABLE_ENTRY, CONNECTING_ENTRY, REDSTONE_REACTIVE_ENTRY);
 
+	/** The entries of {@code entries} that are neither a block id, a tag nor a pseudo-tag. */
+	public static List<String> invalidEntries(List<String> entries) {
+		List<String> invalid = new ArrayList<>();
+		BlockSet.compile(entries, invalid);
+		return invalid;
+	}
+
+	private static final class BlockSet {
 		private final Set<Block> blocks = new HashSet<>();
 		private final List<TagKey<Block>> tags = new ArrayList<>();
 		// The config entry each tag came from, for messages.

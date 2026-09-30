@@ -75,6 +75,14 @@ class ZoneMatcherTest {
 		}
 
 		@Test
+		void invalidEntriesStaticHelperAcceptsIdsTagsAndPseudoTags() {
+			List<String> entries = new ArrayList<>(List.of("minecraft:obsidian", "#minecraft:walls",
+					"#anymod:unknown_tag", "", "minecraft:not_a_block", "#bad tag!"));
+			entries.addAll(ZoneMatcher.PSEUDO_TAG_ENTRIES);
+			assertEquals(List.of("minecraft:not_a_block", "#bad tag!"), ZoneMatcher.invalidEntries(entries));
+		}
+
+		@Test
 		void tagsAreCollectedWithTheirEntries() {
 			Map<TagKey<Block>, String> tags = new LinkedHashMap<>();
 			matcher("minecraft:obsidian", " #minecraft:walls ", "#periscan:immovable").collectTags(tags);

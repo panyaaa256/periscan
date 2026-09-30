@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PeriProfileTest {
 	// In some versions (1.21.11, 26.1) loading ChunkPos touches the registries, so Minecraft must be
@@ -40,5 +42,28 @@ class PeriProfileTest {
 		PeriProfile profile = PeriProfile.of("p", new ChunkPos(0, 0), new ChunkPos(2, 4), "minecraft:overworld");
 		assertEquals(48, profile.sizeBlocksX());
 		assertEquals(80, profile.sizeBlocksZ());
+	}
+
+	@Test
+	void sidesUpToTheLimitAreAllowed() {
+		int last = PeriProfile.MAX_SIDE_CHUNKS - 1;
+		PeriProfile profile = PeriProfile.of("p", new ChunkPos(0, 0), new ChunkPos(last, last), "minecraft:overworld");
+		assertEquals(PeriProfile.MAX_SIDE_CHUNKS, profile.sideChunksX());
+		assertFalse(profile.exceedsMaxSize());
+	}
+
+	@Test
+	void aSideOverTheLimitIsTooLarge() {
+		PeriProfile profile = PeriProfile.of("p", new ChunkPos(0, 0),
+				new ChunkPos(0, PeriProfile.MAX_SIDE_CHUNKS), "minecraft:overworld");
+		assertTrue(profile.exceedsMaxSize());
+	}
+
+	@Test
+	void extremeCoordinatesFromDiskDoNotOverflow() {
+		PeriProfile profile = new PeriProfile("p", Integer.MIN_VALUE, 0, Integer.MAX_VALUE, 0,
+				"minecraft:overworld", null);
+		assertEquals(1L << 32, profile.sideChunksX());
+		assertTrue(profile.exceedsMaxSize());
 	}
 }

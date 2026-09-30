@@ -11,6 +11,12 @@ import java.time.LocalDate;
  * both scanning and schematic placement operate on.
  */
 public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, String dimension, String createdAt) {
+	/**
+	 * Longest supported side of a perimeter, in chunks. Every chunk of the region
+	 * is tracked until it is scanned, so a mistyped coordinate would otherwise
+	 * freeze the game or run it out of memory.
+	 */
+	public static final int MAX_SIDE_CHUNKS = 512;
 
 	/** Creates a profile from two arbitrary corner chunks, normalizing them. */
 	public static PeriProfile of(String name, ChunkPos a, ChunkPos b, String dimension) {
@@ -54,5 +60,20 @@ public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, S
 
 	public int sizeBlocksZ() {
 		return (maxZ - minZ + 1) * 16;
+	}
+
+	// Side lengths in chunks. long, as profiles read from disk may hold any int.
+
+	public long sideChunksX() {
+		return (long) maxX - minX + 1;
+	}
+
+	public long sideChunksZ() {
+		return (long) maxZ - minZ + 1;
+	}
+
+	/** Whether a side is longer than {@link #MAX_SIDE_CHUNKS}. */
+	public boolean exceedsMaxSize() {
+		return sideChunksX() > MAX_SIDE_CHUNKS || sideChunksZ() > MAX_SIDE_CHUNKS;
 	}
 }

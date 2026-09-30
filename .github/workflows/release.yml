@@ -50,6 +50,9 @@ jobs:
         with:
           java-version: '25'
           distribution: 'microsoft'
+      # Restores the Gradle User Home cache (read only for tag builds).
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       # Builds and tests every Minecraft version of the branch, then copies the

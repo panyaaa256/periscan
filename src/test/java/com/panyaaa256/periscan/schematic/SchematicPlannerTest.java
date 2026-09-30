@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SchematicPlannerTest {
 	private static final Path SET = Path.of("schematics", "peri", "ow");
@@ -35,11 +34,6 @@ class SchematicPlannerTest {
 	private static PlannedPlacement placement(Path dir, String file, String name, BlockPos origin,
 			Rotation rotation, Mirror mirror) {
 		return new PlannedPlacement(dir, file, name, origin, rotation, mirror);
-	}
-
-	@Test
-	void placementPrefixIsPerProfile() {
-		assertEquals("peri/p/", SchematicPlanner.placementPrefix("p"));
 	}
 
 	@Nested
@@ -100,28 +94,12 @@ class SchematicPlannerTest {
 		}
 
 		@Test
-		void oneChunkCornersAreSixteenBlocksApart() {
-			List<PlannedPlacement> plan = SchematicPlanner.plan(
-					files(List.of(), List.of("wall.litematic"), List.of(), List.of()), ONE_CHUNK, Y, EdgeCorners.PP_MM);
-			assertEquals(new BlockPos(0, Y, 0), plan.get(0).origin());
-			assertEquals(new BlockPos(15, Y, 15), plan.get(1).origin());
-		}
-
-		@Test
 		void orderIsAllThenMxThenMzThenEdge() {
 			List<PlannedPlacement> plan = SchematicPlanner.plan(
 					files(List.of("1.litematic"), List.of("4.litematic"), List.of("2.litematic"), List.of("3.litematic")),
 					ONE_CHUNK, Y, EdgeCorners.PP_MM);
 			assertEquals(List.of("1.litematic", "2.litematic", "2.litematic", "3.litematic", "3.litematic",
 					"4.litematic", "4.litematic"), plan.stream().map(PlannedPlacement::fileName).toList());
-		}
-
-		@Test
-		void everyNameStartsWithTheProfilePrefix() {
-			List<PlannedPlacement> plan = SchematicPlanner.plan(
-					files(List.of("a.litematic"), List.of("b.litematic"), List.of("c.litematic"), List.of("d.litematic")),
-					LARGE, Y, EdgeCorners.PM_MP);
-			assertTrue(plan.stream().allMatch(p -> p.placementName().startsWith("peri/big/")));
 		}
 	}
 

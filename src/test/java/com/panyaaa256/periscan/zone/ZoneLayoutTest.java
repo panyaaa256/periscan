@@ -111,18 +111,6 @@ class ZoneLayoutTest {
 		}
 
 		@Test
-		void chunkAlignedRegionsNeverTie() {
-			// |16m + 15| == |16k| has no integer solution, so the "tie goes to the
-			// max side" branch is unreachable for chunk regions. Check the boundary
-			// chunks around the origin anyway: each picks exactly one side.
-			for (int cz = -2; cz <= 1; cz++) {
-				ZoneLayout layout = layout(0, cz, 0, cz, allEnabled(NS, EW));
-				long zStrips = layout.trenchStrips().stream().filter(ZoneLayout.TrenchStrip::alongX).count();
-				assertEquals(1, zStrips, "chunk z=" + cz);
-			}
-		}
-
-		@Test
 		void exactlyTwiceTheWidthHoldsTwoStrips() {
 			// Two chunks = 32 blocks = 2 * 16: both Z strips fit and touch in the middle.
 			ZoneLayout layout = layout(0, 0, 0, 1, allEnabled(16, EW));

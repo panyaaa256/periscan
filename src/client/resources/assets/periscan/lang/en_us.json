@@ -64,6 +64,7 @@
 	"periscan.msg.reloaded": "PeriScan: '%s' rescanned",
 	"periscan.msg.region_available": "PeriScan: a saved profile is available. Run /peri scan reload in its dimension to start scanning.",
 	"periscan.msg.invalid_entry": "PeriScan: ignored invalid config entry: %s",
+	"periscan.msg.unknown_tag": "PeriScan: this world has no tag %s, so it matches nothing. Check the spelling.",
 	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan",
 	"periscan.msg.all_disabled": "PeriScan: all zones are disabled. Enable at least one zone in the config."
 }

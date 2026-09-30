@@ -25,10 +25,11 @@ stonecutter parameters {
 			replace(".color(color).endVertex();", ".setColor(color);")
 			replace("new ResourceLocation(", "ResourceLocation.fromNamespaceAndPath(")
 		}
-		// 1.21.2: registry lookups and world height accessors were renamed; the new
+		// 1.21.2: registry lookups (blocks and tags) and world height accessors were renamed; the new
 		// getMaxY() is the highest block (inclusive), unlike getMaxBuildHeight().
 		string(current.parsed >= "1.21.2") {
 			replace("BuiltInRegistries.BLOCK.get(", "BuiltInRegistries.BLOCK.getValue(")
+			replace("blocks.getTag(tag)", "blocks.get(tag)")
 			replace("level.getMinBuildHeight()", "level.getMinY()")
 			replace("(level.getMaxBuildHeight() - 1)", "level.getMaxY()")
 		}

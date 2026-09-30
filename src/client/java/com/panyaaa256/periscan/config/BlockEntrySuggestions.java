@@ -3,7 +3,7 @@ package com.panyaaa256.periscan.config;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.zone.ZoneMatcher;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ public final class BlockEntrySuggestions {
 
 	/** Every block id (including blocks without an item, e.g. minecraft:lava), sorted. */
 	public static List<String> blockIds() {
-		return BuiltInRegistries.BLOCK.keySet().stream().map(Identifier::toString).sorted().toList();
+		return BuiltInRegistries.BLOCK.keySet().stream().map(ResourceLocation::toString).sorted().toList();
 	}
 
 	/**

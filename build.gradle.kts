@@ -72,6 +72,10 @@ dependencies {
 	modLocalRuntime(modrinth("litematica"))
 	modLocalRuntime(modrinth("malilib"))
 
+	// Mod Menu: soft dependency (only adds the "Configure" button that opens the config screen)
+	modCompileOnly(modrinth("modmenu"))
+	modLocalRuntime(modrinth("modmenu"))
+
 	// Iris: soft dependency, compile-only (runtime would also require Sodium).
 	// Used to tell Iris which shader program draws the highlight pipelines.
 	modCompileOnly(modrinth("iris"))

@@ -31,7 +31,7 @@ public final class PeriScanConfigScreen {
 	}
 
 	public static Screen create(Screen parent) {
-		return YetAnotherConfigLib.create(PeriScanConfig.HANDLER, (defaults, config, builder) -> builder
+		return YetAnotherConfigLib.create(PeriScanConfig.handler(), (defaults, config, builder) -> builder
 				.title(Component.translatable(KEY + "title"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable(KEY + "category.general"))
@@ -81,7 +81,7 @@ public final class PeriScanConfigScreen {
 								() -> config.eater.includeTrench, v -> config.eater.includeTrench = v))
 						.build())
 				.save(() -> {
-					PeriScanConfig.HANDLER.save();
+					PeriScanConfig.handler().save();
 					// Re-derive zones and rescan with the new settings if a region is active.
 					ScanManager.INSTANCE.rescan();
 				}))

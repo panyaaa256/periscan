@@ -12,15 +12,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PeriScanConfig {
-	public static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
-			.id(PeriScanClient.id("config"))
-			.serializer(config -> GsonConfigSerializerBuilder.create(config)
-					.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
-					.build())
-			.build();
+	/** Loads and saves the config file. */
+	public static ConfigClassHandler<PeriScanConfig> handler() {
+		return Holder.HANDLER;
+	}
+
+	// Created on first use, so a PeriScanConfig can be made (e.g. in tests)
+	// without YACL setting up its serializer.
+	private static final class Holder {
+		static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
+				.id(PeriScanClient.id("config"))
+				.serializer(config -> GsonConfigSerializerBuilder.create(config)
+						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
+						.build())
+				.build();
+	}
 
 	public static PeriScanConfig get() {
-		return HANDLER.instance();
+		return handler().instance();
 	}
 
 	public static boolean anyZoneEnabled() {

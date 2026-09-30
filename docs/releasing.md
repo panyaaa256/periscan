@@ -58,6 +58,7 @@
 | `mc/1.19.4-1.20.4` | 1.19.4〜1.20.4（1.20.2 を除く） |
 
 - 修正と機能は main で作り、各 `mc/*` ブランチへ `git cherry-pick -x` で持ち込む。
+- 持ち込んだあとは `./gradlew "Refresh active project"` を実行する。main のソースは 26.3 の名前で書かれているため、そのブランチの vcsVersion の名前に直す必要がある。変わったファイルがあればコミットしてからビルドする。
 - `CHANGELOG*` と `docs/releasing.md` は main にだけ置く。
 
 ## Stonecutter での開発

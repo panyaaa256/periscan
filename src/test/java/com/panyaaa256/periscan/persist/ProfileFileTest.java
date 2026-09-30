@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -242,5 +243,85 @@ class ProfileFileTest {
 		assertEquals("My_World__1_2", ProfileFile.sanitize("My World: 1/2"));
 		assertEquals("play.example.com_25565", ProfileFile.sanitize("play.example.com:25565"));
 		assertEquals("___", ProfileFile.sanitize("日本語"));
+	}
+
+	@Nested
+	class FileNames {
+		@Test
+		void namesThatSanitizeAlikeGetDifferentFiles() {
+			// All three sanitize to "_____".
+			String survival = ProfileFile.fileName("sp_", "サバイバル");
+			String creative = ProfileFile.fileName("sp_", "クリエイト");
+			String newWorld = ProfileFile.fileName("sp_", "新しい世界");
+			assertEquals(3, Set.of(survival, creative, newWorld).size());
+			assertTrue(survival.startsWith("sp______-"));
+		}
+
+		@Test
+		void fileNameKeepsTheReadablePartAndIsStable() {
+			String name = ProfileFile.fileName("mp_", "play.example.com:25565");
+			assertTrue(name.matches("mp_play\\.example\\.com_25565-[0-9a-f]{8}"), name);
+			assertEquals(name, ProfileFile.fileName("mp_", "play.example.com:25565"));
+		}
+
+		@Test
+		void longNamesAreShortened() {
+			String name = ProfileFile.fileName("sp_", "x".repeat(300));
+			assertEquals("sp_".length() + 48 + "-".length() + 8, name.length());
+		}
+
+		@Test
+		void legacyFileNameIsTheOldSanitizedName() {
+			assertEquals("sp_My_World", ProfileFile.legacyFileName("sp_", "My World"));
+		}
+	}
+
+	@Nested
+	class LegacyFileCopy {
+		private Path legacy() {
+			return dir.resolve("worlds").resolve("sp_old.json");
+		}
+
+		@Test
+		void missingFileIsFilledFromTheLegacyFile() {
+			Data old = new Data();
+			old.profiles.put("ow", OW);
+			old.lastScanned = "ow";
+			ProfileFile.write(legacy(), old);
+
+			Data read = ProfileFile.read(file(), legacy(), TODAY);
+			assertEquals(OW, read.profiles.get("ow"));
+			assertEquals("ow", read.lastScanned);
+			assertTrue(Files.exists(file()));
+			// Other worlds that shared the legacy file may still need it.
+			assertTrue(Files.exists(legacy()));
+		}
+
+		@Test
+		void existingFileIgnoresTheLegacyFile() {
+			Data old = new Data();
+			old.profiles.put("ow", OW);
+			ProfileFile.write(legacy(), old);
+			Data current = new Data();
+			current.profiles.put("nether", NETHER);
+			ProfileFile.write(file(), current);
+
+			Data read = ProfileFile.read(file(), legacy(), TODAY);
+			assertEquals(List.of("nether"), List.copyOf(read.profiles.keySet()));
+		}
+
+		@Test
+		void withoutEitherFileNothingIsCreated() {
+			Data read = ProfileFile.read(file(), legacy(), TODAY);
+			assertTrue(read.profiles.isEmpty());
+			assertFalse(Files.exists(file()));
+		}
+
+		@Test
+		void emptyLegacyDataIsNotCopied() {
+			ProfileFile.write(legacy(), new Data());
+			ProfileFile.read(file(), legacy(), TODAY);
+			assertFalse(Files.exists(file()));
+		}
 	}
 }

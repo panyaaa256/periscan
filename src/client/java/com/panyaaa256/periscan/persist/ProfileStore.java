@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -21,6 +22,10 @@ import java.util.Map;
  * lives in {@link ProfileFile}; this class picks the current world's file.
  */
 public final class ProfileStore {
+	/** The file of a world/server, and the one it used up to 0.3.0 (read once for migration). */
+	private record WorldFiles(Path file, Path legacyFile) {
+	}
+
 	// Data of the current world/server, so commands and tab completion don't
 	// re-read the file on every call. Reloaded when the world file changes.
 	private static Path cachedFile;
@@ -98,41 +103,45 @@ public final class ProfileStore {
 	}
 
 	private static Data load() {
-		Path file = currentFile();
-		if (file == null) {
+		WorldFiles files = currentFiles();
+		if (files == null) {
 			return new Data();
 		}
-		if (!file.equals(cachedFile)) {
-			cachedData = ProfileFile.read(file, LocalDate.now());
-			cachedFile = file;
+		if (!files.file().equals(cachedFile)) {
+			cachedData = ProfileFile.read(files.file(), files.legacyFile(), LocalDate.now());
+			cachedFile = files.file();
 		}
 		return cachedData;
 	}
 
 	private static void save(Data data) {
-		Path file = currentFile();
-		if (file != null) {
-			ProfileFile.write(file, data);
+		WorldFiles files = currentFiles();
+		if (files != null) {
+			ProfileFile.write(files.file(), data);
 		}
 	}
 
-	private static Path currentFile() {
-		String key = worldKey();
-		if (key == null) {
-			return null;
-		}
-		return FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("worlds").resolve(key + ".json");
-	}
-
-	private static String worldKey() {
+	/**
+	 * The files of the current world: singleplayer worlds are keyed by their
+	 * save folder (the display name can be shared and renamed), servers by
+	 * their address.
+	 */
+	private static WorldFiles currentFiles() {
 		Minecraft client = Minecraft.getInstance();
 		if (client.hasSingleplayerServer() && client.getSingleplayerServer() != null) {
-			return "sp_" + ProfileFile.sanitize(client.getSingleplayerServer().getWorldData().getLevelName());
+			Path folder = client.getSingleplayerServer().getWorldPath(LevelResource.ROOT).normalize().getFileName();
+			String levelName = client.getSingleplayerServer().getWorldData().getLevelName();
+			return worldFiles(ProfileFile.fileName("sp_", folder.toString()), ProfileFile.legacyFileName("sp_", levelName));
 		}
 		ServerData server = client.getCurrentServer();
 		if (server != null) {
-			return "mp_" + ProfileFile.sanitize(server.ip);
+			return worldFiles(ProfileFile.fileName("mp_", server.ip), ProfileFile.legacyFileName("mp_", server.ip));
 		}
 		return null;
+	}
+
+	private static WorldFiles worldFiles(String fileName, String legacyFileName) {
+		Path dir = FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("worlds");
+		return new WorldFiles(dir.resolve(fileName + ".json"), dir.resolve(legacyFileName + ".json"));
 	}
 }

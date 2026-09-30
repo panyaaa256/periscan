@@ -14,17 +14,23 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ScanManager {
 	public static final ScanManager INSTANCE = new ScanManager();
@@ -99,10 +105,10 @@ public class ScanManager {
 
 	/**
 	 * Activates highlighting for the given perimeter (chunk coordinates, outermost
-	 * rectangle) in the given dimension. Returns config entries that could not be
-	 * parsed, for feedback.
+	 * rectangle) in the given dimension. Returns messages about config entries
+	 * that could not be parsed or name tags this world does not have.
 	 */
-	public List<String> activate(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
+	public List<Component> activate(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
 		PeriScanConfig config = PeriScanConfig.get();
 		if (!PeriScanConfig.anyZoneEnabled()) {
 			// Nothing to scan; keep the region so a later reload can start it.
@@ -120,6 +126,13 @@ public class ScanManager {
 		matchers.clear();
 		for (Zone zone : Zone.VALUES) {
 			matchers.put(zone, zone.compileMatcher(config, layout, exclusions, invalidEntries));
+		}
+		List<Component> problems = new ArrayList<>();
+		for (String entry : invalidEntries) {
+			problems.add(Component.translatable("periscan.msg.invalid_entry", entry));
+		}
+		for (String entry : unknownTags(exclusions)) {
+			problems.add(Component.translatable("periscan.msg.unknown_tag", entry));
 		}
 
 		clearScanResults();
@@ -145,11 +158,32 @@ public class ScanManager {
 			}
 			flushFallingLines(level);
 		}
-		return invalidEntries;
+		return problems;
+	}
+
+	/**
+	 * Config entries naming tags the world does not have (usually a typo, e.g.
+	 * "#minecraft:wall" for "#minecraft:walls"): such tags match nothing.
+	 */
+	private List<String> unknownTags(ZoneMatcher.WaterloggedExclusions exclusions) {
+		Map<TagKey<Block>, String> tags = new LinkedHashMap<>();
+		exclusions.collectTags(tags);
+		for (ZoneMatcher matcher : matchers.values()) {
+			matcher.collectTags(tags);
+		}
+		// The server sends the world's tags on join, so only known tags are bound here.
+		Registry<Block> blocks = BuiltInRegistries.BLOCK;
+		List<String> unknown = new ArrayList<>();
+		tags.forEach((tag, entry) -> {
+			if (blocks.get(tag).isEmpty()) {
+				unknown.add(entry);
+			}
+		});
+		return unknown;
 	}
 
 	/** Re-derives zones/matchers from current config and rescans, keeping the region. */
-	public List<String> rescan() {
+	public List<Component> rescan() {
 		if (!isActive()) {
 			return List.of();
 		}

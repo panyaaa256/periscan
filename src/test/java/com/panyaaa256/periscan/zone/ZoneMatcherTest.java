@@ -1,7 +1,10 @@
 package com.panyaaa256.periscan.zone;
 
 import net.minecraft.SharedConstants;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -11,7 +14,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +72,13 @@ class ZoneMatcherTest {
 			ZoneMatcher.compile(List.of("minecraft:not_a_block", "Bad Id!", "#bad tag!", "minecraft:obsidian"),
 					false, NO_EXCLUSIONS, invalid);
 			assertEquals(List.of("minecraft:not_a_block", "Bad Id!", "#bad tag!"), invalid);
+		}
+
+		@Test
+		void tagsAreCollectedWithTheirEntries() {
+			Map<TagKey<Block>, String> tags = new LinkedHashMap<>();
+			matcher("minecraft:obsidian", " #minecraft:walls ", "#periscan:immovable").collectTags(tags);
+			assertEquals(Map.of(TagKey.create(Registries.BLOCK, Identifier.tryParse("minecraft:walls")), "#minecraft:walls"), tags);
 		}
 
 		@Test

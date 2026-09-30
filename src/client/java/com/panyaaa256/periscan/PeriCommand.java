@@ -267,10 +267,10 @@ public final class PeriCommand {
 		if (rejectTooLarge(source, profile)) {
 			return false;
 		}
-		List<String> invalidEntries = ScanManager.INSTANCE.activate(
+		List<Component> problems = ScanManager.INSTANCE.activate(
 				source.getWorld().dimension(), profile.minChunk(), profile.maxChunk());
-		for (String entry : invalidEntries) {
-			source.sendFeedback(Component.translatable("periscan.msg.invalid_entry", entry));
+		for (Component problem : problems) {
+			source.sendFeedback(problem);
 		}
 		return true;
 	}

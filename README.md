@@ -40,6 +40,7 @@ See **[the usage guide](docs/usage.md)** for how to use it.
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) for your Minecraft version
 - Optional: [Litematica](https://modrinth.com/mod/litematica), for placing schematics
+- Optional: [Mod Menu](https://modrinth.com/mod/modmenu), for opening the settings from the mod list
 
 PeriScan only needs to be installed on your own game. It also works on servers that do not have it.
 

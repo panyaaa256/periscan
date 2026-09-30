@@ -40,6 +40,7 @@
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)（Minecraft のバージョンに合うもの）
 - 任意: [Litematica](https://modrinth.com/mod/litematica)（スケマティックの配置に使います）
+- 任意: [Mod Menu](https://modrinth.com/mod/modmenu)（mod 一覧から設定画面を開けます）
 
 PeriScan は自分のゲームに入れるだけで使えます。PeriScan が入っていないサーバーでも動きます。
 

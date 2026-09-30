@@ -117,13 +117,13 @@ Chunks are scanned once they are loaded. While some are not loaded yet:
 
 Once you get close and a chunk loads, it is scanned automatically.
 
-### When highlights disappear
+### When blocks change
 
-When a highlighted block is replaced by something else, its highlight disappears, including when another player breaks it. Changes made while you were too far away to see them are picked up when you come back and the chunk loads again.
+Highlights follow block changes right away, including changes made by other players. When a highlighted block is replaced by something else, its highlight disappears; when a block that should be highlighted appears, such as obsidian formed by lava and water, it is highlighted at once. Runs of falling blocks are updated the same way when one of their blocks is broken or when falling sand and gravel land. Changes made while you were too far away to see them are picked up when you come back and the chunk loads again.
 
 ## Settings
 
-Open the settings with `/peri config`. Saved changes apply right away; if you are scanning, the area is rescanned with the new settings.
+Open the settings with `/peri config`, or with the settings button of PeriScan in Mod Menu if you have it installed. Saved changes apply right away; if you are scanning, the area is rescanned with the new settings.
 
 ### General
 
@@ -172,7 +172,9 @@ Put one of these on each line:
 | `#periscan:connecting` | Walls, fences, glass panes, iron bars and other blocks that connect to their neighbors |
 | `#periscan:redstone_reactive` | Doors, trapdoors, fence gates, copper bulbs, pistons, redstone dust/torches/lamps, dispensers, hoppers and other blocks whose state changes when they receive a redstone signal (signal sources such as buttons and levers are not included) |
 
-Mistyped entries, such as IDs that do not exist, are ignored. When you start scanning, the chat shows "ignored invalid config entry" for each of them.
+On Minecraft 1.20 and newer, the lists suggest block IDs and tags as you type. The world's tags are only suggested when you open the settings while in a world. You can still type anything.
+
+Mistyped entries, such as IDs that do not exist, are ignored. When you save the settings, a message in the top right corner lists them, and when you start scanning, the chat shows "ignored invalid config entry" for each of them.
 
 ## Placing schematics
 

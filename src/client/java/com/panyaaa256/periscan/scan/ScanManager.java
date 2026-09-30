@@ -264,8 +264,6 @@ public class ScanManager {
 
 		int minY = scanMinY(level);
 		int maxY = scanMaxY(level);
-		// The bottom trench zone is the lowest scanned layers; the trench inner
-		// zone starts above them.
 		int bottomTopY = minY + BOTTOM_TRENCH_LAYERS - 1;
 		for (int y = minY; y <= maxY; y++) {
 			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
@@ -285,17 +283,7 @@ public class ScanManager {
 					if (state.isAir()) {
 						continue;
 					}
-					for (Zone zone : Zone.VALUES) {
-						if ((mask & zone.mask()) == 0) {
-							continue;
-						}
-						if (zone == Zone.BOTTOM_TRENCH ? y > bottomTopY : zone == Zone.TRENCH_INNER && y <= bottomTopY) {
-							continue;
-						}
-						if (matchers.get(zone).matches(state, baseX + dx, baseZ + dz)) {
-							highlights.get(zone).add(BlockPos.asLong(baseX + dx, y, baseZ + dz));
-						}
-					}
+					addMatchingZones(mask, baseX + dx, y, baseZ + dz, state, bottomTopY);
 				}
 			}
 		}
@@ -303,6 +291,25 @@ public class ScanManager {
 		// The lowest layers belong to the bottom trench zone, not the trench inner.
 		fallingRuns.markChunk(layout.trenchStrips(), VersionCompat.chunkX(cp), VersionCompat.chunkZ(cp),
 				minY + BOTTOM_TRENCH_LAYERS, maxY, blockView(level));
+	}
+
+	/**
+	 * Highlights the block in every zone of the column mask whose matcher accepts it.
+	 * The bottom trench zone is the lowest scanned layers (up to bottomTopY); the
+	 * trench inner zone starts above them.
+	 */
+	private void addMatchingZones(int mask, int x, int y, int z, BlockState state, int bottomTopY) {
+		for (Zone zone : Zone.VALUES) {
+			if ((mask & zone.mask()) == 0) {
+				continue;
+			}
+			if (zone == Zone.BOTTOM_TRENCH ? y > bottomTopY : zone == Zone.TRENCH_INNER && y <= bottomTopY) {
+				continue;
+			}
+			if (matchers.get(zone).matches(state, x, z)) {
+				highlights.get(zone).add(BlockPos.asLong(x, y, z));
+			}
+		}
 	}
 
 	private void flushFallingLines(ClientLevel level) {

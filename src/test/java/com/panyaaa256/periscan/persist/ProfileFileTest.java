@@ -259,6 +259,37 @@ class ProfileFileTest {
 	}
 
 	@Nested
+	class FormatVersion {
+		@Test
+		void writtenFilesCarryTheFormatVersion() throws IOException {
+			ProfileFile.write(file(), new Data());
+			assertTrue(Files.readString(file()).contains("\"version\": " + ProfileFile.FORMAT_VERSION));
+		}
+
+		@Test
+		void filesWithoutAVersionAreReadAsTheCurrentFormat() throws IOException {
+			writeRaw("{\"profiles\":{\"ow\":{\"minX\":0,\"minZ\":0,\"maxX\":0,\"maxZ\":0,"
+					+ "\"dimension\":\"minecraft:overworld\",\"createdAt\":\"2026-01-01\"}}}");
+			Data data = ProfileFile.read(file(), TODAY);
+			assertEquals(OW, data.profiles.get("ow"));
+			assertTrue(data.writable);
+		}
+
+		@Test
+		void filesOfANewerFormatAreReadButNeverOverwritten() throws IOException {
+			String json = "{\"version\":" + (ProfileFile.FORMAT_VERSION + 1) + ",\"profiles\":{\"ow\":{\"minX\":0,"
+					+ "\"minZ\":0,\"maxX\":0,\"maxZ\":0,\"dimension\":\"minecraft:overworld\",\"createdAt\":\"2026-01-01\"}}}";
+			Path file = writeRaw(json);
+			Data data = ProfileFile.read(file, TODAY);
+			assertEquals(OW, data.profiles.get("ow"));
+			assertFalse(data.writable);
+
+			ProfileFile.write(file, data);
+			assertEquals(json, Files.readString(file));
+		}
+	}
+
+	@Nested
 	class FileNames {
 		@Test
 		void namesThatSanitizeAlikeGetDifferentFiles() {

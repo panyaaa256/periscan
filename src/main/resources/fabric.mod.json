@@ -7,7 +7,11 @@
 	"authors": [
 		"panyaaa256"
 	],
-	"contact": {},
+	"contact": {
+		"homepage": "https://github.com/panyaaa256/periscan",
+		"sources": "https://github.com/panyaaa256/periscan",
+		"issues": "https://github.com/panyaaa256/periscan/issues"
+	},
 	"license": "MIT",
 	"icon": "assets/periscan/icon.png",
 	"environment": "client",

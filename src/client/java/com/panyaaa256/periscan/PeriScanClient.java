@@ -23,6 +23,10 @@ public class PeriScanClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		PeriScanConfig.handler().load();
+		if (PeriScanConfig.get().sanitize()) {
+			LOGGER.warn("PeriScan: the config file had invalid values; they were reset to the nearest allowed ones");
+			PeriScanConfig.handler().save();
+		}
 		PeriCommand.register();
 		ScanManager.INSTANCE.init();
 		HighlightRenderer.init();

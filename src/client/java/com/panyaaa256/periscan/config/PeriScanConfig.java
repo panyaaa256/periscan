@@ -12,6 +12,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PeriScanConfig {
 	// Loads and saves the config file. The handler is created on first use, so a
@@ -45,6 +46,14 @@ public class PeriScanConfig {
 						.build();
 	}
 	*///?}
+
+	// Ranges the settings screen allows; sanitize() keeps values read from the file inside them too.
+	public static final int MIN_TRENCH_WIDTH = 3;
+	public static final int MAX_TRENCH_WIDTH = 32;
+	public static final int MIN_SCAN_MAX_Y = -2032;
+	public static final int MAX_SCAN_MAX_Y = 2031;
+	public static final int MIN_FALLING_RUN = 2;
+	public static final int MAX_FALLING_RUN = 64;
 
 	public static PeriScanConfig get() {
 		return handler().instance();
@@ -179,4 +188,75 @@ public class PeriScanConfig {
 	public boolean waterloggedExcludePushDestroy = true;
 	@SerialEntry
 	public List<String> waterloggedBlacklist = new ArrayList<>();
+
+	/**
+	 * Brings values edited by hand back into what the settings screen allows:
+	 * numbers are clamped to its ranges, missing values get their defaults and
+	 * empty entries are dropped from the block lists. Returns whether anything
+	 * changed.
+	 */
+	public boolean sanitize() {
+		PeriScanConfig defaults = new PeriScanConfig();
+		Sanitizer fix = new Sanitizer();
+		northSouthWidth = fix.clamp(northSouthWidth, MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH);
+		eastWestWidth = fix.clamp(eastWestWidth, MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH);
+		scanMaxY = fix.clamp(scanMaxY, MIN_SCAN_MAX_Y, MAX_SCAN_MAX_Y);
+		schematicsFolder = fix.orDefault(schematicsFolder, defaults.schematicsFolder);
+		edgeCorners = fix.orDefault(edgeCorners, defaults.edgeCorners);
+		pendingChunkColor = fix.orDefault(pendingChunkColor, defaults.pendingChunkColor);
+		waterloggedBlacklist = fix.entries(waterloggedBlacklist, defaults.waterloggedBlacklist);
+
+		trenchOuter = fix.orDefault(trenchOuter, defaults.trenchOuter);
+		trenchInner = fix.orDefault(trenchInner, defaults.trenchInner);
+		bottomTrench = fix.orDefault(bottomTrench, defaults.bottomTrench);
+		eater = fix.orDefault(eater, defaults.eater);
+		fix.zone(trenchOuter, defaults.trenchOuter);
+		fix.zone(trenchInner, defaults.trenchInner);
+		fix.zone(bottomTrench, defaults.bottomTrench);
+		fix.zone(eater, defaults.eater);
+		trenchInner.fenceBlocks = fix.entries(trenchInner.fenceBlocks, defaults.trenchInner.fenceBlocks);
+		trenchInner.fallingRunLength = fix.clamp(trenchInner.fallingRunLength, MIN_FALLING_RUN, MAX_FALLING_RUN);
+		return fix.changed;
+	}
+
+	/** Fixes single values for {@link #sanitize()}, remembering whether any changed. */
+	private static final class Sanitizer {
+		boolean changed;
+
+		int clamp(int value, int min, int max) {
+			int clamped = Math.max(min, Math.min(max, value));
+			changed |= clamped != value;
+			return clamped;
+		}
+
+		<T> T orDefault(T value, T defaultValue) {
+			if (value == null) {
+				changed = true;
+				return defaultValue;
+			}
+			return value;
+		}
+
+		/** A missing list becomes the default; null entries are dropped. */
+		List<String> entries(List<String> value, List<String> defaultValue) {
+			if (value == null) {
+				changed = true;
+				return new ArrayList<>(defaultValue);
+			}
+			if (value.contains(null)) {
+				changed = true;
+				List<String> kept = new ArrayList<>(value);
+				kept.removeIf(Objects::isNull);
+				return kept;
+			}
+			return value;
+		}
+
+		void zone(ZoneSettings zone, ZoneSettings defaults) {
+			zone.color = orDefault(zone.color, defaults.color);
+			if (zone instanceof BlockZoneSettings blockZone) {
+				blockZone.blocks = entries(blockZone.blocks, ((BlockZoneSettings) defaults).blocks);
+			}
+		}
+	}
 }

@@ -1,8 +1,16 @@
 package com.panyaaa256.periscan.compat;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
+
+import java.util.stream.Stream;
 
 /**
  * Calls whose shape (not just name) differs between the Minecraft versions this
@@ -10,6 +18,9 @@ import net.minecraft.world.level.ChunkPos;
  * the code; plain renames are handled by replacements in stonecutter.gradle.kts.
  */
 public final class VersionCompat {
+	// Own id, so the toast does not replace (or get replaced by) a vanilla one.
+	private static final SystemToast.SystemToastId INVALID_ENTRIES = new SystemToast.SystemToastId();
+
 	private VersionCompat() {
 	}
 
@@ -51,5 +62,22 @@ public final class VersionCompat {
 		player.sendOverlayMessage(message);
 		//?} else
 		//player.displayClientMessage(message, true);
+	}
+
+	/** Shows a system toast (works outside a world, unlike chat). */
+	public static void showToast(Component title, Component message) {
+		//? if >=26.2 {
+		ToastManager toasts = Minecraft.getInstance().gui.toastManager();
+		//?} else
+		//ToastManager toasts = Minecraft.getInstance().getToastManager();
+		SystemToast.addOrUpdate(toasts, INVALID_ENTRIES, title, message);
+	}
+
+	/** The ids of the block tags currently bound; empty outside a world. */
+	public static Stream<Identifier> blockTagIds() {
+		// TagKey::location is a method reference on purpose: the 1.21.11 rename
+		// replacement in stonecutter.gradle.kts (meant for ResourceKey) rewrites
+		// direct calls, but TagKey keeps location() in every version.
+		return BuiltInRegistries.BLOCK.getTags().map(named -> named.key()).map(TagKey::location);
 	}
 }

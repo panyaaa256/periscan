@@ -38,6 +38,8 @@
 	"periscan.config.zone.blocks.desc": "Block ids (minecraft:obsidian) or block tags (#minecraft:walls). The special entry #periscan:immovable matches every block a piston cannot move: blocks with a block entity (chests, spawners, sculk sensors, ...) and blocks that refuse pushes (obsidian, reinforced deepslate, ...). Bedrock is excluded (it is terrain, not an obstruction).",
 	"periscan.config.zone.fence_blocks": "State-changing blocks (specific lanes only)",
 	"periscan.config.zone.fence_blocks.desc": "Blocks in this list are only highlighted in trench columns whose 1-based index from the perimeter edge has remainder 2 when divided by 3 (2, 5, 8, 11...). In other columns they do not obstruct the trencher and are ignored. Width-3 trenches survive them even in the middle column, so nothing is highlighted there. Special entries: #periscan:connecting matches blocks whose shape connects to horizontal neighbors (walls, fences, glass panes, iron bars); #periscan:redstone_reactive matches blocks with a redstone-driven state property - powered/open/extended/triggered/enabled (doors, trapdoors, fence gates, copper bulbs, pistons, dispensers, hoppers, observers, ...).",
+	"periscan.config.invalid_entries.title": "PeriScan: invalid block entries",
+	"periscan.config.invalid_entries.message": "Not a block id or tag (saved anyway, %s): %s",
 	"periscan.msg.profile_added": "PeriScan: added profile '%s' (%s x %s blocks)",
 	"periscan.msg.profile_exists": "PeriScan: profile '%s' already exists",
 	"periscan.msg.region_too_large": "PeriScan: the perimeter is %s x %s chunks. Each side can be at most %s chunks.",

@@ -27,6 +27,10 @@ import java.util.Map;
  */
 final class ProfileFile {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	// Version of the file format, written as "version". Files of 0.3.0 and
+	// earlier have none and are version 1. Bump it when the format changes, so
+	// older PeriScan versions leave newer files alone.
+	static final int FORMAT_VERSION = 1;
 	// Longest readable part of a world file name; the hash keeps it unique anyway.
 	private static final int MAX_READABLE_NAME_LENGTH = 48;
 	// Legacy single-region files never stored a dimension: they were overworld only.
@@ -51,8 +55,9 @@ final class ProfileFile {
 	static final class Data {
 		final LinkedHashMap<String, SavedProfile> profiles = new LinkedHashMap<>();
 		String lastScanned;
-		// False when the file on disk could not be read nor backed up: saving
-		// would overwrite the user's profiles with this (empty) data.
+		// False when the file on disk could not be read nor backed up (saving
+		// would overwrite the user's profiles with this empty data), or was
+		// written by a newer PeriScan (saving would drop what it added).
 		boolean writable = true;
 
 		/** Removes the profile; the last-scanned marker is cleared if it pointed there. */
@@ -138,7 +143,7 @@ final class ProfileFile {
 		try {
 			JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
 			if (root.has("profiles")) {
-				return fromJson(root);
+				return fromJson(file, root);
 			}
 			Data data = migrateLegacy(root, today);
 			write(file, data);
@@ -172,8 +177,14 @@ final class ProfileFile {
 		}
 	}
 
-	private static Data fromJson(JsonObject root) {
+	private static Data fromJson(Path file, JsonObject root) {
 		Data data = new Data();
+		int version = root.has("version") ? root.get("version").getAsInt() : 1;
+		if (version > FORMAT_VERSION) {
+			data.writable = false;
+			PeriScanClient.LOGGER.warn("PeriScan: {} was written by a newer PeriScan (format {}); "
+					+ "profile changes will not be saved", file, version);
+		}
 		for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("profiles").entrySet()) {
 			if (isValidProfile(entry.getValue())) {
 				data.profiles.put(entry.getKey(), GSON.fromJson(entry.getValue(), SavedProfile.class));
@@ -216,6 +227,7 @@ final class ProfileFile {
 
 	private static JsonObject toJson(Data data) {
 		JsonObject root = new JsonObject();
+		root.addProperty("version", FORMAT_VERSION);
 		JsonObject profiles = new JsonObject();
 		data.profiles.forEach((name, p) -> profiles.add(name, GSON.toJsonTree(p)));
 		root.add("profiles", profiles);

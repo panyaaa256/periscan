@@ -19,6 +19,9 @@
 	"entrypoints": {
 		"client": [
 			"com.panyaaa256.periscan.PeriScanClient"
+		],
+		"modmenu": [
+			"com.panyaaa256.periscan.integration.modmenu.PeriScanModMenu"
 		]
 	},
 	"depends": {
@@ -29,6 +32,7 @@
 		"yet_another_config_lib_v3": "${yacl}"
 	},
 	"suggests": {
-		"litematica": "*"
+		"litematica": "*",
+		"modmenu": "*"
 	}
 }

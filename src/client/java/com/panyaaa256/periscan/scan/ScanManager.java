@@ -37,7 +37,7 @@ public class ScanManager {
 	private ChunkPos cornerA;
 	private ChunkPos cornerB;
 	private final EnumMap<Zone, ZoneMatcher> matchers = new EnumMap<>(Zone.class);
-	private final EnumMap<Zone, LongOpenHashSet> highlights = new EnumMap<>(Zone.class);
+	private final EnumMap<Zone, ChunkIndexedPositions> highlights = new EnumMap<>(Zone.class);
 	private final FallingRunTracker fallingRuns = new FallingRunTracker();
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
 	private int tickCounter = 0;
@@ -45,7 +45,7 @@ public class ScanManager {
 
 	private ScanManager() {
 		for (Zone zone : Zone.VALUES) {
-			highlights.put(zone, new LongOpenHashSet());
+			highlights.put(zone, new ChunkIndexedPositions());
 		}
 	}
 
@@ -73,8 +73,9 @@ public class ScanManager {
 		this.dormantNoticePending = true;
 	}
 
+	/** Highlighted blocks of the zone (BlockPos longs). Do not modify. */
 	public LongOpenHashSet highlights(Zone zone) {
-		return highlights.get(zone);
+		return highlights.get(zone).positions();
 	}
 
 	/** Falling-block run highlights with runs along the X axis. Do not modify. */
@@ -183,7 +184,7 @@ public class ScanManager {
 	}
 
 	private void clearScanResults() {
-		for (LongOpenHashSet set : highlights.values()) {
+		for (ChunkIndexedPositions set : highlights.values()) {
 			set.clear();
 		}
 		fallingRuns.clear();
@@ -203,8 +204,8 @@ public class ScanManager {
 	}
 
 	private void clearChunkHighlights(ChunkPos pos) {
-		for (LongOpenHashSet set : highlights.values()) {
-			set.removeIf(key -> (BlockPos.getX(key) >> 4) == VersionCompat.chunkX(pos) && (BlockPos.getZ(key) >> 4) == VersionCompat.chunkZ(pos));
+		for (ChunkIndexedPositions set : highlights.values()) {
+			set.removeChunk(VersionCompat.chunkX(pos), VersionCompat.chunkZ(pos));
 		}
 		fallingRuns.clearChunk(VersionCompat.chunkX(pos), VersionCompat.chunkZ(pos));
 	}

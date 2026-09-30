@@ -272,6 +272,96 @@ class FallingRunTrackerTest {
 		}
 	}
 
+	@Nested
+	class MarkPosition {
+		private final List<ZoneLayout.TrenchStrip> strips = List.of(
+				new ZoneLayout.TrenchStrip(new ZoneLayout.Rect(0, 4, 31, 6), true),
+				new ZoneLayout.TrenchStrip(new ZoneLayout.Rect(10, 0, 12, 31), false));
+
+		@Test
+		void marksTheLineOfEveryStripContainingThePosition() {
+			FallingRunTracker tracker = new FallingRunTracker();
+			// (11, 5) is where the two strips cross.
+			tracker.markPosition(strips, 11, Y, 5, Y, Y);
+			assertTrue(tracker.isLineDirty(true, 5, Y));
+			assertTrue(tracker.isLineDirty(false, 11, Y));
+			assertFalse(tracker.isLineDirty(true, 4, Y));
+			assertFalse(tracker.isLineDirty(false, 10, Y));
+		}
+
+		@Test
+		void ignoresPositionsOutsideTheStrips() {
+			FallingRunTracker tracker = new FallingRunTracker();
+			tracker.markPosition(strips, 20, Y, 8, Y, Y);
+			assertFalse(tracker.isLineDirty(true, 8, Y));
+		}
+
+		@Test
+		void ignoresPositionsOutsideTheYRange() {
+			FallingRunTracker tracker = new FallingRunTracker();
+			tracker.markPosition(strips, 0, Y - 1, 5, Y, Y + 5);
+			tracker.markPosition(strips, 0, Y + 6, 5, Y, Y + 5);
+			assertFalse(tracker.isLineDirty(true, 5, Y - 1));
+			assertFalse(tracker.isLineDirty(true, 5, Y + 6));
+			tracker.markPosition(strips, 0, Y + 5, 5, Y, Y + 5);
+			assertTrue(tracker.isLineDirty(true, 5, Y + 5));
+		}
+
+		@Test
+		void landedBlocksFormANewRun() {
+			FakeWorld world = new FakeWorld();
+			FallingRunTracker tracker = new FallingRunTracker();
+			recompute(tracker, world, ONE_CHUNK, 3);
+			assertTrue(tracker.alongX().isEmpty());
+			// Sand lands on x = 2..4, one block change at a time within a tick.
+			for (int x = 2; x <= 4; x++) {
+				world.set(x, Y, Z, RunBlock.COUNTS);
+				tracker.markPosition(stripAlongX(), x, Y, Z, Y, Y);
+			}
+			tracker.flush(world, ONE_CHUNK, 3);
+			assertEquals(Set.of(2, 3, 4), highlightedX(tracker));
+		}
+
+		@Test
+		void brokenBlockShrinksTheRunAtOnce() {
+			FakeWorld world = new FakeWorld().row(2, 4, RunBlock.COUNTS);
+			FallingRunTracker tracker = new FallingRunTracker();
+			recompute(tracker, world, ONE_CHUNK, 3);
+			world.row(3, 3, RunBlock.SKIPS);
+			tracker.markPosition(stripAlongX(), 3, Y, Z, Y, Y);
+			tracker.flush(world, ONE_CHUNK, 3);
+			assertTrue(tracker.alongX().isEmpty());
+		}
+
+		@Test
+		void placedBreakingBlockSplitsTheRun() {
+			FakeWorld world = new FakeWorld().row(2, 6, RunBlock.COUNTS);
+			FallingRunTracker tracker = new FallingRunTracker();
+			recompute(tracker, world, ONE_CHUNK, 3);
+			assertEquals(5, tracker.alongX().size());
+			world.row(4, 4, RunBlock.BREAKS);
+			tracker.markPosition(stripAlongX(), 4, Y, Z, Y, Y);
+			tracker.flush(world, ONE_CHUNK, 3);
+			assertTrue(tracker.alongX().isEmpty());
+		}
+
+		@Test
+		void removedBreakingBlockJoinsTwoRuns() {
+			FakeWorld world = new FakeWorld().row(2, 3, RunBlock.COUNTS).row(4, 4, RunBlock.BREAKS).row(5, 6, RunBlock.COUNTS);
+			FallingRunTracker tracker = new FallingRunTracker();
+			recompute(tracker, world, ONE_CHUNK, 3);
+			assertTrue(tracker.alongX().isEmpty());
+			world.row(4, 4, RunBlock.SKIPS);
+			tracker.markPosition(stripAlongX(), 4, Y, Z, Y, Y);
+			tracker.flush(world, ONE_CHUNK, 3);
+			assertEquals(Set.of(2, 3, 5, 6), highlightedX(tracker));
+		}
+
+		private List<ZoneLayout.TrenchStrip> stripAlongX() {
+			return List.of(new ZoneLayout.TrenchStrip(new ZoneLayout.Rect(0, Z, 15, Z), true));
+		}
+	}
+
 	@Test
 	void lineKeysRoundTrip() {
 		int[][] cases = { { -30_000_000, -64 }, { 29_999_999, 319 }, { 0, -2048 }, { -1, 2047 } };

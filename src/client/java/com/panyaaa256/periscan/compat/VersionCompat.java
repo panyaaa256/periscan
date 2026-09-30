@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 
@@ -67,14 +67,14 @@ public final class VersionCompat {
 	/** Shows a system toast (works outside a world, unlike chat). */
 	public static void showToast(Component title, Component message) {
 		//? if >=26.2 {
-		ToastManager toasts = Minecraft.getInstance().gui.toastManager();
-		//?} else
-		//ToastManager toasts = Minecraft.getInstance().getToastManager();
+		/*ToastManager toasts = Minecraft.getInstance().gui.toastManager();
+		*///?} else
+		ToastManager toasts = Minecraft.getInstance().getToastManager();
 		SystemToast.addOrUpdate(toasts, INVALID_ENTRIES, title, message);
 	}
 
 	/** The ids of the block tags currently bound; empty outside a world. */
-	public static Stream<Identifier> blockTagIds() {
+	public static Stream<ResourceLocation> blockTagIds() {
 		// TagKey::location is a method reference on purpose: the 1.21.11 rename
 		// replacement in stonecutter.gradle.kts (meant for ResourceKey) rewrites
 		// direct calls, but TagKey keeps location() in every version.

@@ -49,19 +49,19 @@ public final class FallingRunTracker {
 
 	// Split by run direction so that a corner position qualifying in one
 	// direction is not clobbered by a recompute of the other.
-	private final LongOpenHashSet alongX = new LongOpenHashSet();
-	private final LongOpenHashSet alongZ = new LongOpenHashSet();
+	private final ChunkIndexedPositions alongX = new ChunkIndexedPositions();
+	private final ChunkIndexedPositions alongZ = new ChunkIndexedPositions();
 	// Lines (direction + cross coordinate + y) whose runs need recomputing.
 	private final LongOpenHashSet dirtyLines = new LongOpenHashSet();
 
 	/** Highlighted blocks (BlockPos longs) of runs along the X axis. Do not modify. */
 	public LongOpenHashSet alongX() {
-		return alongX;
+		return alongX.positions();
 	}
 
 	/** Highlighted blocks (BlockPos longs) of runs along the Z axis. Do not modify. */
 	public LongOpenHashSet alongZ() {
-		return alongZ;
+		return alongZ.positions();
 	}
 
 	public void clear() {
@@ -81,14 +81,8 @@ public final class FallingRunTracker {
 		clearChunk(alongZ, false, chunkX, chunkZ);
 	}
 
-	private void clearChunk(LongOpenHashSet set, boolean runsAlongX, int chunkX, int chunkZ) {
-		set.removeIf(key -> {
-			if ((BlockPos.getX(key) >> 4) != chunkX || (BlockPos.getZ(key) >> 4) != chunkZ) {
-				return false;
-			}
-			markLine(runsAlongX, key);
-			return true;
-		});
+	private void clearChunk(ChunkIndexedPositions set, boolean runsAlongX, int chunkX, int chunkZ) {
+		set.removeChunk(chunkX, chunkZ, key -> markLine(runsAlongX, key));
 	}
 
 	/** Marks every line of the strips inside the chunk, between minY and maxY, that the chunk might affect. */
@@ -125,8 +119,8 @@ public final class FallingRunTracker {
 		markChangedHighlights(alongZ, false, view);
 	}
 
-	private void markChangedHighlights(LongOpenHashSet set, boolean runsAlongX, BlockView view) {
-		LongIterator it = set.iterator();
+	private void markChangedHighlights(ChunkIndexedPositions set, boolean runsAlongX, BlockView view) {
+		LongIterator it = set.positions().iterator();
 		while (it.hasNext()) {
 			long key = it.nextLong();
 			RunBlock block = view.at(BlockPos.getX(key), BlockPos.getY(key), BlockPos.getZ(key));
@@ -161,7 +155,7 @@ public final class FallingRunTracker {
 	 */
 	private void recomputeLine(BlockView view, ZoneLayout.Rect region, int threshold,
 			boolean runsAlongX, int cross, int y) {
-		LongOpenHashSet target = runsAlongX ? alongX : alongZ;
+		ChunkIndexedPositions target = runsAlongX ? alongX : alongZ;
 		int from = runsAlongX ? region.minX() : region.minZ();
 		int to = runsAlongX ? region.maxX() : region.maxZ();
 		LongArrayList run = new LongArrayList();
@@ -186,7 +180,7 @@ public final class FallingRunTracker {
 		endRun(target, run, threshold);
 	}
 
-	private static void endRun(LongOpenHashSet target, LongArrayList run, int threshold) {
+	private static void endRun(ChunkIndexedPositions target, LongArrayList run, int threshold) {
 		boolean qualifies = run.size() >= threshold;
 		for (int i = 0; i < run.size(); i++) {
 			if (qualifies) {

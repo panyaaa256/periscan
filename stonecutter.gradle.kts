@@ -19,10 +19,14 @@ stonecutter parameters {
 			replace("new ResourceLocation(", "ResourceLocation.fromNamespaceAndPath(")
 		}
 		// 1.21.2: registry lookups (blocks and tags) and world height accessors were renamed; the new
-		// getMaxY() is the highest block (inclusive), unlike getMaxBuildHeight().
+		// getMaxY() is the highest block (inclusive), unlike getMaxBuildHeight(). ToastComponent
+		// became ToastManager, and getTags() streams the named sets instead of (key, set) pairs.
 		string(current.parsed >= "1.21.2") {
 			replace("BuiltInRegistries.BLOCK.get(", "BuiltInRegistries.BLOCK.getValue(")
 			replace("blocks.getTag(tag)", "blocks.get(tag)")
+			replace("ToastComponent", "ToastManager")
+			replace("getInstance().getToasts()", "getInstance().getToastManager()")
+			replace("BLOCK.getTagNames()", "BLOCK.getTags().map(named -> named.key())")
 			replace("level.getMinBuildHeight()", "level.getMinY()")
 			replace("(level.getMaxBuildHeight() - 1)", "level.getMaxY()")
 		}

@@ -6,7 +6,6 @@ import com.panyaaa256.periscan.render.HighlightRenderer;
 import com.panyaaa256.periscan.scan.ScanManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
@@ -50,9 +49,5 @@ public class PeriScanClient implements ClientModInitializer {
 	/** An identifier in this mod's namespace. */
 	public static ResourceLocation id(String path) {
 		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
-	}
-
-	public static Minecraft client() {
-		return Minecraft.getInstance();
 	}
 }

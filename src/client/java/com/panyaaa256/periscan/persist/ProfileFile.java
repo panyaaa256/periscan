@@ -8,10 +8,14 @@ import com.google.gson.JsonParser;
 import com.panyaaa256.periscan.PeriScanClient;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,6 +26,8 @@ import java.util.Map;
  */
 final class ProfileFile {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	// Longest readable part of a world file name; the hash keeps it unique anyway.
+	private static final int MAX_READABLE_NAME_LENGTH = 48;
 	// Legacy single-region files never stored a dimension: they were overworld only.
 	private static final String LEGACY_DIMENSION = "minecraft:overworld";
 
@@ -71,6 +77,51 @@ final class ProfileFile {
 	/** Characters allowed in world file names; everything else becomes '_'. */
 	static String sanitize(String name) {
 		return name.replaceAll("[^a-zA-Z0-9._-]", "_");
+	}
+
+	/**
+	 * The file name (without extension) for a world: a readable part plus a hash
+	 * of the whole key. sanitize alone maps different names to the same file
+	 * (every Japanese name of the same length becomes the same run of '_').
+	 */
+	static String fileName(String prefix, String key) {
+		String readable = sanitize(key);
+		if (readable.length() > MAX_READABLE_NAME_LENGTH) {
+			readable = readable.substring(0, MAX_READABLE_NAME_LENGTH);
+		}
+		return prefix + readable + "-" + shortHash(key);
+	}
+
+	/** File name (without extension) used up to 0.3.0, where names that sanitize alike shared a file. */
+	static String legacyFileName(String prefix, String key) {
+		return prefix + sanitize(key);
+	}
+
+	private static String shortHash(String key) {
+		try {
+			byte[] digest = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(digest, 0, 4);
+		} catch (NoSuchAlgorithmException e) {
+			// Every Java platform must provide SHA-256.
+			throw new IllegalStateException(e);
+		}
+	}
+
+	/**
+	 * Reads the file; when it does not exist yet, copies the data of the file
+	 * the world used up to 0.3.0 into it (the old file is kept, as other worlds
+	 * whose names collided may still need it).
+	 */
+	static Data read(Path file, Path legacyFile, LocalDate today) {
+		if (Files.exists(file) || !Files.exists(legacyFile)) {
+			return read(file, today);
+		}
+		Data data = read(legacyFile, today);
+		if (!data.profiles.isEmpty()) {
+			write(file, data);
+			PeriScanClient.LOGGER.info("PeriScan: copied the profiles of {} to {}", legacyFile, file);
+		}
+		return data;
 	}
 
 	/**

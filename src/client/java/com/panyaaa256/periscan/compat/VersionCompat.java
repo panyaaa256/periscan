@@ -19,7 +19,12 @@ import java.util.stream.Stream;
  */
 public final class VersionCompat {
 	// Own id, so the toast does not replace (or get replaced by) a vanilla one.
+	// Before 1.20.3 the ids are a closed enum: borrow the one only
+	// PeriodicNotificationManager uses, as it rarely shows anything.
+	//? if >=1.20.3 {
 	private static final SystemToast.SystemToastId INVALID_ENTRIES = new SystemToast.SystemToastId();
+	//?} else
+	//private static final SystemToast.SystemToastIds INVALID_ENTRIES = SystemToast.SystemToastIds.PERIODIC_NOTIFICATION;
 
 	private VersionCompat() {
 	}

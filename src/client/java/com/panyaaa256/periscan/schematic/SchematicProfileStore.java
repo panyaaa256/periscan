@@ -1,0 +1,232 @@
+package com.panyaaa256.periscan.schematic;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.panyaaa256.periscan.PeriScanClient;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+
+/**
+ * Persists schematic profiles, shared by all worlds: one folder per profile
+ * holding copies of its schematic files and a profile.json with where each is
+ * placed. The files are copies, so moving or deleting the originals does not
+ * break a profile. Every method takes the root folder, so tests can use their
+ * own.
+ */
+public final class SchematicProfileStore {
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	// Version of the file format, written as "version". Bump it when the format changes.
+	static final int FORMAT_VERSION = 1;
+	static final String PROFILE_FILE = "profile.json";
+
+	/**
+	 * Outcome of {@link #update}: the entries now saved, and the import sources
+	 * that could not be copied.
+	 */
+	public record UpdateResult(List<SchematicEntry> entries, List<Path> failedImports) {
+	}
+
+	private SchematicProfileStore() {
+	}
+
+	/** The folder holding every schematic profile. */
+	public static Path root() {
+		return FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("schematics");
+	}
+
+	/**
+	 * Whether the name can be a profile folder. Command arguments allow dots,
+	 * so "." and ".." have to be rejected here.
+	 */
+	public static boolean isValidName(String name) {
+		return name.matches("[A-Za-z0-9_+-][A-Za-z0-9_.+-]*");
+	}
+
+	/** The folder of a profile, holding its schematic files. */
+	public static Path dir(Path root, String name) {
+		return root.resolve(name);
+	}
+
+	public static boolean exists(Path root, String name) {
+		return isValidName(name) && Files.isRegularFile(dir(root, name).resolve(PROFILE_FILE));
+	}
+
+	/** The names of all profiles, sorted. */
+	public static List<String> names(Path root) {
+		if (!Files.isDirectory(root)) {
+			return List.of();
+		}
+		try (Stream<Path> dirs = Files.list(root)) {
+			return dirs.map(dir -> dir.getFileName().toString())
+					.filter(name -> exists(root, name))
+					.sorted()
+					.toList();
+		} catch (IOException e) {
+			return List.of();
+		}
+	}
+
+	/**
+	 * The entries of a profile in their saved order; empty if it does not exist.
+	 * Invalid entries (only possible through hand edits) are skipped. An
+	 * unreadable file is moved aside to profile.json.broken.
+	 */
+	public static List<SchematicEntry> load(Path root, String name) {
+		if (!exists(root, name)) {
+			return List.of();
+		}
+		Path file = dir(root, name).resolve(PROFILE_FILE);
+		try {
+			JsonObject json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+			List<SchematicEntry> entries = new ArrayList<>();
+			Set<String> seen = new HashSet<>();
+			for (JsonElement element : json.getAsJsonArray("schematics")) {
+				SchematicEntry entry = entryFromJson(element);
+				if (entry != null && seen.add(entry.fileName())) {
+					entries.add(entry);
+				} else {
+					PeriScanClient.LOGGER.warn("PeriScan: skipping invalid schematic entry in {}: {}", file, element);
+				}
+			}
+			return entries;
+		} catch (Exception e) {
+			Path backup = file.resolveSibling(file.getFileName() + ".broken");
+			try {
+				Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
+				PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, e.toString());
+			} catch (IOException moveFailure) {
+				PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up: {}", file, e.toString());
+			}
+			return List.of();
+		}
+	}
+
+	/**
+	 * Saves a profile (creating it if needed) with the given entries, then
+	 * imports the given files into it. The copies of entries that are no longer
+	 * listed are deleted. An imported file replaces a same-named copy; if that
+	 * name is still listed its entry is kept, otherwise it gets a
+	 * {@link SchematicEntry#imported new one} at the end.
+	 */
+	public static UpdateResult update(Path root, String name, List<SchematicEntry> entries, List<Path> imports) {
+		Path dir = dir(root, name);
+		List<SchematicEntry> saved = new ArrayList<>(entries);
+		Set<String> kept = new HashSet<>();
+		saved.forEach(entry -> kept.add(entry.fileName()));
+		List<Path> failed = new ArrayList<>();
+		try {
+			Files.createDirectories(dir);
+			for (SchematicEntry old : load(root, name)) {
+				if (!kept.contains(old.fileName())) {
+					Files.deleteIfExists(dir.resolve(old.fileName()));
+				}
+			}
+		} catch (IOException e) {
+			PeriScanClient.LOGGER.warn("PeriScan: could not update schematic profile folder {}: {}", dir, e.toString());
+		}
+		for (Path source : imports) {
+			String fileName = source.getFileName() == null ? "" : source.getFileName().toString();
+			try {
+				if (!SchematicEntry.isValidFileName(fileName) || !Files.isRegularFile(source)) {
+					throw new IOException("not a " + SchematicEntry.EXTENSION + " file");
+				}
+				Files.copy(source, dir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+				if (kept.add(fileName)) {
+					saved.add(SchematicEntry.imported(fileName));
+				}
+			} catch (IOException e) {
+				PeriScanClient.LOGGER.warn("PeriScan: could not import {} into {}: {}", source, dir, e.toString());
+				failed.add(source);
+			}
+		}
+		write(dir.resolve(PROFILE_FILE), saved);
+		return new UpdateResult(List.copyOf(saved), List.copyOf(failed));
+	}
+
+	/** Deletes a profile with its schematic copies. Returns false if there is no such profile. */
+	public static boolean remove(Path root, String name) {
+		if (!exists(root, name)) {
+			return false;
+		}
+		// Deepest paths first, so folders are empty when their turn comes.
+		try (Stream<Path> paths = Files.walk(dir(root, name))) {
+			for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+				Files.delete(path);
+			}
+		} catch (IOException e) {
+			PeriScanClient.LOGGER.warn("PeriScan: could not delete schematic profile {}: {}", dir(root, name), e.toString());
+		}
+		return true;
+	}
+
+	/** The entry of a JSON element, or null if it is not a valid one. */
+	private static SchematicEntry entryFromJson(JsonElement element) {
+		try {
+			JsonObject json = element.getAsJsonObject();
+			String fileName = json.get("file").getAsString();
+			if (!SchematicEntry.isValidFileName(fileName)) {
+				return null;
+			}
+			Set<Corner> corners = EnumSet.noneOf(Corner.class);
+			for (JsonElement label : json.getAsJsonArray("corners")) {
+				Corner corner = Corner.byLabel(label.getAsString());
+				if (corner != null) {
+					corners.add(corner);
+				}
+			}
+			int originY = json.has("originY") ? json.get("originY").getAsInt() : SchematicEntry.DEFAULT_ORIGIN_Y;
+			return new SchematicEntry(fileName, corners, originY);
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Writes the entries through a temporary file that then replaces the file,
+	 * so a crash mid-write cannot leave a truncated one.
+	 */
+	private static void write(Path file, List<SchematicEntry> entries) {
+		JsonObject root = new JsonObject();
+		root.addProperty("version", FORMAT_VERSION);
+		JsonArray schematics = new JsonArray();
+		for (SchematicEntry entry : entries) {
+			JsonObject json = new JsonObject();
+			json.addProperty("file", entry.fileName());
+			JsonArray corners = new JsonArray();
+			entry.corners().forEach(corner -> corners.add(corner.label()));
+			json.add("corners", corners);
+			json.addProperty("originY", entry.originY());
+			schematics.add(json);
+		}
+		root.add("schematics", schematics);
+
+		Path temp = file.resolveSibling(file.getFileName() + ".tmp");
+		try {
+			Files.createDirectories(file.getParent());
+			Files.writeString(temp, GSON.toJson(root));
+			try {
+				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+			}
+		} catch (IOException e) {
+			PeriScanClient.LOGGER.warn("PeriScan: could not save schematic profile to {}: {}", file, e.toString());
+		}
+	}
+}

@@ -17,3 +17,5 @@ Replaces the schematic folders with schematic profiles that you edit in game. Sc
 
 ### Fixed
 - Fill in the suggestion you click in the block lists; clicking one used to leave the typed text unchanged
+- Keep the highlighted suggestion inside the list when you press Tab after typing narrowed the suggestions
+- Detect Litematica on Minecraft 1.19.4 to 1.21.4, where schematic placement always reported it as missing

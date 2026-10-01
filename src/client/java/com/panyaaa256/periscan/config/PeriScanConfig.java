@@ -2,10 +2,8 @@ package com.panyaaa256.periscan.config;
 
 import com.panyaaa256.periscan.PeriScanClient;
 import com.panyaaa256.periscan.zone.Zone;
-//? if >=1.20
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
-//? if >=1.20
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -15,17 +13,13 @@ import java.util.List;
 import java.util.Objects;
 
 public class PeriScanConfig {
-	// Loads and saves the config file. The handler is created on first use, so a
-	// PeriScanConfig can be made (e.g. in tests) without YACL setting up its
-	// serializer. YACL for 1.19.4 (3.1) predates the config v2 API; its
-	// GsonConfigInstance is the older equivalent (ConfigEntry annotations
-	// instead of SerialEntry; written without "@" so the Stonecutter
-	// replacement leaves this comment alone).
-	//? if >=1.20 {
+	/** Loads and saves the config file. */
 	public static ConfigClassHandler<PeriScanConfig> handler() {
 		return Holder.HANDLER;
 	}
 
+	// Created on first use, so a PeriScanConfig can be made (e.g. in tests)
+	// without YACL setting up its serializer.
 	private static final class Holder {
 		static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
 				.id(PeriScanClient.id("config"))
@@ -34,18 +28,6 @@ public class PeriScanConfig {
 						.build())
 				.build();
 	}
-	//?} else {
-	/*public static dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> handler() {
-		return Holder.HANDLER;
-	}
-
-	private static final class Holder {
-		static final dev.isxander.yacl3.config.GsonConfigInstance<PeriScanConfig> HANDLER =
-				dev.isxander.yacl3.config.GsonConfigInstance.createBuilder(PeriScanConfig.class)
-						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
-						.build();
-	}
-	*///?}
 
 	// Ranges the settings screen allows; sanitize() keeps values read from the file inside them too.
 	public static final int MIN_TRENCH_WIDTH = 3;

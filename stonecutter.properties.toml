@@ -14,13 +14,8 @@ deps.fabric_loader = "0.19.3"
 loomx.loom_version = "1.17.19"
 deps.junit = "6.1.3"
 
-["1.19.4"]
-# Minecraft range written into fabric.mod.json
-mod.mc_compat = "1.19.4"
-mod.yacl_compat = ">=3.1.1"
-deps.fabric_api = "0.87.2+1.19.4"
-
 ["1.20.1"]
+# Minecraft range written into fabric.mod.json
 mod.mc_compat = ">=1.20 <=1.20.1"
 mod.yacl_compat = ">=3.6.6"
 deps.fabric_api = "0.92.12+1.20.1"

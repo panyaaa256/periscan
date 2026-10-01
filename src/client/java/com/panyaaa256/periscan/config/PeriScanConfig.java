@@ -73,6 +73,13 @@ public class PeriScanConfig {
 	public static class ZoneSettings {
 		public boolean enabled = true;
 		public Color color = Color.WHITE;
+
+		ZoneSettings() {
+		}
+
+		ZoneSettings(boolean enabled) {
+			this.enabled = enabled;
+		}
 	}
 
 	/** A zone highlighting configured blocks. */
@@ -139,8 +146,9 @@ public class PeriScanConfig {
 
 	// Bottom two scanned layers of the trench body: everything except air and
 	// liquids is highlighted, and the trench inner zone excludes those layers.
+	// Off by default: before the trench is dug its whole floor would light up.
 	@SerialEntry
-	public ZoneSettings bottomTrench = new ZoneSettings();
+	public ZoneSettings bottomTrench = new ZoneSettings(false);
 
 	@SerialEntry
 	public EaterSettings eater = new EaterSettings();

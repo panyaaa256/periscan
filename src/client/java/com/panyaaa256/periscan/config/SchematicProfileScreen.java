@@ -123,7 +123,7 @@ public final class SchematicProfileScreen {
 		// Rebuild so imported schematics get their group and removed ones lose it.
 		if (!imports.isEmpty() || kept.size() != states.size()) {
 			Minecraft client = Minecraft.getInstance();
-			client.gui.setScreen(create(parent, name, sourceRoot));
+			client.setScreen(create(parent, name, sourceRoot));
 		}
 	}
 

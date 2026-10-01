@@ -156,12 +156,12 @@ public final class PeriCommand {
 	}
 
 	private static String dimensionId(ClientLevel level) {
-		return level.dimension().identifier().toString();
+		return level.dimension().location().toString();
 	}
 
 	private static int add(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		if (rejectEnd(source.getLevel(), source::sendError)) {
+		if (rejectEnd(source.getWorld(), source::sendError)) {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
@@ -172,7 +172,7 @@ public final class PeriCommand {
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 		// The profile is bound to the dimension the command was run in.
-		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source.getLevel()));
+		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source.getWorld()));
 		if (rejectTooLarge(source::sendError, profile)) {
 			return 0;
 		}
@@ -230,7 +230,7 @@ public final class PeriCommand {
 		if (profile == null) {
 			return 0;
 		}
-		if (startScan(source.getLevel(), source::sendFeedback, source::sendError, profile)) {
+		if (startScan(source.getWorld(), source::sendFeedback, source::sendError, profile)) {
 			ProfileStore.setLastScanned(name);
 			source.sendFeedback(Component.translatable("periscan.msg.scan_started",
 					name, profile.sizeBlocksX(), profile.sizeBlocksZ()));
@@ -252,7 +252,7 @@ public final class PeriCommand {
 	}
 
 	private static int scanReload(FabricClientCommandSource source) {
-		return scanReload(source.getLevel(), source::sendFeedback, source::sendError) ? 1 : 0;
+		return scanReload(source.getWorld(), source::sendFeedback, source::sendError) ? 1 : 0;
 	}
 
 	/** /peri scan reload; also run by a key (see PeriKeybinds), which has no command source. */
@@ -331,12 +331,12 @@ public final class PeriCommand {
 	 */
 	private static int schematicPlace(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		if (rejectEnd(source.getLevel(), source::sendError) || rejectWithoutLitematica(source)) {
+		if (rejectEnd(source.getWorld(), source::sendError) || rejectWithoutLitematica(source)) {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
 		PeriProfile profile = findProfile(source, name);
-		if (profile == null || rejectOtherDimension(source.getLevel(), source::sendError, profile)) {
+		if (profile == null || rejectOtherDimension(source.getWorld(), source::sendError, profile)) {
 			return 0;
 		}
 		String schematicProfile = StringArgumentType.getString(ctx, "profile");

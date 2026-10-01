@@ -72,6 +72,8 @@
 	"periscan.msg.schem_load_failed": "PeriScan: %s の読み込みに失敗しました - placementは作成していません",
 	"periscan.msg.schem_done": "PeriScan:「%s」に %s 個のplacementを作成しました (設計図プロファイル「%s」)",
 	"periscan.msg.schem_replaced": "PeriScan: 既存の %s 個のplacementを置き換えました",
+	"periscan.msg.schem_cleared": "PeriScan:「%s」のplacementを %s 個削除しました",
+	"periscan.msg.schem_clear_none": "PeriScan:「%s」には削除するplacementがありません",
 	"periscan.msg.placements_removed": "PeriScan: 紐づくplacementを %s 個削除しました",
 	"periscan.msg.cleared": "PeriScan: ハイライトを消去しました",
 	"periscan.msg.reloaded": "PeriScan:「%s」を再スキャンしました",

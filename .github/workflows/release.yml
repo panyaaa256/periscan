@@ -26,8 +26,8 @@ jobs:
             range: 1.21.5-1.21.8
           - branch: mc/1.20.5-1.21.4
             range: 1.20.5-1.21.4
-          - branch: mc/1.19.4-1.20.4
-            range: 1.19.4-1.20.4
+          - branch: mc/1.20-1.20.4
+            range: 1.20-1.20.4
     steps:
       - name: checkout repository
         uses: actions/checkout@v6

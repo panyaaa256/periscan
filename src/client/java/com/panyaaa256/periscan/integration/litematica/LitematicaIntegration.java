@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -91,7 +92,8 @@ public final class LitematicaIntegration {
 			dataManager.getMethod("getSchematicPlacementManager");
 			dataManager.getMethod("getSchematicsBaseDirectory");
 			Class<?> schematic = Class.forName("fi.dy.masa.litematica.schematic.LitematicaSchematic");
-			schematic.getMethod("createFromFile", Path.class, String.class);
+			// Litematica for these versions still works with java.io.File.
+			schematic.getMethod("createFromFile", File.class, String.class);
 			Class<?> messageConsumer = Class.forName("fi.dy.masa.malilib.gui.interfaces.IMessageConsumer");
 			Class<?> placement = Class.forName("fi.dy.masa.litematica.schematic.placement.SchematicPlacement");
 			placement.getMethod("createFor", schematic, BlockPos.class, String.class, boolean.class, boolean.class);

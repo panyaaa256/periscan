@@ -38,7 +38,7 @@
 	"periscan.schematic.default_origin_y": "Default origin Y",
 	"periscan.schematic.default_origin_y.desc": "Origin height a newly imported schematic starts with. Existing schematics keep theirs. Around -59 suits the Overworld and 5 the Nether.",
 	"periscan.schematic.import": "Import schematics",
-	"periscan.schematic.import.desc": "Files to copy into this profile when you save, picked from litematica's schematics folder. Type to narrow down the suggestions, then click one. The profile keeps its own copy, so the original can be moved or deleted afterwards. Importing a file with the same name as an existing schematic replaces its copy and keeps its settings. The settings of a newly imported schematic appear below after saving.",
+	"periscan.schematic.import.desc": "Files to copy into this profile when you save, picked from litematica's schematics folder. Type to narrow down the suggestions, then click one. The profile keeps its own copy, so the original can be moved or deleted afterwards. Importing a file with the same name as an existing schematic replaces its copy and keeps its settings. The settings of a newly imported schematic appear below after saving. Files with the same name cannot be imported together, even from different folders.",
 	"periscan.schematic.corner.mm": "Place at -- (north-west, as saved)",
 	"periscan.schematic.corner.pm": "Place at +- (north-east, flipped east-west)",
 	"periscan.schematic.corner.mp": "Place at -+ (south-west, flipped north-south)",

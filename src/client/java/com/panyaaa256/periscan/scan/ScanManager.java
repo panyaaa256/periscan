@@ -38,6 +38,9 @@ public class ScanManager {
 	// Height of the bottom trench zone: the lowest scanned layers of the trench body.
 	private static final int BOTTOM_TRENCH_LAYERS = 2;
 
+	// Ticks between the safety-net revalidations of the highlights (see onTick).
+	private static final int VALIDATE_INTERVAL_TICKS = 20;
+
 	private ZoneLayout layout;
 	private ResourceKey<Level> dimension;
 	private ChunkPos cornerA;
@@ -421,7 +424,7 @@ public class ScanManager {
 		// Safety net for the removal side: drop highlights whose block no longer
 		// matches, in case a change bypassed onBlockChanged or the world's tags
 		// changed. Block changes normally update the highlights right away.
-		if (tickCounter % 10 == 0) {
+		if (tickCounter % VALIDATE_INTERVAL_TICKS == 0) {
 			validateHighlights(client.level);
 		}
 

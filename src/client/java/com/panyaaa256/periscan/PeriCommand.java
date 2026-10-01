@@ -20,6 +20,7 @@ import com.panyaaa256.periscan.schematic.SchematicProfileStore;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore.UpdateResult;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.Level;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -117,18 +119,18 @@ public final class PeriCommand {
 	}
 
 	/** Peris are never built in the end; fail fast so the mistake is obvious. */
-	private static boolean rejectEnd(FabricClientCommandSource source) {
-		if (source.getWorld().dimension() == Level.END) {
-			source.sendError(Component.translatable("periscan.msg.end_not_supported"));
+	private static boolean rejectEnd(ClientLevel level, Consumer<Component> error) {
+		if (level.dimension() == Level.END) {
+			error.accept(Component.translatable("periscan.msg.end_not_supported"));
 			return true;
 		}
 		return false;
 	}
 
 	/** Rejects perimeters too large to scan; see {@link PeriProfile#MAX_SIDE_CHUNKS}. */
-	private static boolean rejectTooLarge(FabricClientCommandSource source, PeriProfile profile) {
+	private static boolean rejectTooLarge(Consumer<Component> error, PeriProfile profile) {
 		if (profile.exceedsMaxSize()) {
-			source.sendError(Component.translatable("periscan.msg.region_too_large",
+			error.accept(Component.translatable("periscan.msg.region_too_large",
 					profile.sideChunksX(), profile.sideChunksZ(), PeriProfile.MAX_SIDE_CHUNKS));
 			return true;
 		}
@@ -145,21 +147,21 @@ public final class PeriCommand {
 	}
 
 	/** Profiles only work in the dimension they were created in. */
-	private static boolean rejectOtherDimension(FabricClientCommandSource source, PeriProfile profile) {
-		if (!profile.dimension().equals(dimensionId(source))) {
-			source.sendError(Component.translatable("periscan.msg.wrong_dimension", profile.name(), profile.dimension()));
+	private static boolean rejectOtherDimension(ClientLevel level, Consumer<Component> error, PeriProfile profile) {
+		if (!profile.dimension().equals(dimensionId(level))) {
+			error.accept(Component.translatable("periscan.msg.wrong_dimension", profile.name(), profile.dimension()));
 			return true;
 		}
 		return false;
 	}
 
-	private static String dimensionId(FabricClientCommandSource source) {
-		return source.getWorld().dimension().location().toString();
+	private static String dimensionId(ClientLevel level) {
+		return level.dimension().identifier().toString();
 	}
 
 	private static int add(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		if (rejectEnd(source)) {
+		if (rejectEnd(source.getLevel(), source::sendError)) {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
@@ -170,8 +172,8 @@ public final class PeriCommand {
 		ChunkPos a = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x1"), IntegerArgumentType.getInteger(ctx, "z1"));
 		ChunkPos b = new ChunkPos(IntegerArgumentType.getInteger(ctx, "x2"), IntegerArgumentType.getInteger(ctx, "z2"));
 		// The profile is bound to the dimension the command was run in.
-		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source));
-		if (rejectTooLarge(source, profile)) {
+		PeriProfile profile = PeriProfile.of(name, a, b, dimensionId(source.getLevel()));
+		if (rejectTooLarge(source::sendError, profile)) {
 			return 0;
 		}
 		ProfileStore.put(profile);
@@ -228,7 +230,7 @@ public final class PeriCommand {
 		if (profile == null) {
 			return 0;
 		}
-		if (startScan(source, profile)) {
+		if (startScan(source.getLevel(), source::sendFeedback, source::sendError, profile)) {
 			ProfileStore.setLastScanned(name);
 			source.sendFeedback(Component.translatable("periscan.msg.scan_started",
 					name, profile.sizeBlocksX(), profile.sizeBlocksZ()));
@@ -238,50 +240,61 @@ public final class PeriCommand {
 	}
 
 	private static int scanClear(FabricClientCommandSource source) {
-		ScanManager.INSTANCE.deactivate();
-		ProfileStore.clearLastScanned();
-		source.sendFeedback(Component.translatable("periscan.msg.cleared"));
+		scanClear(source::sendFeedback);
 		return 1;
 	}
 
+	/** /peri scan clear; also run by a key (see PeriKeybinds), which has no command source. */
+	static void scanClear(Consumer<Component> feedback) {
+		ScanManager.INSTANCE.deactivate();
+		ProfileStore.clearLastScanned();
+		feedback.accept(Component.translatable("periscan.msg.cleared"));
+	}
+
 	private static int scanReload(FabricClientCommandSource source) {
+		return scanReload(source.getLevel(), source::sendFeedback, source::sendError) ? 1 : 0;
+	}
+
+	/** /peri scan reload; also run by a key (see PeriKeybinds), which has no command source. */
+	static boolean scanReload(ClientLevel level, Consumer<Component> feedback, Consumer<Component> error) {
 		String last = ProfileStore.lastScanned();
 		PeriProfile profile = last == null ? null : ProfileStore.get(last);
 		if (profile == null) {
-			source.sendError(Component.translatable("periscan.msg.no_last_profile"));
-			return 0;
+			error.accept(Component.translatable("periscan.msg.no_last_profile"));
+			return false;
 		}
 		// Also starts scanning for a profile restored on login (kept dormant until now).
-		if (startScan(source, profile)) {
-			source.sendFeedback(Component.translatable("periscan.msg.reloaded", profile.name()));
-			return 1;
+		if (startScan(level, feedback, error, profile)) {
+			feedback.accept(Component.translatable("periscan.msg.reloaded", profile.name()));
+			return true;
 		}
-		return 0;
+		return false;
 	}
 
 	/**
 	 * Shared validation (zones enabled, right dimension) and activation for
 	 * scan start / reload. Returns false after sending an error.
 	 */
-	private static boolean startScan(FabricClientCommandSource source, PeriProfile profile) {
-		if (rejectEnd(source)) {
+	private static boolean startScan(ClientLevel level, Consumer<Component> feedback, Consumer<Component> error,
+			PeriProfile profile) {
+		if (rejectEnd(level, error)) {
 			return false;
 		}
 		if (!PeriScanConfig.anyZoneEnabled()) {
-			source.sendError(Component.translatable("periscan.msg.all_disabled"));
+			error.accept(Component.translatable("periscan.msg.all_disabled"));
 			return false;
 		}
-		if (rejectOtherDimension(source, profile)) {
+		if (rejectOtherDimension(level, error, profile)) {
 			return false;
 		}
 		// Profiles are checked on add, but files may have been edited by hand.
-		if (rejectTooLarge(source, profile)) {
+		if (rejectTooLarge(error, profile)) {
 			return false;
 		}
 		List<Component> problems = ScanManager.INSTANCE.activate(
-				source.getWorld().dimension(), profile.minChunk(), profile.maxChunk());
+				level.dimension(), profile.minChunk(), profile.maxChunk());
 		for (Component problem : problems) {
-			source.sendFeedback(problem);
+			feedback.accept(problem);
 		}
 		return true;
 	}
@@ -318,12 +331,12 @@ public final class PeriCommand {
 	 */
 	private static int schematicPlace(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		if (rejectEnd(source) || rejectWithoutLitematica(source)) {
+		if (rejectEnd(source.getLevel(), source::sendError) || rejectWithoutLitematica(source)) {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
 		PeriProfile profile = findProfile(source, name);
-		if (profile == null || rejectOtherDimension(source, profile)) {
+		if (profile == null || rejectOtherDimension(source.getLevel(), source::sendError, profile)) {
 			return 0;
 		}
 		String schematicProfile = StringArgumentType.getString(ctx, "profile");

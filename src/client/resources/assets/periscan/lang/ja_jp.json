@@ -1,6 +1,8 @@
 {
 	"periscan.config.title": "PeriScan",
 	"periscan.config.category.general": "全般",
+	"periscan.config.show_highlights": "ハイライトを表示",
+	"periscan.config.show_highlights.desc": "OFFにすると、ハイライトも未スキャンチャンクの箱も描画しません。走査は続くので、ONに戻すとすぐに表示されます。キーでも切り替えられます(設定 > 操作設定 > キー割り当て > PeriScan)。",
 	"periscan.config.ns_width": "南北トレンチの幅",
 	"periscan.config.ns_width.desc": "ペリメータのZ軸方向両端にあるトレンチの幅(列数)。",
 	"periscan.config.ew_width": "東西トレンチの幅",
@@ -17,6 +19,8 @@
 	"periscan.config.category.eater": "イーター領域",
 	"periscan.config.zone.enabled": "このゾーンを走査する",
 	"periscan.config.zone.enabled.desc": "OFFにするとこのゾーンは走査・ハイライトされません。全ゾーンOFFの状態では走査を開始できません。",
+	"periscan.config.zone.visible": "このゾーンを表示",
+	"periscan.config.zone.visible.desc": "OFFにすると、このゾーンのハイライトを隠します。走査は続くので、ONに戻すとすぐに表示されます。キーでも切り替えられます(設定 > 操作設定 > キー割り当て > PeriScan)。",
 	"periscan.config.eater.include_trench": "トレンチ範囲を含める",
 	"periscan.config.eater.include_trench.desc": "ON: イーター領域が指定範囲全体(トレンチ含む)になります。OFF: トレンチを除いた内側のみになります。",
 	"periscan.config.falling_run": "落下ブロックの連続数しきい値",

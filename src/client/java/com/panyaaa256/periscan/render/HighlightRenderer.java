@@ -139,6 +139,11 @@ public final class HighlightRenderer {
 			return;
 		}
 		updateMeshes();
+		// Hidden by the user: the meshes are still kept up to date above, so showing
+		// the highlights again needs no rebuild.
+		if (!PeriScanConfig.get().showHighlights) {
+			return;
+		}
 		//? if >=26.1 {
 		Vec3 camera = context.levelState().cameraRenderState.pos;
 		PoseStack poseStack = context.poseStack();
@@ -184,13 +189,17 @@ public final class HighlightRenderer {
 			MeshDrawer meshDrawer, int alpha, int pendingAlpha) {
 		PeriScanConfig config = PeriScanConfig.get();
 		for (Zone zone : Zone.VALUES) {
-			addMeshes(buffer, pose, camera, meshDrawer, ZONE_MESHES[zone.ordinal()],
-					argb(alpha, zone.settings(config).color));
+			if (zone.settings(config).visible) {
+				addMeshes(buffer, pose, camera, meshDrawer, ZONE_MESHES[zone.ordinal()],
+						argb(alpha, zone.settings(config).color));
+			}
 		}
-		// Falling-block runs belong to the trench inner zone and use its color.
-		int fallingColor = argb(alpha, config.trenchInner.color);
-		addMeshes(buffer, pose, camera, meshDrawer, FALLING_X_MESHES, fallingColor);
-		addMeshes(buffer, pose, camera, meshDrawer, FALLING_Z_MESHES, fallingColor);
+		// Falling-block runs belong to the trench inner zone: they use its color and are hidden with it.
+		if (config.trenchInner.visible) {
+			int fallingColor = argb(alpha, config.trenchInner.color);
+			addMeshes(buffer, pose, camera, meshDrawer, FALLING_X_MESHES, fallingColor);
+			addMeshes(buffer, pose, camera, meshDrawer, FALLING_Z_MESHES, fallingColor);
+		}
 		if (config.showPendingChunks) {
 			addPendingChunkBoxes(buffer, pose, camera, drawer, argb(pendingAlpha, config.pendingChunkColor));
 		}

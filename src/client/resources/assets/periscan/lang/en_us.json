@@ -36,7 +36,7 @@
 	"periscan.config.invalid_entries.message": "Not a block id or tag (saved anyway, %s): %s",
 	"periscan.schematic.title": "PeriScan schematics: %s",
 	"periscan.schematic.import": "Import schematics",
-	"periscan.schematic.import.desc": "Files to copy into this profile when you save, picked from litematica's schematics folder (or typed as a path relative to it). The profile keeps its own copy, so the original can be moved or deleted afterwards. Importing a file with the same name as an existing schematic replaces its copy and keeps its settings. The settings of a newly imported schematic appear below after saving.",
+	"periscan.schematic.import.desc": "Files to copy into this profile when you save, picked from litematica's schematics folder. Type to narrow down the suggestions, then click one. The profile keeps its own copy, so the original can be moved or deleted afterwards. Importing a file with the same name as an existing schematic replaces its copy and keeps its settings. The settings of a newly imported schematic appear below after saving.",
 	"periscan.schematic.corner.mm": "Place at -- (north-west, as saved)",
 	"periscan.schematic.corner.pm": "Place at +- (north-east, flipped east-west)",
 	"periscan.schematic.corner.mp": "Place at -+ (south-west, flipped north-south)",

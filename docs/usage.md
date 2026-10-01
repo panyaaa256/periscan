@@ -191,14 +191,14 @@ Schematic profiles are shared by all worlds and servers, unlike the profiles mad
    ```
    /peri schematic edit <schematic profile>
    ```
-2. Under "Import schematics", add the files to use. The suggestions are the `.litematic` files in Litematica's schematics folder (usually `.minecraft/schematics`); you can also type a path relative to that folder.
+2. Under "Import schematics", add the files to use. The suggestions are the `.litematic` files in Litematica's schematics folder (usually `.minecraft/schematics`). Type to narrow them down, then click one.
 3. Press "Save Changes". Each imported schematic now has its own section.
 4. In each section, choose the corners to place the schematic on and its origin height, then save again.
 
 - PeriScan **copies** the files into `config/periscan/schematics/<schematic profile>/`. You can move, rename or delete the originals afterwards.
 - A changed original is not picked up by itself. Import the file again: a file with the same name replaces the copy and keeps the section's settings.
 - To take a schematic out of the profile, turn on "Remove from profile" in its section and save. Its copy is deleted too.
-- On Minecraft 1.19.4 there are no suggestions; type the path.
+- On Minecraft 1.19.4 there are no suggestions; type the path relative to Litematica's schematics folder.
 
 ### Saving your schematics
 

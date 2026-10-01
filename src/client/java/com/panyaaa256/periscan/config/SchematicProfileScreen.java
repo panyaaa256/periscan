@@ -62,7 +62,7 @@ public final class SchematicProfileScreen {
 
 	/**
 	 * @param sourceRoot folder the import list picks files from (litematica's
-	 *                   schematics folder); typed paths are relative to it
+	 *                   schematics folder); its entries are relative to it
 	 */
 	public static Screen create(Screen parent, String name, Path sourceRoot) {
 		List<EntryState> states = SchematicProfileStore.load(SchematicProfileStore.root(), name).stream()
@@ -133,9 +133,9 @@ public final class SchematicProfileScreen {
 	}
 
 	/**
-	 * The files to copy into the profile on save. Entries can be picked from
-	 * {@code sources} or typed. 1.19.4's YACL has no dropdown controller, so it
-	 * keeps plain text.
+	 * The files to copy into the profile on save, picked from {@code sources}
+	 * (typing filters them). 1.19.4's YACL has no dropdown controller, so there
+	 * the path is typed.
 	 */
 	private static ListOption<String> importList(List<String> sources, List<String> imports) {
 		return ListOption.<String>createBuilder()
@@ -146,10 +146,12 @@ public final class SchematicProfileScreen {
 					imports.addAll(v);
 				})
 				//? if >=1.20 {
+				// Only listed values: YACL replaces the typed text with the clicked
+				// suggestion only when the text is not a valid value itself.
 				.controller(opt -> DropdownStringControllerBuilder.create(opt)
 						.values(sources)
-						.allowAnyValue(true)
-						.allowEmptyValue(true))
+						.allowAnyValue(false)
+						.allowEmptyValue(false))
 				//?} else
 				//.controller(StringControllerBuilder::create)
 				.initial("")

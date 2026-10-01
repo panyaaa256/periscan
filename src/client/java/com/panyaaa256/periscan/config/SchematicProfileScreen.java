@@ -47,6 +47,9 @@ public final class SchematicProfileScreen {
 	private static final class EntryState {
 		final String fileName;
 		final Set<Corner> corners;
+		// The saved values when the screen opened, the "Reset" targets.
+		final Set<Corner> initialCorners;
+		final int initialOriginY;
 		int originY;
 		boolean remove;
 
@@ -54,6 +57,8 @@ public final class SchematicProfileScreen {
 			this.fileName = entry.fileName();
 			this.corners = entry.corners().isEmpty() ? EnumSet.noneOf(Corner.class) : EnumSet.copyOf(entry.corners());
 			this.originY = entry.originY();
+			this.initialCorners = EnumSet.copyOf(this.corners);
+			this.initialOriginY = this.originY;
 		}
 	}
 
@@ -169,7 +174,7 @@ public final class SchematicProfileScreen {
 			group.option(Option.<Boolean>createBuilder()
 					.name(Component.translatable(KEY + "corner." + corner.name().toLowerCase(Locale.ROOT)))
 					.description(OptionDescription.of(Component.translatable(KEY + "corner.desc")))
-					.binding(corner == Corner.MM, () -> state.corners.contains(corner), v -> {
+					.binding(state.initialCorners.contains(corner), () -> state.corners.contains(corner), v -> {
 						if (v) {
 							state.corners.add(corner);
 						} else {
@@ -183,7 +188,7 @@ public final class SchematicProfileScreen {
 				.option(Option.<Integer>createBuilder()
 						.name(Component.translatable(KEY + "origin_y"))
 						.description(OptionDescription.of(Component.translatable(KEY + "origin_y.desc")))
-						.binding(SchematicEntry.DEFAULT_ORIGIN_Y, () -> state.originY, v -> state.originY = v)
+						.binding(state.initialOriginY, () -> state.originY, v -> state.originY = v)
 						.controller(opt -> IntegerFieldControllerBuilder.create(opt)
 								.range(SchematicEntry.MIN_ORIGIN_Y, SchematicEntry.MAX_ORIGIN_Y))
 						.build())

@@ -17,6 +17,7 @@ import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.schematic.SchematicEntry;
 import com.panyaaa256.periscan.schematic.SchematicPlanner;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore;
+import com.panyaaa256.periscan.schematic.SchematicProfileStore.UpdateResult;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.Level;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
@@ -33,7 +35,8 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 /**
  * The /peri command: peri profiles (add/remove/list), scanning bound to them
  * (scan start/clear/reload), schematic profiles and their litematica
- * placement (schematic edit/place/clear/list/remove) and the config screen (config).
+ * placement (schematic edit/place/clear/list/copy/remove) and the config
+ * screen (config).
  */
 public final class PeriCommand {
 	private PeriCommand() {
@@ -103,6 +106,10 @@ public final class PeriCommand {
 										.then(argument("name", StringArgumentType.word()).suggests(SUGGEST_PROFILE)
 												.executes(PeriCommand::schematicClear)))
 								.then(literal("list").executes(ctx -> schematicList(ctx.getSource())))
+								.then(literal("copy")
+										.then(argument("from", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
+												.then(argument("to", StringArgumentType.word())
+														.executes(PeriCommand::schematicCopy))))
 								.then(literal("remove")
 										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
 												.executes(PeriCommand::schematicRemove))))
@@ -374,6 +381,38 @@ public final class PeriCommand {
 		for (String name : names) {
 			List<SchematicEntry> entries = SchematicProfileStore.load(root, name).entries();
 			source.sendFeedback(Component.translatable("periscan.msg.schem_profile_list_entry", name, entries.size()));
+		}
+		return 1;
+	}
+
+	/** Duplicates a schematic profile together with its schematic copies, e.g. to reuse an overworld one for the nether. */
+	private static int schematicCopy(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		String from = StringArgumentType.getString(ctx, "from");
+		String to = StringArgumentType.getString(ctx, "to");
+		Path root = SchematicProfileStore.root();
+		if (!SchematicProfileStore.exists(root, from)) {
+			source.sendError(Component.translatable("periscan.msg.no_schem_profile", from));
+			return 0;
+		}
+		if (!SchematicProfileStore.isValidName(to)) {
+			source.sendError(Component.translatable("periscan.msg.schem_profile_invalid_name", to));
+			return 0;
+		}
+		if (SchematicProfileStore.exists(root, to)) {
+			source.sendError(Component.translatable("periscan.msg.schem_profile_exists", to));
+			return 0;
+		}
+		UpdateResult result = SchematicProfileStore.copy(root, from, to);
+		source.sendFeedback(Component.translatable("periscan.msg.schem_profile_copied",
+				from, to, result.profile().entries().size()));
+		// The profile is created anyway; tell which schematic files did not make it.
+		if (!result.failedImports().isEmpty()) {
+			String files = result.failedImports().stream()
+					.map(path -> path.getFileName().toString())
+					.collect(Collectors.joining(", "));
+			source.sendError(Component.translatable("periscan.msg.schem_copy_failed",
+					result.failedImports().size(), files));
 		}
 		return 1;
 	}

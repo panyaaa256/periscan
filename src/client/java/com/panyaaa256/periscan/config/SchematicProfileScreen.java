@@ -13,8 +13,6 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.OptionGroup;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
-//? if <1.20
-//import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import net.minecraft.client.Minecraft;
@@ -165,8 +163,7 @@ public final class SchematicProfileScreen {
 
 	/**
 	 * The files to copy into the profile on save, picked from {@code sources}
-	 * (typing filters them). 1.19.4's YACL has no dropdown controller, so there
-	 * the path is typed.
+	 * (typing filters them).
 	 */
 	private static ListOption<String> importList(List<String> sources, List<String> imports) {
 		return ListOption.<String>createBuilder()
@@ -176,10 +173,7 @@ public final class SchematicProfileScreen {
 					imports.clear();
 					imports.addAll(v);
 				})
-				//? if >=1.20 {
 				.customController(opt -> new PickingDropdownController(opt, sources, false))
-				//?} else
-				//.controller(StringControllerBuilder::create)
 				.initial("")
 				.build();
 	}

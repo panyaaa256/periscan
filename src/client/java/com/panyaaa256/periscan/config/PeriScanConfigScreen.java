@@ -13,7 +13,6 @@ import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
-import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -169,7 +168,7 @@ public final class PeriScanConfigScreen {
 	/**
 	 * A block id / #tag list. The setter receives a mutable copy. Entries can be
 	 * picked from {@code suggestions} or typed freely (invalid ones are reported
-	 * on save). 1.19.4's YACL has no dropdown controller, so it keeps plain text.
+	 * on save).
 	 */
 	private static ListOption<String> blockList(String nameKey, String descKey, List<String> defaultValue,
 			List<String> suggestions, Supplier<List<String>> getter, Consumer<List<String>> setter) {
@@ -177,10 +176,7 @@ public final class PeriScanConfigScreen {
 				.name(Component.translatable(KEY + nameKey))
 				.description(OptionDescription.of(Component.translatable(KEY + descKey)))
 				.binding(defaultValue, getter, v -> setter.accept(new ArrayList<>(v)))
-				//? if >=1.20 {
 				.customController(opt -> new PickingDropdownController(opt, suggestions, true))
-				//?} else
-				//.controller(StringControllerBuilder::create)
 				.initial("minecraft:")
 				.build();
 	}

@@ -36,10 +36,10 @@ public final class SchematicProfileStore {
 	static final String PROFILE_FILE = "profile.json";
 
 	/**
-	 * Outcome of {@link #update}: the entries now saved, and the import sources
+	 * Outcome of {@link #update}: the profile now saved, and the import sources
 	 * that could not be copied.
 	 */
-	public record UpdateResult(List<SchematicEntry> entries, List<Path> failedImports) {
+	public record UpdateResult(SchematicProfile profile, List<Path> failedImports) {
 	}
 
 	private SchematicProfileStore() {
@@ -83,13 +83,13 @@ public final class SchematicProfileStore {
 	}
 
 	/**
-	 * The entries of a profile in their saved order; empty if it does not exist.
-	 * Invalid entries (only possible through hand edits) are skipped. An
-	 * unreadable file is moved aside to profile.json.broken.
+	 * A profile, its entries in their saved order; {@link SchematicProfile#EMPTY}
+	 * if it does not exist. Invalid entries (only possible through hand edits)
+	 * are skipped. An unreadable file is moved aside to profile.json.broken.
 	 */
-	public static List<SchematicEntry> load(Path root, String name) {
+	public static SchematicProfile load(Path root, String name) {
 		if (!exists(root, name)) {
-			return List.of();
+			return SchematicProfile.EMPTY;
 		}
 		Path file = dir(root, name).resolve(PROFILE_FILE);
 		try {
@@ -104,7 +104,9 @@ public final class SchematicProfileStore {
 					PeriScanClient.LOGGER.warn("PeriScan: skipping invalid schematic entry in {}: {}", file, element);
 				}
 			}
-			return entries;
+			int defaultOriginY = json.has("defaultOriginY") ? json.get("defaultOriginY").getAsInt()
+					: SchematicEntry.DEFAULT_ORIGIN_Y;
+			return new SchematicProfile(defaultOriginY, entries);
 		} catch (Exception e) {
 			Path backup = file.resolveSibling(file.getFileName() + ".broken");
 			try {
@@ -113,26 +115,34 @@ public final class SchematicProfileStore {
 			} catch (IOException moveFailure) {
 				PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up: {}", file, e.toString());
 			}
-			return List.of();
+			return SchematicProfile.EMPTY;
 		}
 	}
 
 	/**
-	 * Saves a profile (creating it if needed) with the given entries, then
-	 * imports the given files into it. The copies of entries that are no longer
-	 * listed are deleted. An imported file replaces a same-named copy; if that
-	 * name is still listed its entry is kept, otherwise it gets a
-	 * {@link SchematicEntry#imported new one} at the end.
+	 * Saves a profile (creating it if needed), then imports the given files
+	 * into it. The copies of entries that are no longer listed are deleted. An
+	 * imported file replaces a same-named copy; if that name is still listed its
+	 * entry is kept, otherwise it gets a {@link SchematicEntry#imported new one}
+	 * at the end. Imports sharing a file name fail, all of them: the profile
+	 * could hold only one, and which one would be a guess.
 	 */
-	public static UpdateResult update(Path root, String name, List<SchematicEntry> entries, List<Path> imports) {
+	public static UpdateResult update(Path root, String name, SchematicProfile profile, List<Path> imports) {
 		Path dir = dir(root, name);
-		List<SchematicEntry> saved = new ArrayList<>(entries);
+		List<SchematicEntry> saved = new ArrayList<>(profile.entries());
+		Set<String> importNames = new HashSet<>();
+		Set<String> ambiguous = new HashSet<>();
+		for (Path source : imports) {
+			if (source.getFileName() != null && !importNames.add(source.getFileName().toString())) {
+				ambiguous.add(source.getFileName().toString());
+			}
+		}
 		Set<String> kept = new HashSet<>();
 		saved.forEach(entry -> kept.add(entry.fileName()));
 		List<Path> failed = new ArrayList<>();
 		try {
 			Files.createDirectories(dir);
-			for (SchematicEntry old : load(root, name)) {
+			for (SchematicEntry old : load(root, name).entries()) {
 				if (!kept.contains(old.fileName())) {
 					Files.deleteIfExists(dir.resolve(old.fileName()));
 				}
@@ -146,17 +156,33 @@ public final class SchematicProfileStore {
 				if (!SchematicEntry.isValidFileName(fileName) || !Files.isRegularFile(source)) {
 					throw new IOException("not a " + SchematicEntry.EXTENSION + " file");
 				}
+				if (ambiguous.contains(fileName)) {
+					throw new IOException("several imports are named " + fileName);
+				}
 				Files.copy(source, dir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
 				if (kept.add(fileName)) {
-					saved.add(SchematicEntry.imported(fileName));
+					saved.add(SchematicEntry.imported(fileName, profile.defaultOriginY()));
 				}
 			} catch (IOException e) {
 				PeriScanClient.LOGGER.warn("PeriScan: could not import {} into {}: {}", source, dir, e.toString());
 				failed.add(source);
 			}
 		}
-		write(dir.resolve(PROFILE_FILE), saved);
-		return new UpdateResult(List.copyOf(saved), List.copyOf(failed));
+		SchematicProfile result = new SchematicProfile(profile.defaultOriginY(), saved);
+		write(dir.resolve(PROFILE_FILE), result);
+		return new UpdateResult(result, List.copyOf(failed));
+	}
+
+	/**
+	 * Saves a copy of profile {@code from}, with its schematic files, as
+	 * {@code to}. The caller must have checked that {@code to} is a valid name
+	 * and not taken.
+	 */
+	public static UpdateResult copy(Path root, String from, String to) {
+		SchematicProfile profile = load(root, from);
+		// Importing a file whose entry is listed keeps that entry.
+		List<Path> files = profile.entries().stream().map(entry -> dir(root, from).resolve(entry.fileName())).toList();
+		return update(root, to, profile, files);
 	}
 
 	/** Deletes a profile with its schematic copies. Returns false if there is no such profile. */
@@ -201,11 +227,12 @@ public final class SchematicProfileStore {
 	 * Writes the entries through a temporary file that then replaces the file,
 	 * so a crash mid-write cannot leave a truncated one.
 	 */
-	private static void write(Path file, List<SchematicEntry> entries) {
+	private static void write(Path file, SchematicProfile profile) {
 		JsonObject root = new JsonObject();
 		root.addProperty("version", FORMAT_VERSION);
+		root.addProperty("defaultOriginY", profile.defaultOriginY());
 		JsonArray schematics = new JsonArray();
-		for (SchematicEntry entry : entries) {
+		for (SchematicEntry entry : profile.entries()) {
 			JsonObject json = new JsonObject();
 			json.addProperty("file", entry.fileName());
 			JsonArray corners = new JsonArray();

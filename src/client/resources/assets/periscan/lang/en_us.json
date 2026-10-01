@@ -13,7 +13,7 @@
 	"periscan.config.category.trench_outer": "One outside the trench",
 	"periscan.config.category.trench_inner": "Inside the trench",
 	"periscan.config.category.bottom_trench": "Trench bottom",
-	"periscan.config.bottom_trench.desc": "In the bottom two scanned layers of the trench area (Y=-59, -58 in the overworld), every block except air and liquids is highlighted. Those two layers are excluded from the \"inside the trench\" checks (block list and falling-block runs).",
+	"periscan.config.bottom_trench.desc": "In the bottom two scanned layers of the trench area (Y=-59, -58 in the overworld), every block except air and liquids is highlighted. While this zone is ON, those two layers are excluded from the \"inside the trench\" checks (block list and falling-block runs); while it is OFF, \"inside the trench\" covers them too. OFF by default, because the whole floor of a trench that is not dug yet would be highlighted.",
 	"periscan.config.category.eater": "Eater area",
 	"periscan.config.zone.enabled": "Scan this zone",
 	"periscan.config.zone.enabled.desc": "When OFF this zone is not scanned or highlighted. A scan cannot start while all zones are OFF.",

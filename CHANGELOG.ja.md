@@ -9,7 +9,9 @@ PeriScan の変更点の日本語版です。リリースノート（GitHub Rele
 ### 追加
 - すべてのワールドで共通の設計図プロファイルを追加。スケマティックのコピーを自分で持つので、元のファイルを移動・削除しても壊れません
 - スケマティックごとに、設置する角（`--`、`+-`、`-+`、`++`）と原点の高さを選べるように
-- `/peri schematic edit`、`/peri schematic list`、`/peri schematic remove` を追加
+- 設計図プロファイルごとに、新しく取り込むスケマティックの原点の高さの初期値を設定できるように
+- `/peri schematic edit`、`/peri schematic list`、`/peri schematic copy`、`/peri schematic remove` を追加
+- プロファイルを消さずに配置したスケマティックだけを消す `/peri schematic clear <名前>` を追加
 
 ### 変更
 - スケマティックの配置を、`/peri schematic <名前> [セット]` から `/peri schematic place <名前> <設計図プロファイル>` に変更

@@ -3,7 +3,9 @@ Replaces the schematic folders with schematic profiles that you edit in game. Sc
 ### Added
 - Add schematic profiles, shared by all worlds, that keep their own copies of the schematics, so the original files can be moved or deleted
 - Choose for each schematic the corners it is placed on (`--`, `+-`, `-+`, `++`) and its origin height
-- Add `/peri schematic edit`, `/peri schematic list` and `/peri schematic remove`
+- Set per schematic profile the origin height that newly imported schematics start with
+- Add `/peri schematic edit`, `/peri schematic list`, `/peri schematic copy` and `/peri schematic remove`
+- Add `/peri schematic clear <name>` to remove a profile's placed schematics without deleting the profile
 
 ### Changed
 - Place schematics with `/peri schematic place <name> <schematic profile>` instead of `/peri schematic <name> [set]`

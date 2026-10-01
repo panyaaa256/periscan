@@ -66,6 +66,23 @@ public final class SchematicPlanner {
 	}
 
 	/**
+	 * The placements of a schematic profile's entries (files in profileDir) for
+	 * a peri profile: one per entry and chosen corner, in entry order.
+	 */
+	public static List<PlannedPlacement> plan(Path profileDir, List<SchematicEntry> entries, PeriProfile profile) {
+		String prefix = placementPrefix(profile.name());
+		List<PlannedPlacement> plan = new ArrayList<>();
+		for (SchematicEntry entry : entries) {
+			for (Corner corner : entry.corners()) {
+				plan.add(new PlannedPlacement(profileDir, entry.fileName(),
+						prefix + entry.baseName() + "@" + corner.label(),
+						corner.origin(profile, entry.originY()), corner.rotation(), corner.mirror()));
+			}
+		}
+		return plan;
+	}
+
+	/**
 	 * The placements for a set. Callers must have rejected misplaced edge/ files
 	 * of pre-sorted sets; they would be planned with the edgeCorners rule here.
 	 */

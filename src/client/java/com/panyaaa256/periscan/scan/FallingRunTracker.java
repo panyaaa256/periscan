@@ -64,6 +64,16 @@ public final class FallingRunTracker {
 		return alongZ.positions();
 	}
 
+	/** The X-axis run highlights with their per-chunk index and change record. */
+	public ChunkIndexedPositions alongXIndex() {
+		return alongX;
+	}
+
+	/** The Z-axis run highlights with their per-chunk index and change record. */
+	public ChunkIndexedPositions alongZIndex() {
+		return alongZ;
+	}
+
 	public void clear() {
 		alongX.clear();
 		alongZ.clear();

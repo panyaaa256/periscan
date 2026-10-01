@@ -84,19 +84,22 @@ public class ScanManager {
 		this.dormantNoticePending = true;
 	}
 
-	/** Highlighted blocks of the zone (BlockPos longs). Do not modify. */
-	public LongOpenHashSet highlights(Zone zone) {
-		return highlights.get(zone).positions();
+	/**
+	 * Highlighted blocks of the zone (BlockPos longs), with the per-chunk index
+	 * and change record the renderer uses. Do not modify.
+	 */
+	public ChunkIndexedPositions highlightIndex(Zone zone) {
+		return highlights.get(zone);
 	}
 
 	/** Falling-block run highlights with runs along the X axis. Do not modify. */
-	public LongOpenHashSet fallingAlongX() {
-		return fallingRuns.alongX();
+	public ChunkIndexedPositions fallingAlongXIndex() {
+		return fallingRuns.alongXIndex();
 	}
 
 	/** Falling-block run highlights with runs along the Z axis. Do not modify. */
-	public LongOpenHashSet fallingAlongZ() {
-		return fallingRuns.alongZ();
+	public ChunkIndexedPositions fallingAlongZIndex() {
+		return fallingRuns.alongZIndex();
 	}
 
 	public int pendingChunkCount() {

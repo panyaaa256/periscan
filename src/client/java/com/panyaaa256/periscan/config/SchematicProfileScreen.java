@@ -1,6 +1,7 @@
 package com.panyaaa256.periscan.config;
 
 import com.panyaaa256.periscan.compat.VersionCompat;
+import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration;
 import com.panyaaa256.periscan.schematic.Corner;
 import com.panyaaa256.periscan.schematic.SchematicEntry;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore;
@@ -71,8 +72,9 @@ public final class SchematicProfileScreen {
 		ConfigCategory.Builder category = ConfigCategory.createBuilder()
 				.name(Component.literal(name))
 				.group(importList(listSources(sourceRoot), imports));
+		Path profileDir = SchematicProfileStore.dir(SchematicProfileStore.root(), name);
 		for (EntryState state : states) {
-			category.group(entryGroup(state));
+			category.group(entryGroup(state, LitematicaIntegration.schematicName(profileDir, state.fileName)));
 		}
 		return YetAnotherConfigLib.createBuilder()
 				.title(Component.translatable(KEY + "title", name))
@@ -151,9 +153,14 @@ public final class SchematicProfileScreen {
 				.build();
 	}
 
-	private static OptionGroup entryGroup(EntryState state) {
+	/**
+	 * @param schematicName the name in the schematic's metadata, shown as the
+	 *                      group's title; null to show the file name
+	 */
+	private static OptionGroup entryGroup(EntryState state, String schematicName) {
 		OptionGroup.Builder group = OptionGroup.createBuilder()
-				.name(Component.literal(state.fileName));
+				.name(Component.literal(schematicName != null ? schematicName : state.fileName))
+				.description(OptionDescription.of(Component.literal(state.fileName)));
 		for (Corner corner : Corner.values()) {
 			group.option(Option.<Boolean>createBuilder()
 					.name(Component.translatable(KEY + "corner." + corner.name().toLowerCase(Locale.ROOT)))

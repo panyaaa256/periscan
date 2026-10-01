@@ -62,6 +62,23 @@ public final class LitematicaIntegration {
 		return LitematicaPlacer.schematicsBaseDirectory();
 	}
 
+	/**
+	 * The name stored in a schematic file's metadata, or null if it has none or
+	 * cannot be read. Not covered by the capability probe: a litematica without
+	 * this method only loses the names, not placement.
+	 */
+	public static String schematicName(Path dir, String fileName) {
+		if (!isAvailable()) {
+			return null;
+		}
+		try {
+			String name = LitematicaPlacer.schematicName(dir, fileName);
+			return name == null || name.isBlank() ? null : name;
+		} catch (RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
 	private static boolean probe() {
 		if (!FabricLoader.getInstance().isModLoaded("litematica")) {
 			return false;

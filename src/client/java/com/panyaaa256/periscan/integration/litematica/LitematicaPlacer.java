@@ -4,6 +4,7 @@ import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration.Plan
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration.Result;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic;
+import fi.dy.masa.litematica.schematic.SchematicMetadata;
 import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
 import fi.dy.masa.litematica.schematic.placement.SchematicPlacementManager;
 import fi.dy.masa.malilib.gui.Message;
@@ -39,6 +40,12 @@ final class LitematicaPlacer {
 
 	static Path schematicsBaseDirectory() {
 		return DataManager.getSchematicsBaseDirectory();
+	}
+
+	/** The name in the schematic file's metadata; null if the file cannot be read. */
+	static String schematicName(Path dir, String fileName) {
+		SchematicMetadata metadata = LitematicaSchematic.readMetadataFromFile(dir, fileName);
+		return metadata == null ? null : metadata.getName();
 	}
 
 	static Result place(List<PlannedPlacement> plan, String removePrefix) {

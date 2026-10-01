@@ -10,6 +10,7 @@ With Litematica installed, it can also place all of your perimeter schematics at
 - [Commands](#commands)
 - [What gets highlighted](#what-gets-highlighted)
 - [Settings](#settings)
+- [Keys](#keys)
 - [Placing schematics](#placing-schematics)
 - [Troubleshooting](#troubleshooting)
 
@@ -137,6 +138,7 @@ Open the settings with `/peri config`. Saved changes apply right away; if you ar
 | North-south trench width | Width of the trenches at the north and south ends (lanes, 3–32) | 12 |
 | East-west trench width | Width of the trenches at the east and west ends (lanes, 3–32) | 3 |
 | Maximum scanned Y | Scanning goes up to this height | 128 |
+| Show highlights | Turn off to hide everything PeriScan draws (highlights and unscanned chunk boxes). Scanning continues | On |
 | Highlight unscanned chunks | Shows chunks that have not been scanned yet as boxes | On |
 | Unscanned chunk color | Color of those boxes | Orange |
 | Exclude push-destroyed blocks from waterlogged check | Blocks that pistons break (leaves, coral, dripstone, …) are not highlighted even when waterlogged | On |
@@ -149,6 +151,7 @@ Each zone ("One outside the trench", "Inside the trench", "Trench bottom", "Eate
 | Setting | What it does |
 |---|---|
 | Scan this zone | Turn off to skip the zone. Scanning cannot start with every zone off |
+| Show this zone | Turn off to hide the zone's highlights. The zone is still scanned |
 | Highlight color | The zone's highlight color (white by default) |
 | Include waterlogged blocks | Also highlight waterlogged blocks, such as stairs with water in them. Water itself is never highlighted (not in "Trench bottom") |
 | Highlighted blocks | The blocks to highlight (not in "Trench bottom") |
@@ -176,6 +179,25 @@ Put one of these on each line:
 | `#periscan:redstone_reactive` | Doors, trapdoors, fence gates, copper bulbs, pistons, redstone dust/torches/lamps, dispensers, hoppers and other blocks whose state changes when they receive a redstone signal (signal sources such as buttons and levers are not included) |
 
 Mistyped entries, such as IDs that do not exist, are ignored. When you start scanning, the chat shows "ignored invalid config entry" for each of them.
+
+## Keys
+
+PeriScan adds the keys below to Options > Controls > Key Binds, in the "PeriScan" category. None has a key assigned at first; assign the ones you want to use.
+
+| Key | What it does |
+|---|---|
+| Open Settings | Opens the settings, like `/peri config` |
+| Show/Hide Highlights | Hides or shows everything PeriScan draws. Same as "Show highlights" in the settings |
+| Rescan | Same as `/peri scan reload` |
+| Clear Scan | Same as `/peri scan clear` |
+| Show/Hide One Outside the Trench | Hides or shows the highlights of that zone. Same as "Show this zone" in the settings |
+| Show/Hide Inside the Trench | Same, for "Inside the trench". Runs of falling blocks are hidden with it |
+| Show/Hide Trench Bottom | Same, for "Trench bottom" |
+| Show/Hide Eater Area | Same, for "Eater area" |
+
+- Hiding does not stop the scan, so the highlights are up to date when you show them again.
+- What you hide stays hidden after restarting the game, until you show it again.
+- A zone with "Scan this zone" turned off has nothing to show: its key only tells you that the zone is not enabled.
 
 ## Placing schematics
 
@@ -249,4 +271,6 @@ The corners are named by their X and Z side: `+-` is the +X / -Z corner.
 | "… has nothing to place" | Open `/peri schematic edit <schematic profile>`, import schematics and select at least one corner |
 | "import failed" | Check that the file exists in Litematica's schematics folder and ends in `.litematic` |
 | "failed to load …" | Check that the file is not damaged and that Litematica can open it |
+| No highlights although a scan is running | Check "Show highlights" in General and "Show this zone" in each zone of the settings; they may have been turned off with a key |
+| "… is not enabled" when pressing a zone's key | Turn on "Scan this zone" for that zone in the settings |
 | Highlights are invisible with shaders on | Update Iris to its latest version |

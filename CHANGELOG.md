@@ -1,10 +1,14 @@
-Opens the settings from Mod Menu, suggests blocks and tags in the block lists, and highlights blocks as soon as they appear.
+Replaces the schematic folders with schematic profiles that you edit in game. Schematics in `schematics/peri/` are no longer read: import them into a schematic profile with `/peri schematic edit <schematic profile>`.
 
 ### Added
-- Add a settings button to PeriScan's entry in Mod Menu
-- Suggest block IDs and tags while you type in the block lists (Minecraft 1.20 and newer)
-- Warn when saving the settings about block list entries that are neither a block ID nor a tag
+- Add schematic profiles, shared by all worlds, that keep their own copies of the schematics, so the original files can be moved or deleted
+- Choose for each schematic the corners it is placed on (`--`, `+-`, `-+`, `++`) and its origin height
+- Add `/peri schematic edit`, `/peri schematic list` and `/peri schematic remove`
 
-### Fixed
-- Highlight blocks that appear after their chunk has loaded, such as obsidian formed by lava and water, right away instead of only after the chunk loads again
-- Update runs of falling blocks right away when one of their blocks is broken or when falling sand and gravel land
+### Changed
+- Place schematics with `/peri schematic place <name> <schematic profile>` instead of `/peri schematic <name> [set]`
+- Allow placing schematics in any dimension except the End, as the origin height is now set per schematic
+
+### Removed
+- Remove the `all` / `edge` / `edge/mx` / `edge/mz` folder layout
+- Remove the "Peri schematics folder" and "Edge placement corners" settings

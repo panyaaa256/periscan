@@ -72,6 +72,8 @@
 	"periscan.msg.schem_load_failed": "PeriScan: failed to load %s - no placements were created",
 	"periscan.msg.schem_done": "PeriScan: '%s': created %s placement(s) from schematic profile '%s'",
 	"periscan.msg.schem_replaced": "PeriScan: replaced %s existing placement(s)",
+	"periscan.msg.schem_cleared": "PeriScan: '%s': removed %s placement(s)",
+	"periscan.msg.schem_clear_none": "PeriScan: '%s' has no placements to remove",
 	"periscan.msg.placements_removed": "PeriScan: removed %s linked placement(s)",
 	"periscan.msg.cleared": "PeriScan: highlights cleared",
 	"periscan.msg.reloaded": "PeriScan: '%s' rescanned",

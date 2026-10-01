@@ -41,7 +41,10 @@ Profiles are saved per world (or server). After logging out and back in, run `/p
 | `/peri scan start <name>` | Starts scanning a profile's area |
 | `/peri scan clear` | Removes the highlights and stops scanning (the profile is kept) |
 | `/peri scan reload` | Rescans the profile you scanned last from scratch |
-| `/peri schematic <name> [set]` | Places schematics for a profile (see [below](#placing-schematics)) |
+| `/peri schematic edit <schematic profile>` | Opens a schematic profile's settings, creating it if needed (see [below](#placing-schematics)) |
+| `/peri schematic place <name> <schematic profile>` | Places a schematic profile's schematics for a profile |
+| `/peri schematic list` | Lists your schematic profiles |
+| `/peri schematic remove <schematic profile>` | Deletes a schematic profile, together with its copies of the schematics |
 | `/peri config` | Opens the settings screen |
 
 ### Giving the area
@@ -132,8 +135,6 @@ Open the settings with `/peri config`. Saved changes apply right away; if you ar
 | North-south trench width | Width of the trenches at the north and south ends (lanes, 3–32) | 12 |
 | East-west trench width | Width of the trenches at the east and west ends (lanes, 3–32) | 3 |
 | Maximum scanned Y | Scanning goes up to this height | 128 |
-| Peri schematics folder | Folder used for [placing schematics](#placing-schematics) | peri |
-| Edge placement corners | How edge schematics are placed ([see below](#how-schematics-are-placed)) | ++ / -- |
 | Highlight unscanned chunks | Shows chunks that have not been scanned yet as boxes | On |
 | Unscanned chunk color | Color of those boxes | Orange |
 | Exclude push-destroyed blocks from waterlogged check | Blocks that pistons break (leaves, coral, dripstone, …) are not highlighted even when waterlogged | On |
@@ -176,53 +177,51 @@ Mistyped entries, such as IDs that do not exist, are ignored. When you start sca
 
 ## Placing schematics
 
-Every perimeter uses the same schematics in the same positions. `/peri schematic` places all of them in Litematica, lined up with a profile's area.
+Every perimeter uses the same schematics in the same positions. A **schematic profile** remembers which schematics those are and where each one goes, and `/peri schematic place` places all of them in Litematica, lined up with a profile's area.
 
 **This needs Litematica.** Everything else works without it.
 
-### Folder layout
+Schematic profiles are shared by all worlds and servers, unlike the profiles made with `/peri add`.
 
-Put your files in Litematica's schematics folder (usually `.minecraft/schematics`) like this:
+### Making a schematic profile
 
-```
-schematics/
-  peri/              <- the "Peri schematics folder" setting
-    ow/              <- a set (for the Overworld)
-      all/           <- placed once
-      edge/          <- placed twice, on opposite sides
-    nether/          <- a set (for the Nether)
-      all/
-      edge/
-        mx/          <- paired by flipping east-west
-        mz/          <- paired by flipping north-south
-```
+1. Open the profile's settings. Any name works; a profile that does not exist yet is created when you save.
+   ```
+   /peri schematic edit <schematic profile>
+   ```
+2. Under "Import schematics", add the files to use. The suggestions are the `.litematic` files in Litematica's schematics folder (usually `.minecraft/schematics`); you can also type a path relative to that folder.
+3. Press "Save Changes". Each imported schematic now has its own section.
+4. In each section, choose the corners to place the schematic on and its origin height, then save again.
 
-- Choose the set with `/peri schematic <name> <set>`. Without it, `ow` is used in the Overworld and `nether` in the Nether. Press Tab to see the sets you have.
-- Every `.litematic` file in these folders is placed.
+- PeriScan **copies** the files into `config/periscan/schematics/<schematic profile>/`. You can move, rename or delete the originals afterwards.
+- A changed original is not picked up by itself. Import the file again: a file with the same name replaces the copy and keeps the section's settings.
+- To take a schematic out of the profile, turn on "Remove from profile" in its section and save. Its copy is deleted too.
+- On Minecraft 1.19.4 there are no suggestions; type the path.
 
 ### Saving your schematics
 
 Save every file like this:
 
 - Put the origin on the perimeter's **north-west corner block**
-- The origin's height is **Y = -59** in the Overworld and **Y = 5** in the Nether
 - The contents extend east (+X) and south (+Z) from the origin
 
-In `edge`, save only the half of the perimeter that can be reused for the opposite side.
+For parts that repeat on several sides, save only one of them and place it on more than one corner.
 
 ### How schematics are placed
 
-| Folder | Where it goes |
-|---|---|
-| `all/` | Once at the north-west corner, as saved |
-| `edge/` ("Edge placement corners" is `++ / --`) | As saved at the north-west corner + rotated 180° at the south-east corner |
-| `edge/` ("Edge placement corners" is `+- / -+`) | Flipped east-west at the north-east corner + flipped north-south at the south-west corner |
-| `edge/mx/` (Nether) | As saved at the north-west corner + flipped east-west at the north-east corner |
-| `edge/mz/` (Nether) | As saved at the north-west corner + flipped north-south at the south-west corner |
+The corners are named by their X and Z side: `+-` is the +X / -Z corner.
 
-- In the Nether, files cannot go directly in `edge/`; sort them into `mx/` or `mz/`. Nether trenchers always start in a fixed direction, so the opposite copy is flipped instead of rotated 180°. Which way to flip depends on the contents, so the folder tells PeriScan.
-- The "Edge placement corners" setting is not used in the Nether.
+| Corner | Where it goes |
+|---|---|
+| `--` | At the north-west corner, as saved |
+| `+-` | At the north-east corner, flipped east-west |
+| `-+` | At the south-west corner, flipped north-south |
+| `++` | At the south-east corner, rotated 180° |
+
+- The origin height is set per schematic (default -59, just above the Overworld's bedrock floor; use 5 for the Nether).
+- A schematic with no corner selected is not placed.
 - Flipping also swaps left and right in circuits. A circuit that is not symmetric may stop working when flipped.
+- Rotating 180° reverses the direction a machine faces. Where that matters (for example trenchers that must start in a fixed direction), use `+-` or `-+` instead of `++`.
 
 ### After placing
 
@@ -230,6 +229,7 @@ In `edge`, save only the half of the perimeter that can be reused for the opposi
 - Running the command again for the same profile replaces what it placed before.
 - If any file cannot be loaded, nothing is placed.
 - Deleting the profile with `/peri remove` also removes its placements.
+- Placements keep pointing at the schematic profile's copies. After removing a schematic or deleting a schematic profile, placements made from it in other worlds can no longer be loaded.
 
 ## Troubleshooting
 
@@ -240,6 +240,8 @@ In `edge`, save only the half of the perimeter that can be reused for the opposi
 | "… chunks not loaded yet" | Go near the orange boxes; those chunks are scanned once they load |
 | "a saved profile is available" | Run `/peri scan reload` in that dimension to resume scanning |
 | "litematica is not installed (or is an incompatible version)" | Install Litematica, or update it to the version for your Minecraft version |
-| "… has .litematic files directly in edge" | In a Nether set, move the files in `edge/` into `edge/mx/` or `edge/mz/` |
+| "no schematic profile named …" | Create it with `/peri schematic edit <schematic profile>`, or check the name with `/peri schematic list` |
+| "… has nothing to place" | Open `/peri schematic edit <schematic profile>`, import schematics and select at least one corner |
+| "import failed" | Check that the file exists in Litematica's schematics folder and ends in `.litematic` |
 | "failed to load …" | Check that the file is not damaged and that Litematica can open it |
 | Highlights are invisible with shaders on | Update Iris to its latest version |

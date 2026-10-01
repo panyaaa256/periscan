@@ -27,6 +27,7 @@ public class PeriScanClient implements ClientModInitializer {
 			PeriScanConfig.handler().save();
 		}
 		PeriCommand.register();
+		PeriKeybinds.register();
 		ScanManager.INSTANCE.init();
 		HighlightRenderer.init();
 		ProfileStore.init();

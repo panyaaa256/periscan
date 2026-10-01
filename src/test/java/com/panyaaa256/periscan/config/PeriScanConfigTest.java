@@ -35,15 +35,13 @@ class PeriScanConfigTest {
 	void missingValuesGetTheirDefaults() {
 		PeriScanConfig defaults = new PeriScanConfig();
 		PeriScanConfig config = new PeriScanConfig();
-		config.schematicsFolder = null;
-		config.edgeCorners = null;
+		config.pendingChunkColor = null;
 		config.eater = null;
 		config.trenchOuter.color = null;
 		config.trenchOuter.blocks = null;
 
 		assertTrue(config.sanitize());
-		assertEquals(defaults.schematicsFolder, config.schematicsFolder);
-		assertEquals(defaults.edgeCorners, config.edgeCorners);
+		assertEquals(defaults.pendingChunkColor, config.pendingChunkColor);
 		assertEquals(defaults.eater.blocks, config.eater.blocks);
 		assertEquals(defaults.trenchOuter.color, config.trenchOuter.color);
 		assertEquals(defaults.trenchOuter.blocks, config.trenchOuter.blocks);

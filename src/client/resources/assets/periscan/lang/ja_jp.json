@@ -31,7 +31,7 @@
 	"periscan.config.zone.blocks": "ハイライトするブロック",
 	"periscan.config.zone.blocks.desc": "ブロックID(minecraft:obsidian)またはブロックタグ(#minecraft:walls)。特殊エントリ #periscan:immovable はピストンで動かせないブロック全般(チェスト・スポナー・スカルクセンサーなどのブロックエンティティ持ち、黒曜石・強化深層岩などの押し不可ブロック)に一致します。岩盤は地形の一部のため除外されます。",
 	"periscan.config.zone.fence_blocks": "state変化ブロック(特定レーンのみ)",
-	"periscan.config.zone.fence_blocks.desc": "このリストのブロックは、トレンチの端から数えて3で割って2余る列(2, 5, 8, 11...)にある場合のみハイライトされます。それ以外の列ではtrencherの妨げにならないため無視されます。幅が3のトレンチは真ん中にあっても壊れないため、全くハイライトされません。特殊エントリ: #periscan:connecting は隣接ブロックと接続して形状が変わるブロック(塀・フェンス・板ガラス・鉄格子)、#periscan:redstone_reactive はレッドストーン信号でstateが変わるプロパティ(powered/open/extended/triggered/enabled)を持つブロック(ドア・トラップドア・フェンスゲート・銅電球・ピストン・ディスペンサー・ホッパー・オブザーバーなど)に一致します。",
+	"periscan.config.zone.fence_blocks.desc": "このリストのブロックは、トレンチの端から数えて3で割って2余る列(2, 5, 8, 11...)にある場合のみハイライトされます。それ以外の列ではtrencherの妨げにならないため無視されます。幅が3のトレンチは真ん中にあっても壊れないため、全くハイライトされません。特殊エントリ: #periscan:connecting は隣接ブロックと接続して形状が変わるブロック(塀・フェンス・板ガラス・鉄格子)、#periscan:redstone_reactive はレッドストーン信号を受けてstateが変わるブロック(ドア・トラップドア・フェンスゲート・銅電球・ピストン・レッドストーンダスト/トーチ/ランプ・リピーター・コンパレーター・ディスペンサー・ホッパー・レール・TNTなど)に一致します。信号を出すだけのブロック(ボタン・レバー・感圧板・オブザーバーなど)は含みません。",
 	"periscan.config.invalid_entries.title": "PeriScan: 無効なブロック指定",
 	"periscan.config.invalid_entries.message": "%s 件がブロックIDでもタグでもありません(保存はされました): %s",
 	"periscan.schematic.title": "PeriScan 設計図: %s",

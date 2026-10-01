@@ -46,6 +46,8 @@ public final class PeriScanConfigScreen {
 				.title(Component.translatable(KEY + "title"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable(KEY + "category.general"))
+						.option(tickBox("show_highlights", "show_highlights.desc", defaults.showHighlights,
+								() -> config.showHighlights, v -> config.showHighlights = v))
 						.option(slider("ns_width", "ns_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.northSouthWidth,
 								() -> config.northSouthWidth, v -> config.northSouthWidth = v))
 						.option(slider("ew_width", "ew_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.eastWestWidth,
@@ -112,13 +114,15 @@ public final class PeriScanConfigScreen {
 				Component.translatable(KEY + "invalid_entries.message", invalid.size(), list));
 	}
 
-	/** Enabled toggle and color, shared by every zone. */
+	/** Enabled and visible toggles and color, shared by every zone. */
 	private static ConfigCategory.Builder zoneCategory(String zoneId, String enabledDescKey,
 			ZoneSettings defaults, Supplier<? extends ZoneSettings> current) {
 		return ConfigCategory.createBuilder()
 				.name(Component.translatable(KEY + "category." + zoneId))
 				.option(tickBox("zone.enabled", enabledDescKey, defaults.enabled,
 						() -> current.get().enabled, v -> current.get().enabled = v))
+				.option(tickBox("zone.visible", "zone.visible.desc", defaults.visible,
+						() -> current.get().visible, v -> current.get().visible = v))
 				.option(color("zone.color", defaults.color,
 						() -> current.get().color, v -> current.get().color = v));
 	}

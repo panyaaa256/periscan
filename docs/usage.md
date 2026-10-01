@@ -175,7 +175,7 @@ Put one of these on each line:
 | `#periscan:connecting` | Walls, fences, glass panes, iron bars and other blocks that connect to their neighbors |
 | `#periscan:redstone_reactive` | Doors, trapdoors, fence gates, copper bulbs, pistons, redstone dust/torches/lamps, dispensers, hoppers and other blocks whose state changes when they receive a redstone signal (signal sources such as buttons and levers are not included) |
 
-On Minecraft 1.20 and newer, the lists suggest block IDs and tags as you type. The world's tags are only suggested when you open the settings while in a world. You can still type anything.
+The lists suggest block IDs and tags as you type. The world's tags are only suggested when you open the settings while in a world. You can still type anything.
 
 Mistyped entries, such as IDs that do not exist, are ignored. When you save the settings, a message in the top right corner lists them, and when you start scanning, the chat shows "ignored invalid config entry" for each of them.
 
@@ -202,7 +202,6 @@ Schematic profiles are shared by all worlds and servers, unlike the profiles mad
 - Files with the same name cannot be imported in one save, even from different folders; none of them is imported and a message lists them. Rename one, or import them one save at a time (the later one then replaces the earlier).
 - "Default origin Y" at the top is the origin height newly imported schematics start with. Set it before importing, for example to 5 for a Nether profile.
 - To take a schematic out of the profile, turn on "Remove from profile" in its section and save. Its copy is deleted too.
-- On Minecraft 1.19.4 there are no suggestions; type the path relative to Litematica's schematics folder.
 
 To make a variant, for example a Nether version of an Overworld profile, copy it with `/peri schematic copy <from> <to>` and change the heights and corners in the copy.
 

@@ -27,15 +27,14 @@
 | 1.21.2 – 1.21.3 | `periscan-<version>+1.21.3.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
 | 1.21 – 1.21.1 | `periscan-<version>+1.21.1.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
 | 1.20.5 – 1.20.6 | `periscan-<version>+1.20.6.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
-| 1.20.3 – 1.20.4 | `periscan-<version>+1.20.4.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
-| 1.20 – 1.20.1 | `periscan-<version>+1.20.1.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
-| 1.19.4 | `periscan-<version>+1.19.4.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
+| 1.20.3 – 1.20.4 | `periscan-<version>+1.20.4.jar` | [`mc/1.20-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20-1.20.4) |
+| 1.20 – 1.20.1 | `periscan-<version>+1.20.1.jar` | [`mc/1.20-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20-1.20.4) |
 
 1.20.2 は、YACL に beta 版しかないため対象外です。
 
 ## 必要なもの
 
-- Minecraft 1.19.4〜26.3（上の表を参照）
+- Minecraft 1.20〜26.3（上の表を参照）
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 以降
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)（Minecraft のバージョンに合うもの）

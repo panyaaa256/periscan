@@ -27,15 +27,14 @@ See **[the usage guide](docs/usage.md)** for how to use it.
 | 1.21.2 – 1.21.3 | `periscan-<version>+1.21.3.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
 | 1.21 – 1.21.1 | `periscan-<version>+1.21.1.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
 | 1.20.5 – 1.20.6 | `periscan-<version>+1.20.6.jar` | [`mc/1.20.5-1.21.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20.5-1.21.4) |
-| 1.20.3 – 1.20.4 | `periscan-<version>+1.20.4.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
-| 1.20 – 1.20.1 | `periscan-<version>+1.20.1.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
-| 1.19.4 | `periscan-<version>+1.19.4.jar` | [`mc/1.19.4-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.19.4-1.20.4) |
+| 1.20.3 – 1.20.4 | `periscan-<version>+1.20.4.jar` | [`mc/1.20-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20-1.20.4) |
+| 1.20 – 1.20.1 | `periscan-<version>+1.20.1.jar` | [`mc/1.20-1.20.4`](https://github.com/panyaaa256/periscan/tree/mc/1.20-1.20.4) |
 
 1.20.2 is not supported, as YACL only has beta builds for it.
 
 ## Requirements
 
-- Minecraft 1.19.4 to 26.3 (see the table above)
+- Minecraft 1.20 to 26.3 (see the table above)
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) for your Minecraft version

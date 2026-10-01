@@ -7,34 +7,33 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
+import com.panyaaa256.periscan.config.SchematicProfileScreen;
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration;
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration.PlannedPlacement;
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration.Result;
 import com.panyaaa256.periscan.persist.PeriProfile;
 import com.panyaaa256.periscan.persist.ProfileStore;
 import com.panyaaa256.periscan.scan.ScanManager;
+import com.panyaaa256.periscan.schematic.SchematicEntry;
 import com.panyaaa256.periscan.schematic.SchematicPlanner;
-import com.panyaaa256.periscan.schematic.SchematicPlanner.SetFiles;
+import com.panyaaa256.periscan.schematic.SchematicProfileStore;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
 /**
  * The /peri command: peri profiles (add/remove/list), scanning bound to them
- * (scan start/clear/reload), litematica schematic placement (schematic) and
- * the config screen (config).
+ * (scan start/clear/reload), schematic profiles and their litematica
+ * placement (schematic edit/place/list/remove) and the config screen (config).
  */
 public final class PeriCommand {
 	private PeriCommand() {
@@ -61,15 +60,10 @@ public final class PeriCommand {
 		}
 		return builder.buildFuture();
 	};
-	// Suggest the schematic set folders that actually exist under the peri root.
-	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_SET_DIR = (ctx, builder) -> {
-		if (LitematicaIntegration.isAvailable() && Files.isDirectory(periRoot())) {
-			try (Stream<Path> dirs = Files.list(periRoot())) {
-				dirs.filter(Files::isDirectory)
-						.map(dir -> dir.getFileName().toString())
-						.filter(name -> name.startsWith(builder.getRemaining()))
-						.forEach(builder::suggest);
-			} catch (IOException ignored) {
+	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_SCHEMATIC_PROFILE = (ctx, builder) -> {
+		for (String name : SchematicProfileStore.names(SchematicProfileStore.root())) {
+			if (name.startsWith(builder.getRemaining())) {
+				builder.suggest(name);
 			}
 		}
 		return builder.buildFuture();
@@ -98,10 +92,17 @@ public final class PeriCommand {
 								.then(literal("clear").executes(ctx -> scanClear(ctx.getSource())))
 								.then(literal("reload").executes(ctx -> scanReload(ctx.getSource()))))
 						.then(literal("schematic")
-								.then(argument("name", StringArgumentType.word()).suggests(SUGGEST_PROFILE)
-										.executes(ctx -> schematic(ctx, null))
-										.then(argument("dir", StringArgumentType.word()).suggests(SUGGEST_SET_DIR)
-												.executes(ctx -> schematic(ctx, StringArgumentType.getString(ctx, "dir"))))))
+								.then(literal("edit")
+										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
+												.executes(PeriCommand::schematicEdit)))
+								.then(literal("place")
+										.then(argument("name", StringArgumentType.word()).suggests(SUGGEST_PROFILE)
+												.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
+														.executes(PeriCommand::schematicPlace))))
+								.then(literal("list").executes(ctx -> schematicList(ctx.getSource())))
+								.then(literal("remove")
+										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
+												.executes(PeriCommand::schematicRemove))))
 						.then(literal("config").executes(ctx -> openConfig()))));
 	}
 
@@ -275,18 +276,39 @@ public final class PeriCommand {
 		return true;
 	}
 
-	/**
-	 * Creates litematica placements for every schematic of a set directory (see
-	 * SchematicPlanner). Existing placements of the profile are replaced; a
-	 * broken file aborts before anything is touched.
-	 */
-	private static int schematic(CommandContext<FabricClientCommandSource> ctx, String dirArg) {
-		FabricClientCommandSource source = ctx.getSource();
-		if (rejectEnd(source)) {
-			return 0;
-		}
+	private static boolean rejectWithoutLitematica(FabricClientCommandSource source) {
 		if (!LitematicaIntegration.isAvailable()) {
 			source.sendError(Component.translatable("periscan.msg.litematica_missing"));
+			return true;
+		}
+		return false;
+	}
+
+	/** Opens the settings screen of a schematic profile; saving there creates the profile. */
+	private static int schematicEdit(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		// Schematics are imported from litematica's schematics folder.
+		if (rejectWithoutLitematica(source)) {
+			return 0;
+		}
+		String schematicProfile = StringArgumentType.getString(ctx, "profile");
+		if (!SchematicProfileStore.isValidName(schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.schem_profile_invalid_name", schematicProfile));
+			return 0;
+		}
+		Path sourceRoot = LitematicaIntegration.schematicsBaseDirectory();
+		PeriScanClient.scheduleScreen(() -> SchematicProfileScreen.create(null, schematicProfile, sourceRoot));
+		return 1;
+	}
+
+	/**
+	 * Creates litematica placements for the schematics of a schematic profile
+	 * (see SchematicPlanner). Existing placements of the peri profile are
+	 * replaced; a broken file aborts before anything is touched.
+	 */
+	private static int schematicPlace(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		if (rejectEnd(source) || rejectWithoutLitematica(source)) {
 			return 0;
 		}
 		String name = StringArgumentType.getString(ctx, "name");
@@ -294,44 +316,56 @@ public final class PeriCommand {
 		if (profile == null || rejectOtherDimension(source, profile)) {
 			return 0;
 		}
-		PeriDimension dimension = PeriDimension.of(profile.dimension());
-		if (dimension == null) {
-			source.sendError(Component.translatable("periscan.msg.unsupported_dimension", profile.dimension()));
+		String schematicProfile = StringArgumentType.getString(ctx, "profile");
+		Path root = SchematicProfileStore.root();
+		if (!SchematicProfileStore.exists(root, schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.no_schem_profile", schematicProfile));
 			return 0;
 		}
 
-		String dir = dirArg != null ? dirArg : dimension.defaultSetDir();
-		Path setDir = periRoot().resolve(dir);
-		if (!Files.isDirectory(setDir)) {
-			source.sendError(Component.translatable("periscan.msg.schem_dir_missing", setDir.toString()));
+		List<PlannedPlacement> plan = SchematicPlanner.plan(SchematicProfileStore.dir(root, schematicProfile),
+				SchematicProfileStore.load(root, schematicProfile), profile);
+		if (plan.isEmpty()) {
+			source.sendError(Component.translatable("periscan.msg.schem_no_files", schematicProfile));
 			return 0;
 		}
-		SetFiles files = SetFiles.list(setDir, dimension.presortedMirrorEdges());
-		if (dimension.presortedMirrorEdges() && !files.edge().isEmpty()) {
-			source.sendError(Component.translatable("periscan.msg.schem_edge_unsorted", files.edgeDir().toString()));
-			return 0;
-		}
-		if (files.fileCount() == 0) {
-			source.sendError(Component.translatable("periscan.msg.schem_no_files", setDir.toString()));
-			return 0;
-		}
-
-		List<PlannedPlacement> plan = SchematicPlanner.plan(files, profile,
-				dimension.schematicOriginY(), PeriScanConfig.get().edgeCorners);
 		Result result = LitematicaIntegration.place(plan, SchematicPlanner.placementPrefix(name));
 		if (result.failedFile() != null) {
 			source.sendError(Component.translatable("periscan.msg.schem_load_failed", result.failedFile()));
 			return 0;
 		}
-		source.sendFeedback(Component.translatable("periscan.msg.schem_done", name, result.created(), files.fileCount()));
+		source.sendFeedback(Component.translatable("periscan.msg.schem_done", name, result.created(), schematicProfile));
 		if (result.removed() > 0) {
 			source.sendFeedback(Component.translatable("periscan.msg.schem_replaced", result.removed()));
 		}
 		return 1;
 	}
 
-	private static Path periRoot() {
-		return LitematicaIntegration.schematicsBaseDirectory().resolve(PeriScanConfig.get().schematicsFolder);
+	private static int schematicList(FabricClientCommandSource source) {
+		Path root = SchematicProfileStore.root();
+		List<String> names = SchematicProfileStore.names(root);
+		if (names.isEmpty()) {
+			source.sendFeedback(Component.translatable("periscan.msg.no_schem_profiles"));
+			return 1;
+		}
+		source.sendFeedback(Component.translatable("periscan.msg.schem_profile_list_header", names.size()));
+		for (String name : names) {
+			List<SchematicEntry> entries = SchematicProfileStore.load(root, name);
+			source.sendFeedback(Component.translatable("periscan.msg.schem_profile_list_entry", name, entries.size()));
+		}
+		return 1;
+	}
+
+	/** Deletes a schematic profile with its schematic copies; placements made from it are kept. */
+	private static int schematicRemove(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		String schematicProfile = StringArgumentType.getString(ctx, "profile");
+		if (!SchematicProfileStore.remove(SchematicProfileStore.root(), schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.no_schem_profile", schematicProfile));
+			return 0;
+		}
+		source.sendFeedback(Component.translatable("periscan.msg.schem_profile_removed", schematicProfile));
+		return 1;
 	}
 
 	private static int openConfig() {

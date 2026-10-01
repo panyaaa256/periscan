@@ -14,7 +14,6 @@ import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
 //? if >=1.20 {
 import dev.isxander.yacl3.api.controller.DropdownStringControllerBuilder;
 //?}
-import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
@@ -26,7 +25,6 @@ import net.minecraft.network.chat.Component;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -59,17 +57,6 @@ public final class PeriScanConfigScreen {
 						.option(option("scan_max_y", "scan_max_y.desc", defaults.scanMaxY,
 								() -> config.scanMaxY, v -> config.scanMaxY = v)
 								.controller(opt -> IntegerFieldControllerBuilder.create(opt).range(MIN_SCAN_MAX_Y, MAX_SCAN_MAX_Y))
-								.build())
-						.option(option("schematics_folder", "schematics_folder.desc", defaults.schematicsFolder,
-								() -> config.schematicsFolder, v -> config.schematicsFolder = v)
-								.controller(StringControllerBuilder::create)
-								.build())
-						.option(option("edge_corners", "edge_corners.desc", defaults.edgeCorners,
-								() -> config.edgeCorners, v -> config.edgeCorners = v)
-								.controller(opt -> EnumControllerBuilder.create(opt)
-										.enumClass(PeriScanConfig.EdgeCorners.class)
-										.formatValue(v -> Component.translatable(
-												KEY + "edge_corners." + v.name().toLowerCase(Locale.ROOT))))
 								.build())
 						.option(tickBox("show_pending", "show_pending.desc", defaults.showPendingChunks,
 								() -> config.showPendingChunks, v -> config.showPendingChunks = v))

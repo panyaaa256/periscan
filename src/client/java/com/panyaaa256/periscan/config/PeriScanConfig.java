@@ -80,24 +80,6 @@ public class PeriScanConfig {
 	@SerialEntry
 	public int scanMaxY = 128;
 
-	// Folder under litematica's schematics directory holding the peri schematic
-	// sets (one subfolder per set, e.g. "ow", with "all"/"edge" inside).
-	@SerialEntry
-	public String schematicsFolder = "peri";
-
-	// Which corner pair the edge/ schematics anchor to. The untransformed content
-	// extends toward +x/+z from its corner. PM_MP uses mirrors, not 90/270
-	// rotations, so the NS/EW trench widths stay on their axes.
-	public enum EdgeCorners {
-		// Unmirrored at the -x/-z corner, rotated 180deg at the +x/+z corner.
-		PP_MM,
-		// X-flipped (FRONT_BACK) at the +x/-z corner, Z-flipped (LEFT_RIGHT) at the -x/+z corner.
-		PM_MP
-	}
-
-	@SerialEntry
-	public EdgeCorners edgeCorners = EdgeCorners.PP_MM;
-
 	// Highlight chunks inside the region that have not been scanned yet (not
 	// loaded since the region was activated) as chunk-sized boxes.
 	@SerialEntry
@@ -201,8 +183,6 @@ public class PeriScanConfig {
 		northSouthWidth = fix.clamp(northSouthWidth, MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH);
 		eastWestWidth = fix.clamp(eastWestWidth, MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH);
 		scanMaxY = fix.clamp(scanMaxY, MIN_SCAN_MAX_Y, MAX_SCAN_MAX_Y);
-		schematicsFolder = fix.orDefault(schematicsFolder, defaults.schematicsFolder);
-		edgeCorners = fix.orDefault(edgeCorners, defaults.edgeCorners);
 		pendingChunkColor = fix.orDefault(pendingChunkColor, defaults.pendingChunkColor);
 		waterloggedBlacklist = fix.entries(waterloggedBlacklist, defaults.waterloggedBlacklist);
 

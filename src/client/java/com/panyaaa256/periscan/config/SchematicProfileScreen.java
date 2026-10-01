@@ -113,7 +113,7 @@ public final class SchematicProfileScreen {
 		}
 		UpdateResult result = SchematicProfileStore.update(SchematicProfileStore.root(), name,
 				new SchematicProfile(defaultOriginY, kept), sources);
-		result.failedImports().forEach(source -> failed.add(source.getFileName().toString()));
+		result.failedImports().forEach(source -> failed.add(displayName(sourceRoot, source)));
 		if (!failed.isEmpty()) {
 			List<String> shown = failed.subList(0, Math.min(failed.size(), MAX_TOAST_ENTRIES));
 			String list = String.join(", ", shown) + (failed.size() > shown.size() ? ", ..." : "");
@@ -136,6 +136,15 @@ public final class SchematicProfileScreen {
 				.controller(opt -> IntegerFieldControllerBuilder.create(opt)
 						.range(SchematicEntry.MIN_ORIGIN_Y, SchematicEntry.MAX_ORIGIN_Y))
 				.build();
+	}
+
+	/** The path relative to root with "/" separators, as listSources writes it; the file name if it is not under root. */
+	private static String displayName(Path root, Path file) {
+		try {
+			return root.relativize(file).toString().replace('\\', '/');
+		} catch (IllegalArgumentException e) {
+			return file.getFileName().toString();
+		}
 	}
 
 	/** The .litematic files under root as "/"-separated relative paths, sorted; empty if unreadable. */

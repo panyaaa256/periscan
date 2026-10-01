@@ -200,7 +200,6 @@ Schematic profiles are shared by all worlds and servers, unlike the profiles mad
 - Files with the same name cannot be imported in one save, even from different folders; none of them is imported and a message lists them. Rename one, or import them one save at a time (the later one then replaces the earlier).
 - "Default origin Y" at the top is the origin height newly imported schematics start with. Set it before importing, for example to 5 for a Nether profile.
 - To take a schematic out of the profile, turn on "Remove from profile" in its section and save. Its copy is deleted too.
-- On Minecraft 1.19.4 there are no suggestions; type the path relative to Litematica's schematics folder.
 
 To make a variant, for example a Nether version of an Overworld profile, copy it with `/peri schematic copy <from> <to>` and change the heights and corners in the copy.
 

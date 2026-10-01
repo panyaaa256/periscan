@@ -1,21 +1,11 @@
-Replaces the schematic folders with schematic profiles that you edit in game. Schematics in `schematics/peri/` are no longer read: import them into a schematic profile with `/peri schematic edit <schematic profile>`.
-
-### Added
-- Add schematic profiles, shared by all worlds, that keep their own copies of the schematics, so the original files can be moved or deleted
-- Choose for each schematic the corners it is placed on (`--`, `+-`, `-+`, `++`) and its origin height
-- Set per schematic profile the origin height that newly imported schematics start with
-- Add `/peri schematic edit`, `/peri schematic list`, `/peri schematic copy` and `/peri schematic remove`
-- Add `/peri schematic clear <name>` to remove a profile's placed schematics without deleting the profile
+Draws large groups of highlights much faster, and turns the "Trench bottom" zone off for new installs. Your saved settings are kept: if you already have a config file, "Trench bottom" stays as you set it.
 
 ### Changed
-- Place schematics with `/peri schematic place <name> <schematic profile>` instead of `/peri schematic <name> [set]`
-- Allow placing schematics in any dimension except the End, as the origin height is now set per schematic
-
-### Removed
-- Remove the `all` / `edge` / `edge/mx` / `edge/mz` folder layout
-- Remove the "Peri schematics folder" and "Edge placement corners" settings
+- Turn the "Trench bottom" zone off by default, as it highlights the whole floor of a trench that is not dug yet
+- Check the bottom two layers of the trench with "Inside the trench" while "Trench bottom" is off, so obsidian, chests and the like there are still highlighted
+- Draw highlighted blocks that touch each other as one shape, without the faces and lines between them, which makes large groups of highlights much cheaper to draw
+- Reduce stutter when many chunks of a region with long trenches load at once
 
 ### Fixed
-- Fill in the suggestion you click in the block lists; clicking one used to leave the typed text unchanged
-- Keep the highlighted suggestion inside the list when you press Tab after typing narrowed the suggestions
-- Detect Litematica on Minecraft 1.19.4 to 1.21.4, where schematic placement always reported it as missing
+- Highlight blocks that appear in the line just outside the area (lava, sculk sensors) right away; they used to wait until the chunk was loaded again
+- Fix the description of `#periscan:redstone_reactive` in the settings screen and the usage guide: observers and other blocks that only emit a signal are not matched

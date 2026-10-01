@@ -75,9 +75,11 @@ public final class SchematicProfileScreen {
 				.map(EntryState::new)
 				.toList();
 		List<String> imports = new ArrayList<>();
+		int[] defaultOriginY = {profile.defaultOriginY()};
 
 		ConfigCategory.Builder category = ConfigCategory.createBuilder()
 				.name(Component.literal(name))
+				.option(defaultOriginYOption(profile.defaultOriginY(), defaultOriginY))
 				.group(importList(listSources(sourceRoot), imports));
 		Path profileDir = SchematicProfileStore.dir(SchematicProfileStore.root(), name);
 		for (EntryState state : states) {
@@ -86,7 +88,7 @@ public final class SchematicProfileScreen {
 		return YetAnotherConfigLib.createBuilder()
 				.title(Component.translatable(KEY + "title", name))
 				.category(category.build())
-				.save(() -> save(parent, name, sourceRoot, profile.defaultOriginY(), states, imports))
+				.save(() -> save(parent, name, sourceRoot, defaultOriginY[0], states, imports))
 				.build()
 				.generateScreen(parent);
 	}
@@ -123,6 +125,17 @@ public final class SchematicProfileScreen {
 			Minecraft client = Minecraft.getInstance();
 			client.gui.setScreen(create(parent, name, sourceRoot));
 		}
+	}
+
+	/** The origin Y that schematics imported from now on start with; {@code value[0]} receives the edit. */
+	private static Option<Integer> defaultOriginYOption(int saved, int[] value) {
+		return Option.<Integer>createBuilder()
+				.name(Component.translatable(KEY + "default_origin_y"))
+				.description(OptionDescription.of(Component.translatable(KEY + "default_origin_y.desc")))
+				.binding(saved, () -> value[0], v -> value[0] = v)
+				.controller(opt -> IntegerFieldControllerBuilder.create(opt)
+						.range(SchematicEntry.MIN_ORIGIN_Y, SchematicEntry.MAX_ORIGIN_Y))
+				.build();
 	}
 
 	/** The .litematic files under root as "/"-separated relative paths, sorted; empty if unreadable. */

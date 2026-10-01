@@ -7,7 +7,7 @@ import com.panyaaa256.periscan.config.PeriScanConfig.ZoneSettings;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
 import com.panyaaa256.periscan.zone.Zone;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -32,7 +32,7 @@ public final class PeriKeybinds {
 	}
 
 	public static void register() {
-		add("open_config", client -> client.gui.setScreen(PeriScanConfigScreen.create(null)));
+		add("open_config", client -> client.setScreen(PeriScanConfigScreen.create(null)));
 		add("toggle_highlights", PeriKeybinds::toggleHighlights);
 		add("rescan", PeriKeybinds::rescan);
 		add("clear_scan", client -> PeriCommand.scanClear(chat(client.player)));
@@ -56,7 +56,7 @@ public final class PeriKeybinds {
 	private static void add(String name, Consumer<Minecraft> action) {
 		KeyMapping key = new KeyMapping("key." + PeriScanClient.MOD_ID + "." + name,
 				InputConstants.UNKNOWN.getValue(), CATEGORY);
-		ACTIONS.put(KeyMappingHelper.registerKeyMapping(key), action);
+		ACTIONS.put(KeyBindingHelper.registerKeyBinding(key), action);
 	}
 
 	private static Consumer<Component> chat(LocalPlayer player) {

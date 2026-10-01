@@ -90,8 +90,8 @@ West  |TT        E E E E         TT|    East
 | Zone | Where | Highlighted by default |
 |---|---|---|
 | One outside the trench | One line on each side of every trench (the line just outside the area, and the line just inside the trench) | Sculk sensors, calibrated sculk sensors, lava |
-| Inside the trench | The trenches (except their bottom two layers) | Blocks pistons cannot push (below), fences and the like in certain lanes (below), runs of falling blocks (below) |
-| Trench bottom | The bottom two layers of the trenches | Everything except air and liquids |
+| Inside the trench | The trenches (except their bottom two layers while "Trench bottom" is on) | Blocks pistons cannot push (below), fences and the like in certain lanes (below), runs of falling blocks (below) |
+| Trench bottom | The bottom two layers of the trenches | Nothing: this zone is off by default, as it would highlight the whole floor of a trench that is not dug yet. Turned on, everything except air and liquids |
 | Eater area | The inside, trenches excluded | Obsidian, ender chests, vaults, trial spawners, reinforced deepslate, kelp, waterlogged blocks |
 
 ### Height range
@@ -106,7 +106,7 @@ The "Trench bottom" zone is the lowest two of those layers (Y = -59 and -58 in t
 ### What "Inside the trench" looks for
 
 - **Blocks pistons cannot push**: obsidian, crying obsidian, respawn anchors, reinforced deepslate, unbreakable blocks, extended pistons, as well as chests, furnaces, spawners, sculk sensors and similar blocks. Bedrock is left out because it is part of the terrain.
-- **Blocks that change shape or state, in certain lanes**: walls, fences, glass panes and iron bars; blocks that change with a redstone signal such as doors, trapdoors, fence gates, pistons, dispensers, hoppers and observers; and redstone lamps. These are only highlighted in the 2nd, 5th, 8th, 11th … lane counted from the edge of the trench, because anywhere else they do not get in the trencher's way. They are never highlighted in a trench that is 3 wide.
+- **Blocks that change shape or state, in certain lanes**: walls, fences, glass panes and iron bars; and blocks that change when they receive a redstone signal, such as doors, trapdoors, fence gates, pistons, dispensers, hoppers and redstone lamps (blocks that only emit a signal, such as observers, are not included). These are only highlighted in the 2nd, 5th, 8th, 11th … lane counted from the edge of the trench, because anywhere else they do not get in the trencher's way. They are never highlighted in a trench that is 3 wide.
 - **Runs of falling blocks**: places where sand, gravel, concrete powder and similar blocks line up 10 or more times (adjustable) along the length of the trench. Air, liquids and blocks that pistons break are not counted, but they do not end a run either. Any other block ends it. These use the "Inside the trench" color.
 
 ### Narrow areas

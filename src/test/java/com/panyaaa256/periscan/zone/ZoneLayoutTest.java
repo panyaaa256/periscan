@@ -332,4 +332,33 @@ class ZoneLayoutTest {
 			assertFalse(layout.intersectsChunk(new ChunkPos(0, 0)));
 		}
 	}
+
+	@Nested
+	class ContainsColumn {
+		@Test
+		void reachesOneBlockOutsideTheRegionWithTrenchOuter() {
+			ZoneLayout layout = large(allEnabled(NS, EW));
+			assertTrue(layout.containsColumn(-1, 20));
+			assertTrue(layout.containsColumn(48, 20));
+			assertTrue(layout.containsColumn(20, -1));
+			assertTrue(layout.containsColumn(20, 48));
+			assertFalse(layout.containsColumn(-2, 20));
+			assertFalse(layout.containsColumn(20, 49));
+		}
+
+		@Test
+		void staysInsideTheRegionWithoutTrenchOuter() {
+			ZoneLayout layout = large(new ZoneLayout.Settings(NS, EW, false, true, true, true, false));
+			assertTrue(layout.containsColumn(0, 0));
+			assertFalse(layout.containsColumn(-1, 20));
+			assertFalse(layout.containsColumn(20, 48));
+		}
+
+		@Test
+		void isEmptyWhenNoZoneIsEnabled() {
+			ZoneLayout layout = large(new ZoneLayout.Settings(NS, EW, false, false, false, false, false));
+			assertFalse(layout.containsColumn(0, 0));
+			assertFalse(layout.containsColumn(20, 20));
+		}
+	}
 }

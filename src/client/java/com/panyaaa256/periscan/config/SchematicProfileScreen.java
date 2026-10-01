@@ -11,9 +11,7 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.OptionGroup;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
-//? if >=1.20 {
-import dev.isxander.yacl3.api.controller.DropdownStringControllerBuilder;
-//?} else
+//? if <1.20
 //import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
@@ -146,12 +144,7 @@ public final class SchematicProfileScreen {
 					imports.addAll(v);
 				})
 				//? if >=1.20 {
-				// Only listed values: YACL replaces the typed text with the clicked
-				// suggestion only when the text is not a valid value itself.
-				.controller(opt -> DropdownStringControllerBuilder.create(opt)
-						.values(sources)
-						.allowAnyValue(false)
-						.allowEmptyValue(false))
+				.customController(opt -> new PickingDropdownController(opt, sources, false))
 				//?} else
 				//.controller(StringControllerBuilder::create)
 				.initial("")

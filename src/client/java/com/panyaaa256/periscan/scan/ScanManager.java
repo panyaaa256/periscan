@@ -113,8 +113,8 @@ public class ScanManager {
 	public List<Component> activate(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
 		PeriScanConfig config = PeriScanConfig.get();
 		if (!PeriScanConfig.anyZoneEnabled()) {
-			// Nothing to scan; keep the region so a later reload can start it.
-			deactivateKeepingRegion(dim, a, b);
+			// Nothing to scan; a later /peri scan reload starts from the saved profile.
+			deactivate();
 			return List.of();
 		}
 		this.dimension = dim;
@@ -190,8 +190,8 @@ public class ScanManager {
 			return List.of();
 		}
 		if (!PeriScanConfig.anyZoneEnabled()) {
-			// All zones were just disabled: stop scanning but keep the region dormant.
-			deactivateKeepingRegion(dimension, cornerA, cornerB);
+			// All zones were just disabled: stop scanning (/peri scan reload starts it again).
+			deactivate();
 			Minecraft client = Minecraft.getInstance();
 			if (client.player != null) {
 				VersionCompat.sendChat(client.player, Component.translatable("periscan.msg.all_disabled"));
@@ -209,14 +209,6 @@ public class ScanManager {
 		dormantNoticePending = false;
 		matchers.clear();
 		clearScanResults();
-	}
-
-	/** Stops scanning but remembers the region, so rescan/reload can restart it. */
-	private void deactivateKeepingRegion(ResourceKey<Level> dim, ChunkPos a, ChunkPos b) {
-		deactivate();
-		this.dimension = dim;
-		this.cornerA = a;
-		this.cornerB = b;
 	}
 
 	private void clearScanResults() {

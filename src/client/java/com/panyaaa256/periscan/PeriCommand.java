@@ -324,7 +324,7 @@ public final class PeriCommand {
 		}
 
 		List<PlannedPlacement> plan = SchematicPlanner.plan(SchematicProfileStore.dir(root, schematicProfile),
-				SchematicProfileStore.load(root, schematicProfile), profile);
+				SchematicProfileStore.load(root, schematicProfile).entries(), profile);
 		if (plan.isEmpty()) {
 			source.sendError(Component.translatable("periscan.msg.schem_no_files", schematicProfile));
 			return 0;
@@ -350,7 +350,7 @@ public final class PeriCommand {
 		}
 		source.sendFeedback(Component.translatable("periscan.msg.schem_profile_list_header", names.size()));
 		for (String name : names) {
-			List<SchematicEntry> entries = SchematicProfileStore.load(root, name);
+			List<SchematicEntry> entries = SchematicProfileStore.load(root, name).entries();
 			source.sendFeedback(Component.translatable("periscan.msg.schem_profile_list_entry", name, entries.size()));
 		}
 		return 1;

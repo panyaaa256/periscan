@@ -161,7 +161,7 @@ public class ScanManager {
 			for (LevelChunk chunk : loaded) {
 				scanChunk(level, chunk);
 			}
-			flushFallingLines(level);
+			// The falling lines marked by the scan are flushed at the end of the next tick.
 		}
 		return problems;
 	}
@@ -231,8 +231,9 @@ public class ScanManager {
 		// Remove stale highlights from this chunk before rescanning it (covers
 		// changes that happened while the chunk was unloaded).
 		clearChunkHighlights(chunk.getPos());
+		// Only marks falling lines dirty: many chunks can load in one tick, and the
+		// lines span the whole region, so they are recomputed once in onTick.
 		scanChunk(level, chunk);
-		flushFallingLines(level);
 	}
 
 	/**
@@ -273,7 +274,6 @@ public class ScanManager {
 			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + BOTTOM_TRENCH_LAYERS, maxY);
 		}
 		changedBlocks.clear();
-		flushFallingLines(level);
 	}
 
 	/** Re-evaluates a single block for every zone, like scanChunk does for a whole chunk. */
@@ -428,6 +428,11 @@ public class ScanManager {
 			validateHighlights(client.level);
 		}
 
+		// Everything above (and chunk loads since the last tick) only marked falling
+		// lines dirty; recompute them once. Dirty lines wait here while the player is
+		// in another dimension; they are evaluated against whatever is loaded then.
+		flushFallingLines(client.level);
+
 		if (!pendingChunks.isEmpty() && tickCounter % 20 == 0 && client.player != null) {
 			VersionCompat.sendOverlay(client.player,
 					Component.translatable("periscan.msg.pending_chunks", pendingChunks.size()));
@@ -452,10 +457,9 @@ public class ScanManager {
 		validateFallingHighlights(level);
 	}
 
-	/** Re-checks highlighted falling blocks and recomputes the lines of replaced ones. */
+	/** Re-checks highlighted falling blocks and marks the lines of replaced ones dirty. */
 	private void validateFallingHighlights(ClientLevel level) {
 		fallingRuns.markChangedHighlights(blockView(level));
-		flushFallingLines(level);
 	}
 
 }

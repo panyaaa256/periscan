@@ -1,6 +1,5 @@
 package com.panyaaa256.periscan.config;
 
-//? if >=1.20 {
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.utils.Dimension;
 import dev.isxander.yacl3.gui.AbstractWidget;
@@ -92,4 +91,3 @@ final class PickingDropdownController extends DropdownStringController {
 		}
 	}
 }
-//?}

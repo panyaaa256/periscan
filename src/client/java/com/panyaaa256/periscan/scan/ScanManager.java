@@ -51,6 +51,10 @@ public class ScanManager {
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
 	// Positions (BlockPos longs) in the scanned zones whose block changed since the last tick.
 	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
+	// Layers at the bottom of the trench body that belong to the bottom trench zone
+	// instead of the trench inner zone: none while the bottom trench zone is
+	// disabled, so the trench inner zone then covers them too.
+	private int bottomTrenchLayers;
 	private int tickCounter = 0;
 	private boolean dormantNoticePending = false;
 
@@ -127,6 +131,7 @@ public class ScanManager {
 		this.cornerA = a;
 		this.cornerB = b;
 		this.layout = ZoneLayout.of(a, b, ZoneLayout.Settings.from(config));
+		this.bottomTrenchLayers = config.bottomTrench.enabled ? BOTTOM_TRENCH_LAYERS : 0;
 
 		List<String> invalidEntries = new ArrayList<>();
 		ZoneMatcher.WaterloggedExclusions exclusions = ZoneMatcher.WaterloggedExclusions.compile(
@@ -274,7 +279,7 @@ public class ScanManager {
 			if (y >= minY && y <= maxY) {
 				updateHighlights(level, pos.set(x, y, z), minY);
 			}
-			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + BOTTOM_TRENCH_LAYERS, maxY);
+			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + bottomTrenchLayers, maxY);
 		}
 		changedBlocks.clear();
 	}
@@ -288,7 +293,7 @@ public class ScanManager {
 		int mask = layout.zoneMask(pos.getX(), pos.getZ());
 		BlockState state = level.getBlockState(pos);
 		if (mask != 0 && !state.isAir()) {
-			addMatchingZones(mask, pos.getX(), pos.getY(), pos.getZ(), state, minY + BOTTOM_TRENCH_LAYERS - 1);
+			addMatchingZones(mask, pos.getX(), pos.getY(), pos.getZ(), state, minY + bottomTrenchLayers - 1);
 		}
 	}
 
@@ -319,7 +324,7 @@ public class ScanManager {
 
 		int minY = scanMinY(level);
 		int maxY = scanMaxY(level);
-		int bottomTopY = minY + BOTTOM_TRENCH_LAYERS - 1;
+		int bottomTopY = minY + bottomTrenchLayers - 1;
 		for (int y = minY; y <= maxY; y++) {
 			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
 			if (section.hasOnlyAir()) {
@@ -343,15 +348,16 @@ public class ScanManager {
 			}
 		}
 
-		// The lowest layers belong to the bottom trench zone, not the trench inner.
+		// The lowest layers belong to the bottom trench zone (when enabled), not the trench inner.
 		fallingRuns.markChunk(layout.trenchStrips(), VersionCompat.chunkX(cp), VersionCompat.chunkZ(cp),
-				minY + BOTTOM_TRENCH_LAYERS, maxY, blockView(level));
+				minY + bottomTrenchLayers, maxY, blockView(level));
 	}
 
 	/**
 	 * Highlights the block in every zone of the column mask whose matcher accepts it.
 	 * The bottom trench zone is the lowest scanned layers (up to bottomTopY); the
-	 * trench inner zone starts above them.
+	 * trench inner zone starts above them. With the bottom trench zone disabled
+	 * bottomTopY is below the scan, so the trench inner zone takes every layer.
 	 */
 	private void addMatchingZones(int mask, int x, int y, int z, BlockState state, int bottomTopY) {
 		for (Zone zone : Zone.VALUES) {

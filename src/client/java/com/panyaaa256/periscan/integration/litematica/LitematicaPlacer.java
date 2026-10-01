@@ -45,7 +45,7 @@ final class LitematicaPlacer {
 
 	/** The name in the schematic file's metadata; null if the file cannot be read. */
 	static String schematicName(Path dir, String fileName) {
-		SchematicMetadata metadata = LitematicaSchematic.readMetadataFromFile(dir, fileName);
+		SchematicMetadata metadata = LitematicaSchematic.readMetadataFromFile(dir.toFile(), fileName);
 		return metadata == null ? null : metadata.getName();
 	}
 

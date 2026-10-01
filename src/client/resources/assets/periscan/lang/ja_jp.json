@@ -35,6 +35,8 @@
 	"periscan.config.invalid_entries.title": "PeriScan: 無効なブロック指定",
 	"periscan.config.invalid_entries.message": "%s 件がブロックIDでもタグでもありません(保存はされました): %s",
 	"periscan.schematic.title": "PeriScan 設計図: %s",
+	"periscan.schematic.default_origin_y": "originのYの初期値",
+	"periscan.schematic.default_origin_y.desc": "新しく取り込む設計図が最初に持つoriginの高さ。既にある設計図は変わりません。目安はオーバーワールドが -59、ネザーが 5 です。",
 	"periscan.schematic.import": "設計図を取り込む",
 	"periscan.schematic.import.desc": "保存時にこのプロファイルへコピーするファイル。litematicaのschematicsフォルダの中から選びます。文字を入力すると候補が絞り込まれるので、クリックして選んでください。プロファイルは自分用のコピーを持つので、取り込んだ後に元ファイルを移動・削除しても構いません。既にある設計図と同じ名前のファイルを取り込むと、コピーだけを置き換えて設定は残します。新しく取り込んだ設計図の設定欄は、保存後に下に現れます。",
 	"periscan.schematic.corner.mm": "-- に設置(北西、保存したまま)",

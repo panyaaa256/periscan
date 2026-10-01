@@ -178,7 +178,7 @@ public final class PeriScanConfigScreen {
 				.description(OptionDescription.of(Component.translatable(KEY + descKey)))
 				.binding(defaultValue, getter, v -> setter.accept(new ArrayList<>(v)))
 				//? if >=1.20 {
-				.customController(opt -> new PickingDropdownController(opt, suggestions))
+				.customController(opt -> new PickingDropdownController(opt, suggestions, true))
 				//?} else
 				//.controller(StringControllerBuilder::create)
 				.initial("minecraft:")

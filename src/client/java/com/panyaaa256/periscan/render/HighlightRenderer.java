@@ -8,14 +8,12 @@ import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.zone.Zone;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -39,6 +37,23 @@ public final class HighlightRenderer {
 	private interface BoxDrawer {
 		void draw(VertexConsumer buffer, PoseStack.Pose pose, int color,
 				float x0, float y0, float z0, float x1, float y1, float z1);
+	}
+
+	/** Emits the cached faces or lines of one chunk, given the camera position. */
+	@FunctionalInterface
+	private interface MeshDrawer {
+		void draw(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, int color, HighlightGeometry.Mesh mesh);
+	}
+
+	// Cached shapes per highlight group, indexed by Zone ordinal; colour is applied at draw time.
+	private static final HighlightMeshes[] ZONE_MESHES = new HighlightMeshes[Zone.VALUES.length];
+	private static final HighlightMeshes FALLING_X_MESHES = new HighlightMeshes();
+	private static final HighlightMeshes FALLING_Z_MESHES = new HighlightMeshes();
+
+	static {
+		for (int i = 0; i < ZONE_MESHES.length; i++) {
+			ZONE_MESHES[i] = new HighlightMeshes();
+		}
 	}
 
 	private HighlightRenderer() {
@@ -70,34 +85,57 @@ public final class HighlightRenderer {
 	private static void render(WorldRenderContext context) {
 		ScanManager scan = ScanManager.INSTANCE;
 		if (!scan.isActive()) {
+			releaseMeshes();
 			return;
 		}
 		// Highlights only exist in the dimension the region was started in.
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null || level.dimension() != scan.dimension()) {
+			releaseMeshes();
 			return;
 		}
+		updateMeshes();
 		Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		PoseStack.Pose pose = context.matrixStack().last();
 
 		// All fills first, then all lines: BufferSource batches by RenderType and
 		// ends the previous batch when a different type is requested.
 		addAllBoxes(context.consumers().getBuffer(FILL_TYPE), pose, camera, HighlightRenderer::boxFaces,
-				FILL_ALPHA, PENDING_FILL_ALPHA);
-		addAllBoxes(context.consumers().getBuffer(LINE_TYPE), pose, camera, HighlightRenderer::boxEdges, 0xFF, 0xFF);
+				HighlightRenderer::meshFaces, FILL_ALPHA, PENDING_FILL_ALPHA);
+		addAllBoxes(context.consumers().getBuffer(LINE_TYPE), pose, camera, HighlightRenderer::boxEdges,
+				HighlightRenderer::meshLines, 0xFF, 0xFF);
+	}
+
+	/** Rebuilds the meshes of the chunks that changed; called once per frame before anything is drawn. */
+	private static void updateMeshes() {
+		ScanManager scan = ScanManager.INSTANCE;
+		for (Zone zone : Zone.VALUES) {
+			ZONE_MESHES[zone.ordinal()].update(scan.highlightIndex(zone));
+		}
+		FALLING_X_MESHES.update(scan.fallingAlongXIndex());
+		FALLING_Z_MESHES.update(scan.fallingAlongZIndex());
+	}
+
+	/** Drops the cached meshes while nothing is drawn, so they do not outlive the scan. */
+	private static void releaseMeshes() {
+		for (HighlightMeshes meshes : ZONE_MESHES) {
+			meshes.release();
+		}
+		FALLING_X_MESHES.release();
+		FALLING_Z_MESHES.release();
 	}
 
 	private static void addAllBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,
-			int alpha, int pendingAlpha) {
-		ScanManager scan = ScanManager.INSTANCE;
+			MeshDrawer meshDrawer, int alpha, int pendingAlpha) {
 		PeriScanConfig config = PeriScanConfig.get();
 		for (Zone zone : Zone.VALUES) {
-			addBlockBoxes(buffer, pose, camera, drawer, scan.highlights(zone), argb(alpha, zone.settings(config).color));
+			addMeshes(buffer, pose, camera, meshDrawer, ZONE_MESHES[zone.ordinal()],
+					argb(alpha, zone.settings(config).color));
 		}
 		// Falling-block runs belong to the trench inner zone and use its color.
 		int fallingColor = argb(alpha, config.trenchInner.color);
-		addBlockBoxes(buffer, pose, camera, drawer, scan.fallingAlongX(), fallingColor);
-		addBlockBoxes(buffer, pose, camera, drawer, scan.fallingAlongZ(), fallingColor);
+		addMeshes(buffer, pose, camera, meshDrawer, FALLING_X_MESHES, fallingColor);
+		addMeshes(buffer, pose, camera, meshDrawer, FALLING_Z_MESHES, fallingColor);
 		if (config.showPendingChunks) {
 			addPendingChunkBoxes(buffer, pose, camera, drawer, argb(pendingAlpha, config.pendingChunkColor));
 		}
@@ -107,16 +145,42 @@ public final class HighlightRenderer {
 		return (alpha << 24) | (color.getRGB() & 0xFFFFFF);
 	}
 
-	/** Draws a one-block box at every position (BlockPos longs) in the set. */
-	private static void addBlockBoxes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, BoxDrawer drawer,
-			LongOpenHashSet positions, int color) {
-		LongIterator it = positions.iterator();
-		while (it.hasNext()) {
-			long key = it.nextLong();
-			float x0 = (float) (BlockPos.getX(key) - camera.x);
-			float y0 = (float) (BlockPos.getY(key) - camera.y);
-			float z0 = (float) (BlockPos.getZ(key) - camera.z);
-			drawer.draw(buffer, pose, color, x0, y0, z0, x0 + 1, y0 + 1, z0 + 1);
+	/** Streams the cached meshes into the buffer, converting to camera-relative coordinates. */
+	private static void addMeshes(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, MeshDrawer drawer,
+			HighlightMeshes meshes, int color) {
+		for (HighlightGeometry.Mesh mesh : meshes.meshes()) {
+			drawer.draw(buffer, pose, camera, color, mesh);
+		}
+	}
+
+	private static void meshFaces(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, int color,
+			HighlightGeometry.Mesh mesh) {
+		int[] faces = mesh.faces();
+		for (int i = 0; i < faces.length; i += HighlightGeometry.FACE_STRIDE) {
+			float x0 = (float) (faces[i] - camera.x);
+			float y0 = (float) (faces[i + 1] - camera.y);
+			float z0 = (float) (faces[i + 2] - camera.z);
+			float x1 = x0 + 1;
+			float y1 = y0 + 1;
+			float z1 = z0 + 1;
+			switch (faces[i + 3]) {
+				case HighlightGeometry.DOWN -> quad(buffer, pose, color, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+				case HighlightGeometry.UP -> quad(buffer, pose, color, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+				case HighlightGeometry.NORTH -> quad(buffer, pose, color, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+				case HighlightGeometry.SOUTH -> quad(buffer, pose, color, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+				case HighlightGeometry.WEST -> quad(buffer, pose, color, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
+				default -> quad(buffer, pose, color, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+			}
+		}
+	}
+
+	private static void meshLines(VertexConsumer buffer, PoseStack.Pose pose, Vec3 camera, int color,
+			HighlightGeometry.Mesh mesh) {
+		int[] lines = mesh.lines();
+		for (int i = 0; i < lines.length; i += HighlightGeometry.LINE_STRIDE) {
+			line(buffer, pose, color,
+					(float) (lines[i] - camera.x), (float) (lines[i + 1] - camera.y), (float) (lines[i + 2] - camera.z),
+					(float) (lines[i + 3] - camera.x), (float) (lines[i + 4] - camera.y), (float) (lines[i + 5] - camera.z));
 		}
 	}
 

@@ -33,7 +33,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 /**
  * The /peri command: peri profiles (add/remove/list), scanning bound to them
  * (scan start/clear/reload), schematic profiles and their litematica
- * placement (schematic edit/place/list/remove) and the config screen (config).
+ * placement (schematic edit/place/clear/list/remove) and the config screen (config).
  */
 public final class PeriCommand {
 	private PeriCommand() {
@@ -99,6 +99,9 @@ public final class PeriCommand {
 										.then(argument("name", StringArgumentType.word()).suggests(SUGGEST_PROFILE)
 												.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
 														.executes(PeriCommand::schematicPlace))))
+								.then(literal("clear")
+										.then(argument("name", StringArgumentType.word()).suggests(SUGGEST_PROFILE)
+												.executes(PeriCommand::schematicClear)))
 								.then(literal("list").executes(ctx -> schematicList(ctx.getSource())))
 								.then(literal("remove")
 										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
@@ -337,6 +340,25 @@ public final class PeriCommand {
 		source.sendFeedback(Component.translatable("periscan.msg.schem_done", name, result.created(), schematicProfile));
 		if (result.removed() > 0) {
 			source.sendFeedback(Component.translatable("periscan.msg.schem_replaced", result.removed()));
+		}
+		return 1;
+	}
+
+	/** Removes only the litematica placements made for a peri profile; both profiles are kept. */
+	private static int schematicClear(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		if (rejectWithoutLitematica(source)) {
+			return 0;
+		}
+		String name = StringArgumentType.getString(ctx, "name");
+		if (findProfile(source, name) == null) {
+			return 0;
+		}
+		int removed = LitematicaIntegration.removePlacements(SchematicPlanner.placementPrefix(name));
+		if (removed > 0) {
+			source.sendFeedback(Component.translatable("periscan.msg.schem_cleared", name, removed));
+		} else {
+			source.sendFeedback(Component.translatable("periscan.msg.schem_clear_none", name));
 		}
 		return 1;
 	}

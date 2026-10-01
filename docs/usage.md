@@ -43,7 +43,9 @@ Profiles are saved per world (or server). After logging out and back in, run `/p
 | `/peri scan reload` | Rescans the profile you scanned last from scratch |
 | `/peri schematic edit <schematic profile>` | Opens a schematic profile's settings, creating it if needed (see [below](#placing-schematics)) |
 | `/peri schematic place <name> <schematic profile>` | Places a schematic profile's schematics for a profile |
+| `/peri schematic clear <name>` | Removes the schematics placed for a profile (both profiles are kept) |
 | `/peri schematic list` | Lists your schematic profiles |
+| `/peri schematic copy <from> <to>` | Copies a schematic profile, together with its schematics, under a new name |
 | `/peri schematic remove <schematic profile>` | Deletes a schematic profile, together with its copies of the schematics |
 | `/peri config` | Opens the settings screen |
 
@@ -195,8 +197,12 @@ Schematic profiles are shared by all worlds and servers, unlike the profiles mad
 
 - PeriScan **copies** the files into `config/periscan/schematics/<schematic profile>/`. You can move, rename or delete the originals afterwards.
 - A changed original is not picked up by itself. Import the file again: a file with the same name replaces the copy and keeps the section's settings.
+- Files with the same name cannot be imported in one save, even from different folders; none of them is imported and a message lists them. Rename one, or import them one save at a time (the later one then replaces the earlier).
+- "Default origin Y" at the top is the origin height newly imported schematics start with. Set it before importing, for example to 5 for a Nether profile.
 - To take a schematic out of the profile, turn on "Remove from profile" in its section and save. Its copy is deleted too.
 - On Minecraft 1.19.4 there are no suggestions; type the path relative to Litematica's schematics folder.
+
+To make a variant, for example a Nether version of an Overworld profile, copy it with `/peri schematic copy <from> <to>` and change the heights and corners in the copy.
 
 ### Saving your schematics
 
@@ -218,7 +224,7 @@ The corners are named by their X and Z side: `+-` is the +X / -Z corner.
 | `-+` | At the south-west corner, flipped north-south |
 | `++` | At the south-east corner, rotated 180° |
 
-- The origin height is set per schematic (default -59, just above the Overworld's bedrock floor; use 5 for the Nether).
+- The origin height is set per schematic. New schematics start with the profile's "Default origin Y" (-59 unless changed, just above the Overworld's bedrock floor; use 5 for the Nether).
 - A schematic with no corner selected is not placed.
 - Flipping also swaps left and right in circuits. A circuit that is not symmetric may stop working when flipped.
 - Rotating 180° reverses the direction a machine faces. Where that matters (for example trenchers that must start in a fixed direction), use `+-` or `-+` instead of `++`.
@@ -228,7 +234,7 @@ The corners are named by their X and Z side: `+-` is the +X / -Z corner.
 - The schematics appear in Litematica's placement list as `peri/<profile name>/…`. Their position is locked so they are not moved by accident.
 - Running the command again for the same profile replaces what it placed before.
 - If any file cannot be loaded, nothing is placed.
-- Deleting the profile with `/peri remove` also removes its placements.
+- `/peri schematic clear <name>` removes a profile's placements. Deleting the profile with `/peri remove` removes them too.
 - Placements keep pointing at the schematic profile's copies. After removing a schematic or deleting a schematic profile, placements made from it in other worlds can no longer be loaded.
 
 ## Troubleshooting

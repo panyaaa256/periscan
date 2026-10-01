@@ -12,3 +12,6 @@ Replaces the schematic folders with schematic profiles that you edit in game. Sc
 ### Removed
 - Remove the `all` / `edge` / `edge/mx` / `edge/mz` folder layout
 - Remove the "Peri schematics folder" and "Edge placement corners" settings
+
+### Fixed
+- Fill in the suggestion you click in the block lists; clicking one used to leave the typed text unchanged

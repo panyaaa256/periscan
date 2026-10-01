@@ -11,9 +11,6 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
-//? if >=1.20 {
-import dev.isxander.yacl3.api.controller.DropdownStringControllerBuilder;
-//?}
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
@@ -181,10 +178,7 @@ public final class PeriScanConfigScreen {
 				.description(OptionDescription.of(Component.translatable(KEY + descKey)))
 				.binding(defaultValue, getter, v -> setter.accept(new ArrayList<>(v)))
 				//? if >=1.20 {
-				.controller(opt -> DropdownStringControllerBuilder.create(opt)
-						.values(suggestions)
-						.allowAnyValue(true)
-						.allowEmptyValue(true))
+				.customController(opt -> new PickingDropdownController(opt, suggestions))
 				//?} else
 				//.controller(StringControllerBuilder::create)
 				.initial("minecraft:")

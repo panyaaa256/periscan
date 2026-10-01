@@ -218,6 +218,15 @@ public final class ZoneLayout {
 		return scanBounds;
 	}
 
+	/**
+	 * Whether the column is worth watching for block changes: inside the bounds of
+	 * the enabled zones. That reaches one block past the region where the "outside
+	 * the trench" lines are, and is empty when no zone is enabled.
+	 */
+	public boolean containsColumn(int x, int z) {
+		return scanBounds.contains(x, z);
+	}
+
 	/** The trench body strips, empty when the trench inner zone is disabled. */
 	public List<TrenchStrip> trenchStrips() {
 		return trenchStrips;

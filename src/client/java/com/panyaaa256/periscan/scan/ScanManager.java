@@ -46,7 +46,7 @@ public class ScanManager {
 	private final EnumMap<Zone, ChunkIndexedPositions> highlights = new EnumMap<>(Zone.class);
 	private final FallingRunTracker fallingRuns = new FallingRunTracker();
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
-	// Positions (BlockPos longs) in the region whose block changed since the last tick.
+	// Positions (BlockPos longs) in the scanned zones whose block changed since the last tick.
 	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
 	private int tickCounter = 0;
 	private boolean dormantNoticePending = false;
@@ -247,7 +247,7 @@ public class ScanManager {
 	 * once at the end of the tick, from the block states as they are then.
 	 */
 	public void onBlockChanged(ClientLevel level, BlockPos pos) {
-		if (layout == null || level.dimension() != dimension || !layout.region().contains(pos.getX(), pos.getZ())) {
+		if (layout == null || level.dimension() != dimension || !layout.containsColumn(pos.getX(), pos.getZ())) {
 			return;
 		}
 		changedBlocks.add(pos.asLong());

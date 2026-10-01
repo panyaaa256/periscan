@@ -69,9 +69,16 @@ public class PeriScanConfig {
 	@SerialEntry
 	public Color pendingChunkColor = new Color(0xFF8800);
 
+	// false hides everything this mod draws (highlights and pending chunk boxes)
+	// while the scan keeps running. Also switched by a key (see PeriKeybinds).
+	@SerialEntry
+	public boolean showHighlights = true;
+
 	/** Settings every zone has. */
 	public static class ZoneSettings {
 		public boolean enabled = true;
+		// false hides the zone's highlights; unlike enabled, the zone is still scanned.
+		public boolean visible = true;
 		public Color color = Color.WHITE;
 
 		ZoneSettings() {

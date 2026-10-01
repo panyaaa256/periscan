@@ -1,6 +1,8 @@
 {
 	"periscan.config.title": "PeriScan",
 	"periscan.config.category.general": "General",
+	"periscan.config.show_highlights": "Show highlights",
+	"periscan.config.show_highlights.desc": "When OFF nothing is drawn: no highlights and no unscanned chunk boxes. The scan keeps running, so turning this back ON shows the highlights right away. Can also be switched with a key (Options > Controls > Key Binds > PeriScan).",
 	"periscan.config.ns_width": "North-south trench width",
 	"periscan.config.ns_width.desc": "Width in columns of the trenches at both Z ends of the perimeter.",
 	"periscan.config.ew_width": "East-west trench width",
@@ -17,6 +19,8 @@
 	"periscan.config.category.eater": "Eater area",
 	"periscan.config.zone.enabled": "Scan this zone",
 	"periscan.config.zone.enabled.desc": "When OFF this zone is not scanned or highlighted. A scan cannot start while all zones are OFF.",
+	"periscan.config.zone.visible": "Show this zone",
+	"periscan.config.zone.visible.desc": "When OFF the highlights of this zone are hidden. The zone is still scanned, so turning this back ON shows them right away. Can also be switched with a key (Options > Controls > Key Binds > PeriScan).",
 	"periscan.config.eater.include_trench": "Include trench area",
 	"periscan.config.eater.include_trench.desc": "ON: the eater zone covers the whole specified region including the trenches. OFF: only the interior with the trenches removed.",
 	"periscan.config.falling_run": "Falling block run threshold",

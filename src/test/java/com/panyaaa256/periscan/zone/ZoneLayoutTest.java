@@ -60,19 +60,13 @@ class ZoneLayoutTest {
 		@Test
 		void cornersAreNormalizedToBlockBounds() {
 			ZoneLayout layout = layout(2, 2, 0, 0, allEnabled(NS, EW));
-			assertEquals(0, layout.regionMinX());
-			assertEquals(0, layout.regionMinZ());
-			assertEquals(47, layout.regionMaxX());
-			assertEquals(47, layout.regionMaxZ());
+			assertEquals(new ZoneLayout.Rect(0, 0, 47, 47), layout.region());
 		}
 
 		@Test
 		void singleChunkRegionCoversSixteenBlocks() {
 			ZoneLayout layout = layout(-1, 3, -1, 3, allEnabled(NS, EW));
-			assertEquals(-16, layout.regionMinX());
-			assertEquals(-1, layout.regionMaxX());
-			assertEquals(48, layout.regionMinZ());
-			assertEquals(63, layout.regionMaxZ());
+			assertEquals(new ZoneLayout.Rect(-16, 48, -1, 63), layout.region());
 		}
 	}
 
@@ -258,6 +252,57 @@ class ZoneLayoutTest {
 		void disabledTrenchInnerNeverMatters() {
 			ZoneLayout layout = large(new ZoneLayout.Settings(NS, EW, true, false, true, true, false));
 			assertFalse(layout.fenceLaneMatters(20, 1));
+		}
+
+		/**
+		 * The rule as it was written before the strips were the single source of
+		 * truth: computed from the region edges and widths directly.
+		 */
+		private boolean referenceMatters(ZoneLayout.Rect region, int ns, int ew, int x, int z) {
+			boolean twoZ = region.maxZ() - region.minZ() + 1 >= 2 * ns;
+			boolean zMax = twoZ || Math.abs(region.maxZ()) >= Math.abs(region.minZ());
+			boolean zMin = twoZ || !zMax;
+			boolean twoX = region.maxX() - region.minX() + 1 >= 2 * ew;
+			boolean xMax = twoX || Math.abs(region.maxX()) >= Math.abs(region.minX());
+			boolean xMin = twoX || !xMax;
+			if (ns != 3) {
+				if (zMin && z >= region.minZ() && z <= region.minZ() + ns - 1 && (z - region.minZ() + 1) % 3 == 2) {
+					return true;
+				}
+				if (zMax && z <= region.maxZ() && z >= region.maxZ() - ns + 1 && (region.maxZ() - z + 1) % 3 == 2) {
+					return true;
+				}
+			}
+			if (ew != 3) {
+				if (xMin && x >= region.minX() && x <= region.minX() + ew - 1 && (x - region.minX() + 1) % 3 == 2) {
+					return true;
+				}
+				if (xMax && x <= region.maxX() && x >= region.maxX() - ew + 1 && (region.maxX() - x + 1) % 3 == 2) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		@Test
+		void matchesTheDirectComputationInEveryColumnOfTheRegion() {
+			int[][] regions = { { 0, 0, 0, 0 }, { -1, -1, -1, -1 }, { 3, -2, 3, -2 }, { 0, 0, 2, 2 },
+					{ -3, 1, 0, 4 }, { -5, -5, 4, 4 }, { 1, 0, 1, 5 } };
+			int[] widths = { 1, 2, 3, 4, 5, 6, 8, 12, 16, 17, 20, 33 };
+			for (int[] r : regions) {
+				for (int ns : widths) {
+					for (int ew : widths) {
+						ZoneLayout layout = layout(r[0], r[1], r[2], r[3], allEnabled(ns, ew));
+						ZoneLayout.Rect region = layout.region();
+						for (int x = region.minX(); x <= region.maxX(); x++) {
+							for (int z = region.minZ(); z <= region.maxZ(); z++) {
+								assertEquals(referenceMatters(region, ns, ew, x, z), layout.fenceLaneMatters(x, z),
+										"region " + region + " ns " + ns + " ew " + ew + " at " + x + "," + z);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 

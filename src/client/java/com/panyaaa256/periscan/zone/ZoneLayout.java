@@ -69,38 +69,39 @@ public final class ZoneLayout {
 	public record TrenchStrip(Rect rect, boolean alongX) {
 	}
 
+	/**
+	 * A trench strip with what the fence lane rule needs: which edge of the region
+	 * it is anchored at (columns are counted from that outer edge) and its width.
+	 * The strip's rect is already cut to the region, so a narrow region needs no
+	 * special case when counting.
+	 */
+	private record Band(TrenchStrip strip, boolean fromMin, int width) {
+
+		boolean laneMatters(int x, int z) {
+			// A width-3 trench survives a wall/fence even in the middle column.
+			if (width == 3 || !strip.rect().contains(x, z)) {
+				return false;
+			}
+			Rect rect = strip.rect();
+			int index = strip.alongX()
+					? (fromMin ? z - rect.minZ() : rect.maxZ() - z)
+					: (fromMin ? x - rect.minX() : rect.maxX() - x);
+			// 1-based from the outer edge.
+			return (index + 1) % 3 == 2;
+		}
+	}
+
 	private final List<ZoneRect> rects = new ArrayList<>();
+	// Only filled when the trench inner zone is enabled, so the fence lane rule is
+	// off together with the zone.
+	private final List<Band> bands = new ArrayList<>();
 	private final List<TrenchStrip> trenchStrips = new ArrayList<>();
 	// Bounds of everything that needs scanning (union of all enabled zone rects).
 	private Rect scanBounds;
+	private final Rect region;
 
-	private final boolean trenchActive;
-	private final int regionMinX;
-	private final int regionMinZ;
-	private final int regionMaxX;
-	private final int regionMaxZ;
-	private final int ns;
-	private final int ew;
-	// Which of the four trench strips exist (single-trench regions drop one per axis).
-	private final boolean stripZMin;
-	private final boolean stripZMax;
-	private final boolean stripXMin;
-	private final boolean stripXMax;
-
-	private ZoneLayout(boolean trenchActive,
-			int regionMinX, int regionMinZ, int regionMaxX, int regionMaxZ, int ns, int ew,
-			boolean stripZMin, boolean stripZMax, boolean stripXMin, boolean stripXMax) {
-		this.trenchActive = trenchActive;
-		this.regionMinX = regionMinX;
-		this.regionMinZ = regionMinZ;
-		this.regionMaxX = regionMaxX;
-		this.regionMaxZ = regionMaxZ;
-		this.ns = ns;
-		this.ew = ew;
-		this.stripZMin = stripZMin;
-		this.stripZMax = stripZMax;
-		this.stripXMin = stripXMin;
-		this.stripXMax = stripXMax;
+	private ZoneLayout(Rect region) {
+		this.region = region;
 	}
 
 	public static ZoneLayout of(ChunkPos cornerA, ChunkPos cornerB, Settings settings) {
@@ -121,8 +122,7 @@ public final class ZoneLayout {
 		boolean stripXMax = twoX || Math.abs(maxX) >= Math.abs(minX);
 		boolean stripXMin = twoX || !stripXMax;
 
-		ZoneLayout layout = new ZoneLayout(settings.trenchInner(), minX, minZ, maxX, maxZ, ns, ew,
-				stripZMin, stripZMax, stripXMin, stripXMax);
+		ZoneLayout layout = new ZoneLayout(new Rect(minX, minZ, maxX, maxZ));
 
 		boolean inner = settings.trenchInner();
 		boolean outer = settings.trenchOuter();
@@ -132,28 +132,28 @@ public final class ZoneLayout {
 		// each with its one-block "outside the trench" lines on both sides. The bottom
 		// trench zone shares the strip footprint (its Y range is cut in the scan).
 		if (stripZMin) {
-			layout.addStrip(new Rect(minX, minZ, maxX, Math.min(minZ + ns - 1, maxZ)), true, inner, bottom);
+			layout.addStrip(new Rect(minX, minZ, maxX, Math.min(minZ + ns - 1, maxZ)), true, true, ns, inner, bottom);
 			if (outer) {
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ - 1, maxX, minZ - 1));
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX, minZ + ns, maxX, minZ + ns));
 			}
 		}
 		if (stripZMax) {
-			layout.addStrip(new Rect(minX, Math.max(maxZ - ns + 1, minZ), maxX, maxZ), true, inner, bottom);
+			layout.addStrip(new Rect(minX, Math.max(maxZ - ns + 1, minZ), maxX, maxZ), true, false, ns, inner, bottom);
 			if (outer) {
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ - ns, maxX, maxZ - ns));
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX, maxZ + 1, maxX, maxZ + 1));
 			}
 		}
 		if (stripXMin) {
-			layout.addStrip(new Rect(minX, minZ, Math.min(minX + ew - 1, maxX), maxZ), false, inner, bottom);
+			layout.addStrip(new Rect(minX, minZ, Math.min(minX + ew - 1, maxX), maxZ), false, true, ew, inner, bottom);
 			if (outer) {
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX - 1, minZ, minX - 1, maxZ));
 				layout.add(Zone.TRENCH_OUTER, new Rect(minX + ew, minZ, minX + ew, maxZ));
 			}
 		}
 		if (stripXMax) {
-			layout.addStrip(new Rect(Math.max(maxX - ew + 1, minX), minZ, maxX, maxZ), false, inner, bottom);
+			layout.addStrip(new Rect(Math.max(maxX - ew + 1, minX), minZ, maxX, maxZ), false, false, ew, inner, bottom);
 			if (outer) {
 				layout.add(Zone.TRENCH_OUTER, new Rect(maxX - ew, minZ, maxX - ew, maxZ));
 				layout.add(Zone.TRENCH_OUTER, new Rect(maxX + 1, minZ, maxX + 1, maxZ));
@@ -193,13 +193,15 @@ public final class ZoneLayout {
 		return new Rect(minX, minZ, maxX, maxZ);
 	}
 
-	private void addStrip(Rect rect, boolean alongX, boolean inner, boolean bottom) {
+	private void addStrip(Rect rect, boolean alongX, boolean fromMin, int width, boolean inner, boolean bottom) {
 		if (!rect.valid()) {
 			return;
 		}
 		if (inner) {
 			add(Zone.TRENCH_INNER, rect);
-			trenchStrips.add(new TrenchStrip(rect, alongX));
+			TrenchStrip strip = new TrenchStrip(rect, alongX);
+			trenchStrips.add(strip);
+			bands.add(new Band(strip, fromMin, width));
 		}
 		if (bottom) {
 			add(Zone.BOTTOM_TRENCH, rect);
@@ -223,23 +225,7 @@ public final class ZoneLayout {
 
 	/** The specified region (outermost perimeter rectangle) in block coordinates. */
 	public Rect region() {
-		return new Rect(regionMinX, regionMinZ, regionMaxX, regionMaxZ);
-	}
-
-	public int regionMinX() {
-		return regionMinX;
-	}
-
-	public int regionMinZ() {
-		return regionMinZ;
-	}
-
-	public int regionMaxX() {
-		return regionMaxX;
-	}
-
-	public int regionMaxZ() {
-		return regionMaxZ;
+		return region;
 	}
 
 	/** Bitmask of zones (Zone#mask) that contain the given column. */
@@ -263,22 +249,8 @@ public final class ZoneLayout {
 	 * positions inside the trench body.
 	 */
 	public boolean fenceLaneMatters(int x, int z) {
-		if (!trenchActive) {
-			return false;
-		}
-		if (ns != 3) {
-			if (stripZMin && z >= regionMinZ && z <= regionMinZ + ns - 1 && (z - regionMinZ + 1) % 3 == 2) {
-				return true;
-			}
-			if (stripZMax && z <= regionMaxZ && z >= regionMaxZ - ns + 1 && (regionMaxZ - z + 1) % 3 == 2) {
-				return true;
-			}
-		}
-		if (ew != 3) {
-			if (stripXMin && x >= regionMinX && x <= regionMinX + ew - 1 && (x - regionMinX + 1) % 3 == 2) {
-				return true;
-			}
-			if (stripXMax && x <= regionMaxX && x >= regionMaxX - ew + 1 && (regionMaxX - x + 1) % 3 == 2) {
+		for (Band band : bands) {
+			if (band.laneMatters(x, z)) {
 				return true;
 			}
 		}

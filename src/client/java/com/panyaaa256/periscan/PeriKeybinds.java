@@ -23,7 +23,9 @@ import java.util.function.Consumer;
  * a default key, so they do nothing until the player assigns one.
  */
 public final class PeriKeybinds {
-	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(PeriScanClient.id("general"));
+	// Before 1.21.9 a category is just its translation key (the same key 1.21.9+
+	// derives from the category id, so the lang files need no change).
+	private static final String CATEGORY = "key.category." + PeriScanClient.MOD_ID + ".general";
 
 	// In registration order; each key runs its action once per press.
 	private static final Map<KeyMapping, Consumer<Minecraft>> ACTIONS = new LinkedHashMap<>();

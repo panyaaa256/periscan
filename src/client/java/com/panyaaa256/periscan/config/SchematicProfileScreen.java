@@ -4,6 +4,7 @@ import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.integration.litematica.LitematicaIntegration;
 import com.panyaaa256.periscan.schematic.Corner;
 import com.panyaaa256.periscan.schematic.SchematicEntry;
+import com.panyaaa256.periscan.schematic.SchematicProfile;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore.UpdateResult;
 import dev.isxander.yacl3.api.ConfigCategory;
@@ -64,7 +65,8 @@ public final class SchematicProfileScreen {
 	 *                   schematics folder); its entries are relative to it
 	 */
 	public static Screen create(Screen parent, String name, Path sourceRoot) {
-		List<EntryState> states = SchematicProfileStore.load(SchematicProfileStore.root(), name).stream()
+		SchematicProfile profile = SchematicProfileStore.load(SchematicProfileStore.root(), name);
+		List<EntryState> states = profile.entries().stream()
 				.map(EntryState::new)
 				.toList();
 		List<String> imports = new ArrayList<>();
@@ -79,12 +81,13 @@ public final class SchematicProfileScreen {
 		return YetAnotherConfigLib.createBuilder()
 				.title(Component.translatable(KEY + "title", name))
 				.category(category.build())
-				.save(() -> save(parent, name, sourceRoot, states, imports))
+				.save(() -> save(parent, name, sourceRoot, profile.defaultOriginY(), states, imports))
 				.build()
 				.generateScreen(parent);
 	}
 
-	private static void save(Screen parent, String name, Path sourceRoot, List<EntryState> states, List<String> imports) {
+	private static void save(Screen parent, String name, Path sourceRoot, int defaultOriginY, List<EntryState> states,
+			List<String> imports) {
 		List<SchematicEntry> kept = states.stream()
 				.filter(state -> !state.remove)
 				.map(state -> new SchematicEntry(state.fileName, state.corners, state.originY))
@@ -101,7 +104,8 @@ public final class SchematicProfileScreen {
 				failed.add(entry.trim());
 			}
 		}
-		UpdateResult result = SchematicProfileStore.update(SchematicProfileStore.root(), name, kept, sources);
+		UpdateResult result = SchematicProfileStore.update(SchematicProfileStore.root(), name,
+				new SchematicProfile(defaultOriginY, kept), sources);
 		result.failedImports().forEach(source -> failed.add(source.getFileName().toString()));
 		if (!failed.isEmpty()) {
 			List<String> shown = failed.subList(0, Math.min(failed.size(), MAX_TOAST_ENTRIES));

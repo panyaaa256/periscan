@@ -9,10 +9,8 @@ import com.panyaaa256.periscan.PeriScanClient;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
@@ -154,24 +152,16 @@ final class ProfileFile {
 	}
 
 	/**
-	 * Writes the data; does nothing for non-writable data. The data goes to a
-	 * temporary file that then replaces the file, so a crash mid-write cannot
-	 * leave a truncated file (which the next read would move aside). Failures
-	 * are logged; persistence is best effort and highlighting keeps working.
+	 * Writes the data atomically (see {@link SafeFiles#writeAtomically}); does
+	 * nothing for non-writable data. Failures are logged; persistence is best
+	 * effort and highlighting keeps working.
 	 */
 	static void write(Path file, Data data) {
 		if (!data.writable) {
 			return;
 		}
-		Path temp = file.resolveSibling(file.getFileName() + ".tmp");
 		try {
-			Files.createDirectories(file.getParent());
-			Files.writeString(temp, GSON.toJson(toJson(data)));
-			try {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			} catch (AtomicMoveNotSupportedException e) {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-			}
+			SafeFiles.writeAtomically(file, GSON.toJson(toJson(data)));
 		} catch (IOException e) {
 			PeriScanClient.LOGGER.warn("PeriScan: could not save profiles to {}: {}", file, e.toString());
 		}
@@ -239,9 +229,8 @@ final class ProfileFile {
 
 	private static Data recoverFromBrokenFile(Path file, Exception cause) {
 		Data data = new Data();
-		Path backup = file.resolveSibling(file.getFileName() + ".broken");
 		try {
-			Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
+			Path backup = SafeFiles.moveAsideAsBroken(file);
 			PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, cause.toString());
 		} catch (IOException e) {
 			data.writable = false;

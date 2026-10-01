@@ -7,10 +7,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.persist.SafeFiles;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -108,9 +108,8 @@ public final class SchematicProfileStore {
 					: SchematicEntry.DEFAULT_ORIGIN_Y;
 			return new SchematicProfile(defaultOriginY, entries);
 		} catch (Exception e) {
-			Path backup = file.resolveSibling(file.getFileName() + ".broken");
 			try {
-				Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
+				Path backup = SafeFiles.moveAsideAsBroken(file);
 				PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, e.toString());
 			} catch (IOException moveFailure) {
 				PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up: {}", file, e.toString());
@@ -223,10 +222,7 @@ public final class SchematicProfileStore {
 		}
 	}
 
-	/**
-	 * Writes the entries through a temporary file that then replaces the file,
-	 * so a crash mid-write cannot leave a truncated one.
-	 */
+	/** Writes the entries atomically (see {@link SafeFiles#writeAtomically}). */
 	private static void write(Path file, SchematicProfile profile) {
 		JsonObject root = new JsonObject();
 		root.addProperty("version", FORMAT_VERSION);
@@ -243,15 +239,8 @@ public final class SchematicProfileStore {
 		}
 		root.add("schematics", schematics);
 
-		Path temp = file.resolveSibling(file.getFileName() + ".tmp");
 		try {
-			Files.createDirectories(file.getParent());
-			Files.writeString(temp, GSON.toJson(root));
-			try {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			} catch (AtomicMoveNotSupportedException e) {
-				Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-			}
+			SafeFiles.writeAtomically(file, GSON.toJson(root));
 		} catch (IOException e) {
 			PeriScanClient.LOGGER.warn("PeriScan: could not save schematic profile to {}: {}", file, e.toString());
 		}

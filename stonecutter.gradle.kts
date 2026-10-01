@@ -22,6 +22,8 @@ stonecutter parameters {
 		// wideners use the official namespace.
 		string(current.parsed >= "26.1") {
 			replace("ClientCommandManager", "ClientCommands")
+			replace("keybinding.v1.KeyBindingHelper", "keymapping.v1.KeyMappingHelper")
+			replace("KeyBindingHelper.registerKeyBinding(", "KeyMappingHelper.registerKeyMapping(")
 			replace("source.getWorld()", "source.getLevel()")
 			replace("rendering.v1.world.", "rendering.v1.level.")
 			replace("WorldRenderEvents", "LevelRenderEvents")

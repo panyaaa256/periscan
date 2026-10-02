@@ -32,9 +32,9 @@ import java.util.stream.Stream;
 
 /**
  * The settings screen of one schematic profile: a list of files to import, and
- * a group per schematic with its corners and origin height. YACL screens
- * cannot grow groups while open, so imported schematics get their group when
- * the screen is rebuilt after saving.
+ * a group per schematic with its corners, origin height and orientation. YACL
+ * screens cannot grow groups while open, so imported schematics get their
+ * group when the screen is rebuilt after saving.
  */
 public final class SchematicProfileScreen {
 	private static final String KEY = "periscan.schematic.";
@@ -48,7 +48,9 @@ public final class SchematicProfileScreen {
 		// The saved values when the screen opened, the "Reset" targets.
 		final Set<Corner> initialCorners;
 		final int initialOriginY;
+		final boolean initialKeepOrientation;
 		int originY;
+		boolean keepOrientation;
 		boolean remove;
 
 		EntryState(SchematicEntry entry) {
@@ -57,6 +59,8 @@ public final class SchematicProfileScreen {
 			this.originY = entry.originY();
 			this.initialCorners = EnumSet.copyOf(this.corners);
 			this.initialOriginY = this.originY;
+			this.keepOrientation = entry.keepOrientation();
+			this.initialKeepOrientation = this.keepOrientation;
 		}
 	}
 
@@ -95,7 +99,7 @@ public final class SchematicProfileScreen {
 			List<String> imports) {
 		List<SchematicEntry> kept = states.stream()
 				.filter(state -> !state.remove)
-				.map(state -> new SchematicEntry(state.fileName, state.corners, state.originY))
+				.map(state -> new SchematicEntry(state.fileName, state.corners, state.originY, state.keepOrientation))
 				.toList();
 		List<Path> sources = new ArrayList<>();
 		List<String> failed = new ArrayList<>();
@@ -207,6 +211,12 @@ public final class SchematicProfileScreen {
 						.binding(state.initialOriginY, () -> state.originY, v -> state.originY = v)
 						.controller(opt -> IntegerFieldControllerBuilder.create(opt)
 								.range(SchematicEntry.MIN_ORIGIN_Y, SchematicEntry.MAX_ORIGIN_Y))
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.translatable(KEY + "keep_orientation"))
+						.description(OptionDescription.of(Component.translatable(KEY + "keep_orientation.desc")))
+						.binding(state.initialKeepOrientation, () -> state.keepOrientation, v -> state.keepOrientation = v)
+						.controller(TickBoxControllerBuilder::create)
 						.build())
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.translatable(KEY + "remove"))

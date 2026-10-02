@@ -216,7 +216,8 @@ public final class SchematicProfileStore {
 				}
 			}
 			int originY = json.has("originY") ? json.get("originY").getAsInt() : SchematicEntry.DEFAULT_ORIGIN_Y;
-			return new SchematicEntry(fileName, corners, originY);
+			boolean keepOrientation = json.has("keepOrientation") && json.get("keepOrientation").getAsBoolean();
+			return new SchematicEntry(fileName, corners, originY, keepOrientation);
 		} catch (RuntimeException e) {
 			return null;
 		}
@@ -235,6 +236,7 @@ public final class SchematicProfileStore {
 			entry.corners().forEach(corner -> corners.add(corner.label()));
 			json.add("corners", corners);
 			json.addProperty("originY", entry.originY());
+			json.addProperty("keepOrientation", entry.keepOrientation());
 			schematics.add(json);
 		}
 		root.add("schematics", schematics);

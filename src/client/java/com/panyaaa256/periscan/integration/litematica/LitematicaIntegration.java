@@ -19,9 +19,14 @@ import java.util.List;
 public final class LitematicaIntegration {
 	private static Boolean available;
 
-	/** One placement to create: a schematic file plus where and how to place it. */
+	/**
+	 * One placement to create: a schematic file plus where and how to place it.
+	 * With alignMaxX the placement is moved along X so that the east side of its
+	 * enclosing box, instead of its origin, is at the origin's X; alignMaxZ does
+	 * the same for the south side.
+	 */
 	public record PlannedPlacement(Path dir, String fileName, String placementName, BlockPos origin,
-			Rotation rotation, Mirror mirror) {
+			Rotation rotation, Mirror mirror, boolean alignMaxX, boolean alignMaxZ) {
 	}
 
 	/**
@@ -102,6 +107,12 @@ public final class LitematicaIntegration {
 			placement.getMethod("isLocked");
 			placement.getMethod("toggleLocked");
 			placement.getMethod("getName");
+			Class<?> requiredEnabled = Class.forName("fi.dy.masa.litematica.schematic.placement.SubRegionPlacement$RequiredEnabled");
+			requiredEnabled.getField("ANY");
+			placement.getMethod("getSubRegionBoxes", requiredEnabled);
+			Class<?> box = Class.forName("fi.dy.masa.litematica.selection.Box");
+			box.getMethod("getPos1");
+			box.getMethod("getPos2");
 			Class<?> manager = Class.forName("fi.dy.masa.litematica.schematic.placement.SchematicPlacementManager");
 			manager.getMethod("addSchematicPlacement", placement, boolean.class);
 			manager.getMethod("getAllSchematicsPlacements");

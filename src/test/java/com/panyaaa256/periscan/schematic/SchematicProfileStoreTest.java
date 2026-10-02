@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SchematicProfileStoreTest {
-	private static final SchematicEntry BASE = new SchematicEntry("base.litematic", EnumSet.of(Corner.MM), -59);
-	private static final SchematicEntry WALL = new SchematicEntry("wall.litematic", EnumSet.of(Corner.PM, Corner.MP), 5);
+	private static final SchematicEntry BASE = new SchematicEntry("base.litematic", EnumSet.of(Corner.MM), -59, false);
+	private static final SchematicEntry WALL = new SchematicEntry("wall.litematic", EnumSet.of(Corner.PM, Corner.MP), 5, true);
 
 	@TempDir
 	Path root;
@@ -47,14 +47,14 @@ class SchematicProfileStoreTest {
 	class Entry {
 		@Test
 		void cornersCompareEqualHoweverTheyWereBuilt() {
-			assertEquals(new SchematicEntry("a.litematic", EnumSet.of(Corner.PP, Corner.MM), 0),
-					new SchematicEntry("a.litematic", Set.of(Corner.MM, Corner.PP), 0));
+			assertEquals(new SchematicEntry("a.litematic", EnumSet.of(Corner.PP, Corner.MM), 0, false),
+					new SchematicEntry("a.litematic", Set.of(Corner.MM, Corner.PP), 0, false));
 		}
 
 		@Test
 		void originYIsClamped() {
-			assertEquals(SchematicEntry.MAX_ORIGIN_Y, new SchematicEntry("a.litematic", EnumSet.noneOf(Corner.class), 9999).originY());
-			assertEquals(SchematicEntry.MIN_ORIGIN_Y, new SchematicEntry("a.litematic", EnumSet.noneOf(Corner.class), -9999).originY());
+			assertEquals(SchematicEntry.MAX_ORIGIN_Y, new SchematicEntry("a.litematic", EnumSet.noneOf(Corner.class), 9999, false).originY());
+			assertEquals(SchematicEntry.MIN_ORIGIN_Y, new SchematicEntry("a.litematic", EnumSet.noneOf(Corner.class), -9999, false).originY());
 		}
 
 		@Test
@@ -87,14 +87,14 @@ class SchematicProfileStoreTest {
 			writeRaw("ow", """
 					{"version":1,"schematics":[
 					{"file":"../evil.litematic","corners":["--"],"originY":0},
-					{"file":"ok.litematic","corners":["--","??","++"],"originY":7},
+					{"file":"ok.litematic","corners":["--","??","++"],"originY":7,"keepOrientation":true},
 					{"file":"ok.litematic","corners":["+-"],"originY":1},
 					{"corners":["--"]},
 					{"file":"noy.litematic","corners":[]}
 					]}""");
 			assertEquals(List.of(
-					new SchematicEntry("ok.litematic", EnumSet.of(Corner.MM, Corner.PP), 7),
-					new SchematicEntry("noy.litematic", EnumSet.noneOf(Corner.class), SchematicEntry.DEFAULT_ORIGIN_Y)),
+					new SchematicEntry("ok.litematic", EnumSet.of(Corner.MM, Corner.PP), 7, true),
+					new SchematicEntry("noy.litematic", EnumSet.noneOf(Corner.class), SchematicEntry.DEFAULT_ORIGIN_Y, false)),
 					SchematicProfileStore.load(root, "ow").entries());
 		}
 

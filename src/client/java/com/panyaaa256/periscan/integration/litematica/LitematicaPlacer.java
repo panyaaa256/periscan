@@ -7,8 +7,11 @@ import fi.dy.masa.litematica.schematic.LitematicaSchematic;
 import fi.dy.masa.litematica.schematic.SchematicMetadata;
 import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
 import fi.dy.masa.litematica.schematic.placement.SchematicPlacementManager;
+import fi.dy.masa.litematica.schematic.placement.SubRegionPlacement;
+import fi.dy.masa.litematica.selection.Box;
 import fi.dy.masa.malilib.gui.Message;
 import fi.dy.masa.malilib.gui.interfaces.IMessageConsumer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 
@@ -71,7 +74,7 @@ final class LitematicaPlacer {
 		for (Map.Entry<PlannedPlacement, LitematicaSchematic> entry : loaded.entrySet()) {
 			PlannedPlacement planned = entry.getKey();
 			SchematicPlacement placement = SchematicPlacement.createFor(
-					entry.getValue(), planned.origin(), planned.placementName(), true, true);
+					entry.getValue(), alignedOrigin(entry.getValue(), planned), planned.placementName(), true, true);
 			manager.addSchematicPlacement(placement, false);
 			// Transform after adding (mirroring the GUI flow, so the schematic
 			// world refreshes) and lock last: a locked placement refuses modification.
@@ -86,6 +89,35 @@ final class LitematicaPlacer {
 			}
 		}
 		return new Result(loaded.size(), removed, null);
+	}
+
+	/**
+	 * The origin to place the schematic at: the planned one, moved along each
+	 * aligned axis so that the far side of the enclosing box lands on it.
+	 */
+	private static BlockPos alignedOrigin(LitematicaSchematic schematic, PlannedPlacement planned) {
+		BlockPos origin = planned.origin();
+		if (!planned.alignMaxX() && !planned.alignMaxZ()) {
+			return origin;
+		}
+		// Measured on a placement that is never added: the placement's own enclosing
+		// box is only kept up to date while litematica renders it.
+		SchematicPlacement probe = SchematicPlacement.createFor(schematic, origin, planned.placementName(), true, true);
+		int maxX = Integer.MIN_VALUE;
+		int maxZ = Integer.MIN_VALUE;
+		for (Box box : probe.getSubRegionBoxes(SubRegionPlacement.RequiredEnabled.ANY).values()) {
+			for (BlockPos pos : new BlockPos[] {box.getPos1(), box.getPos2()}) {
+				if (pos != null) {
+					maxX = Math.max(maxX, pos.getX());
+					maxZ = Math.max(maxZ, pos.getZ());
+				}
+			}
+		}
+		if (maxX == Integer.MIN_VALUE) {
+			return origin;
+		}
+		return origin.offset(planned.alignMaxX() ? origin.getX() - maxX : 0, 0,
+				planned.alignMaxZ() ? origin.getZ() - maxZ : 0);
 	}
 
 	static int removeWithPrefix(String prefix) {

@@ -9,7 +9,8 @@ import net.minecraft.world.level.block.Rotation;
  * A corner of the perimeter a schematic can be placed on, named by the signs
  * of its X and Z side ("+-" is the +x/-z corner). Schematics are saved for the
  * -x/-z corner, extending toward +x/+z; the other corners transform them so
- * the content extends into the perimeter from there too.
+ * the content extends into the perimeter from there too. A schematic that
+ * keeps its orientation is moved into the corner instead (see SchematicPlanner).
  */
 public enum Corner {
 	MM("--", false, false, Rotation.NONE, Mirror.NONE),
@@ -46,6 +47,16 @@ public enum Corner {
 	/** The X and Z signs, e.g. "+-"; used in files, placement names and the settings screen. */
 	public String label() {
 		return label;
+	}
+
+	/** Whether this corner is on the +x side of the perimeter. */
+	public boolean maxX() {
+		return maxX;
+	}
+
+	/** Whether this corner is on the +z side of the perimeter. */
+	public boolean maxZ() {
+		return maxZ;
 	}
 
 	public Rotation rotation() {

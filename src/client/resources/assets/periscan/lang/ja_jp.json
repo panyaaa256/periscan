@@ -59,6 +59,8 @@
 	"periscan.schematic.corner.desc": "この設計図を設置するペリメータの角。符号は角のX側・Z側を表します。設計図は -- の角を基準に +X/+Z 方向へ伸びる形で保存してください。他の角では、そこからペリメータの内側へ伸びるように反転または回転されます。どの角も選ばない場合は設置されません。",
 	"periscan.schematic.origin_y": "originのY",
 	"periscan.schematic.origin_y.desc": "設計図のoriginを置く高さ。",
+	"periscan.schematic.keep_orientation": "保存した向きを保つ",
+	"periscan.schematic.keep_orientation.desc": "ONにすると、どの角でも設計図を反転・回転させず、装置の向きを保存したときのまま設置します。代わりに、角に収まるように位置をずらします。+X側の角では設計図の東の端を、+Z側の角では南の端を、ペリメータの端に合わせます。OFFのときは、各角の名前のとおりに反転または回転します。",
 	"periscan.schematic.remove": "プロファイルから外す",
 	"periscan.schematic.remove.desc": "ONにして保存すると、この設計図をプロファイルから外し、プロファイル内のコピーも削除します。他のワールドでこの設計図から作成済みのplacementは読み込めなくなります。",
 	"periscan.schematic.import_failed.title": "PeriScan: 取り込みに失敗",

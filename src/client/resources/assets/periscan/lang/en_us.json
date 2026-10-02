@@ -59,6 +59,8 @@
 	"periscan.schematic.corner.desc": "Corners of the perimeter this schematic is placed on. The signs are the X and Z side of the corner. Save the schematic for the -- corner, extending toward +X/+Z; the other corners flip or rotate it so it extends into the perimeter from there. With no corner selected the schematic is not placed.",
 	"periscan.schematic.origin_y": "Origin Y",
 	"periscan.schematic.origin_y.desc": "Height the schematic's origin is placed at.",
+	"periscan.schematic.keep_orientation": "Keep the saved orientation",
+	"periscan.schematic.keep_orientation.desc": "When ON, the schematic is not flipped or rotated at any corner, so machines keep facing the way they were saved. It is moved instead, so that it still fits into the corner: at the +X corners its east side, and at the +Z corners its south side, is placed on the edge of the perimeter. When OFF, the corners flip or rotate it as their names say.",
 	"periscan.schematic.remove": "Remove from profile",
 	"periscan.schematic.remove.desc": "When ON, saving removes this schematic from the profile and deletes the profile's copy of the file. Placements already made in other worlds with it can no longer be loaded.",
 	"periscan.schematic.import_failed.title": "PeriScan: import failed",

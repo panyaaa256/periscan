@@ -24,7 +24,13 @@ class SchematicPlannerTest {
 
 	private static PlannedPlacement placement(Path dir, String file, String name, BlockPos origin,
 			Rotation rotation, Mirror mirror) {
-		return new PlannedPlacement(dir, file, name, origin, rotation, mirror);
+		return new PlannedPlacement(dir, file, name, origin, rotation, mirror, false, false);
+	}
+
+	/** A placement that keeps the saved orientation and is aligned to the given sides instead. */
+	private static PlannedPlacement aligned(Path dir, String file, String name, BlockPos origin,
+			boolean alignMaxX, boolean alignMaxZ) {
+		return new PlannedPlacement(dir, file, name, origin, Rotation.NONE, Mirror.NONE, alignMaxX, alignMaxZ);
 	}
 
 	@Nested
@@ -32,7 +38,7 @@ class SchematicPlannerTest {
 		private static final Path DIR = Path.of("config", "periscan", "schematics", "ow");
 
 		private static SchematicEntry entry(String file, int originY, Corner... corners) {
-			return new SchematicEntry(file, Set.of(corners), originY);
+			return new SchematicEntry(file, Set.of(corners), originY, false);
 		}
 
 		@Test
@@ -48,6 +54,17 @@ class SchematicPlannerTest {
 							new BlockPos(-32, Y, 47), Rotation.NONE, Mirror.LEFT_RIGHT),
 					placement(DIR, "wall.litematic", "peri/big/wall@++",
 							new BlockPos(31, Y, 47), Rotation.CLOCKWISE_180, Mirror.NONE)), plan);
+		}
+
+		@Test
+		void keptOrientationAlignsToTheCornerInsteadOfTransforming() {
+			List<PlannedPlacement> plan = SchematicPlanner.plan(DIR,
+					List.of(new SchematicEntry("wall.litematic", Set.of(Corner.values()), Y, true)), LARGE);
+			assertEquals(List.of(
+					aligned(DIR, "wall.litematic", "peri/big/wall@--", new BlockPos(-32, Y, -16), false, false),
+					aligned(DIR, "wall.litematic", "peri/big/wall@+-", new BlockPos(31, Y, -16), true, false),
+					aligned(DIR, "wall.litematic", "peri/big/wall@-+", new BlockPos(-32, Y, 47), false, true),
+					aligned(DIR, "wall.litematic", "peri/big/wall@++", new BlockPos(31, Y, 47), true, true)), plan);
 		}
 
 		@Test

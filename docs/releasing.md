@@ -62,6 +62,7 @@
 
 - `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` ジョブを飛ばし、GitHub Release だけを作る。
 - 依存 Mod は `release.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `release.yml` も直す。
+- プロジェクトページの説明文は `docs/modrinth.md` に置いてある。自動では反映されないので、変えたら Modrinth の設定画面（Description）に貼り直す。説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
 
 ## ブランチ
 

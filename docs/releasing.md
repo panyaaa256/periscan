@@ -48,6 +48,7 @@
 - ビルドしたコミットに `v<バージョン>+<範囲>` のタグを付ける（例: `v0.4.0+1.20.5-1.21.4`）。
 - `v<バージョン>` の GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`、本文は `CHANGELOG.md` をそのまま使う。
 - GitHub Release を作ったあと、jar を 1 つずつ Modrinth に上げる（`modrinth` ジョブ）。jar ごとに Modrinth のバージョンが 1 つでき、名前は `PeriScan <バージョン>+<MC>`、変更点は `CHANGELOG.md` になる。対応する Minecraft のバージョンは、jar の `fabric.mod.json` の範囲から決まる。
+- Modrinth のプロジェクトページを、タグのコミットの内容に合わせる（`modrinth-page` ジョブ）。対象は名前、概要、説明文、タグ、ライセンス、リンク。
 
 `modrinth` ジョブのどれかが失敗したら、Actions の画面で「Re-run failed jobs」を押す。失敗した jar だけが上げ直される。
 
@@ -58,11 +59,14 @@
 | 種類 | 名前 | 中身 |
 |---|---|---|
 | Variables | `MODRINTH_PROJECT_ID` | Modrinth のプロジェクト ID |
-| Secrets | `MODRINTH_TOKEN` | Modrinth の API トークン（権限は Create versions、Read versions、Write versions） |
+| Secrets | `MODRINTH_TOKEN` | Modrinth の API トークン（権限は Create versions、Read versions、Write versions、Read projects、Write projects） |
 
-- `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` ジョブを飛ばし、GitHub Release だけを作る。
+- `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` と `modrinth-page` のジョブを飛ばし、GitHub Release だけを作る。
 - 依存 Mod は `release.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `release.yml` も直す。
-- プロジェクトページの説明文は `docs/modrinth.md` に置いてある。自動では反映されないので、変えたら Modrinth の設定画面（Description）に貼り直す。説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
+- プロジェクトページの内容はリポジトリに置いてある。説明文は `docs/modrinth.md`、それ以外（名前、概要、タグ、ライセンス、リンク、アイコン、ギャラリー）は `.github/modrinth/project.json`。
+- 説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
+- ページの内容はリリースのたびに反映される。リリースを待たずに反映するときは、Actions の「modrinth page」を手で実行する。アイコンとギャラリーは、このワークフローで `icon` や `gallery` にチェックを入れたときだけ上げる。
+- AI 利用の開示（Contains AI-generated content）と審査への提出は、Modrinth の画面で行う。
 
 ## ブランチ
 

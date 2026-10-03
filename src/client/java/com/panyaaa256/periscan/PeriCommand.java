@@ -45,6 +45,10 @@ public final class PeriCommand {
 	private PeriCommand() {
 	}
 
+	// Chunk coordinates of /peri add, limited to the chunks inside the world.
+	private static final IntegerArgumentType CHUNK_COORD =
+			IntegerArgumentType.integer(-PeriProfile.MAX_CHUNK_COORD, PeriProfile.MAX_CHUNK_COORD);
+
 	// Suggest the chunk the player is currently standing in.
 	private static final SuggestionProvider<FabricClientCommandSource> SUGGEST_CHUNK_X = (ctx, builder) -> {
 		if (ctx.getSource().getPlayer() != null) {
@@ -81,10 +85,10 @@ public final class PeriCommand {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
 				literal("peri")
 						.then(literal("add")
-								.then(argument("x1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
-										.then(argument("z1", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
-												.then(argument("x2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_X)
-														.then(argument("z2", IntegerArgumentType.integer()).suggests(SUGGEST_CHUNK_Z)
+								.then(argument("x1", CHUNK_COORD).suggests(SUGGEST_CHUNK_X)
+										.then(argument("z1", CHUNK_COORD).suggests(SUGGEST_CHUNK_Z)
+												.then(argument("x2", CHUNK_COORD).suggests(SUGGEST_CHUNK_X)
+														.then(argument("z2", CHUNK_COORD).suggests(SUGGEST_CHUNK_Z)
 																.then(argument("name", StringArgumentType.word())
 																		.executes(PeriCommand::add)))))))
 						.then(literal("remove")

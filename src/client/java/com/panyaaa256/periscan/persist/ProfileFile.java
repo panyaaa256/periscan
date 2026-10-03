@@ -190,8 +190,9 @@ final class ProfileFile {
 	}
 
 	/**
-	 * A profile needs its four chunk coordinates and its dimension; the commands
-	 * rely on them. createdAt is informational and may be missing.
+	 * A profile needs its four chunk coordinates, inside the world (see
+	 * {@link PeriProfile#MAX_CHUNK_COORD}), and its dimension; the commands rely
+	 * on them. createdAt is informational and may be missing.
 	 */
 	private static boolean isValidProfile(JsonElement element) {
 		if (!element.isJsonObject()) {
@@ -199,7 +200,7 @@ final class ProfileFile {
 		}
 		JsonObject profile = element.getAsJsonObject();
 		for (String field : new String[] { "minX", "minZ", "maxX", "maxZ" }) {
-			if (!isInt(profile.get(field))) {
+			if (!isChunkCoord(profile.get(field))) {
 				return false;
 			}
 		}
@@ -207,12 +208,13 @@ final class ProfileFile {
 		return dimension != null && dimension.isJsonPrimitive() && dimension.getAsJsonPrimitive().isString();
 	}
 
-	private static boolean isInt(JsonElement element) {
+	private static boolean isChunkCoord(JsonElement element) {
 		if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
 			return false;
 		}
 		double value = element.getAsDouble();
-		return value == Math.floor(value) && value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE;
+		return value == Math.floor(value)
+				&& value >= -PeriProfile.MAX_CHUNK_COORD && value <= PeriProfile.MAX_CHUNK_COORD;
 	}
 
 	private static JsonObject toJson(Data data) {

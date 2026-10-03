@@ -2,6 +2,7 @@ package com.panyaaa256.periscan.persist;
 
 import com.panyaaa256.periscan.compat.VersionCompat;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 import java.time.LocalDate;
 
@@ -17,6 +18,13 @@ public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, S
 	 * freeze the game or run it out of memory.
 	 */
 	public static final int MAX_SIDE_CHUNKS = 512;
+
+	/**
+	 * Largest chunk coordinate (either sign) a profile may use: the chunks up to
+	 * the edge of the world (±30,000,000 blocks). Keeps the block coordinates
+	 * inside an int.
+	 */
+	public static final int MAX_CHUNK_COORD = Level.MAX_LEVEL_SIZE >> 4;
 
 	/** Creates a profile from two arbitrary corner chunks, normalizing them. */
 	public static PeriProfile of(String name, ChunkPos a, ChunkPos b, String dimension) {

@@ -73,8 +73,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-24.04
-    outputs:
-      jars: ${{ steps.jars.outputs.jars }}
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -103,59 +101,17 @@ jobs:
           body_path: CHANGELOG.md
           files: release/*.jar
           fail_on_unmatched_files: true
-      # The jar names for the modrinth job, as a JSON array.
-      - name: list the jars
-        id: jars
-        run: echo "jars=$(cd release && ls *.jar | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
 
-  # One Modrinth version per jar, each with the Minecraft versions of its
-  # fabric.mod.json. Runs after the GitHub Release, and is skipped until the
+  # One Modrinth version per jar, uploaded from the GitHub Release in the order
+  # of the Minecraft versions (see modrinth-upload.yml). Skipped until the
   # repository variable MODRINTH_PROJECT_ID is set (see docs/releasing.md).
   modrinth:
     needs: publish
     if: vars.MODRINTH_PROJECT_ID != ''
-    runs-on: ubuntu-24.04
-    strategy:
-      # A failed upload can be re-run alone without uploading the others again.
-      fail-fast: false
-      matrix:
-        jar: ${{ fromJSON(needs.publish.outputs.jars) }}
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@v6
-      - name: download jars
-        uses: actions/download-artifact@v8
-        with:
-          pattern: release-*
-          path: release/
-          merge-multiple: true
-      # periscan-1.0.0+26.2.jar -> 1.0.0+26.2. Without it mc-publish would use
-      # the tag, giving every jar the same version number.
-      - name: read the version
-        id: version
-        run: |
-          version="${{ matrix.jar }}"
-          version="${version#periscan-}"
-          echo "version=${version%.jar}" >> "$GITHUB_OUTPUT"
-      # The Minecraft versions, loader and environment are read from the
-      # jar's fabric.mod.json. The dependencies are listed here because YACL's
-      # mod id (yet_another_config_lib_v3) is not its Modrinth slug (yacl).
-      - name: upload to modrinth
-        uses: Kira-NT/mc-publish@v3.3.1
-        with:
-          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-          files: release/${{ matrix.jar }}
-          name: PeriScan ${{ steps.version.outputs.version }}
-          version: ${{ steps.version.outputs.version }}
-          version-type: release
-          changelog-file: CHANGELOG.md
-          game-version-filter: releases
-          modrinth-dependencies: |
-            fabric-api(required)
-            yet_another_config_lib_v3(required){modrinth:yacl}
-            litematica(optional)
-            modmenu(optional)
+    uses: ./.github/workflows/modrinth-upload.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit
 
   # Brings the Modrinth project page in line with the released commit: the
   # summary, links and the description (docs/modrinth.md). The icon and the

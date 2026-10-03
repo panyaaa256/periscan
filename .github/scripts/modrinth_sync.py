@@ -8,15 +8,20 @@ sent. The environment (client only) is not set here: Modrinth takes it from
 the versions, which get it from the jar's fabric.mod.json on upload.
 
 Usage: modrinth_sync.py [--icon] [--gallery] [--versions] [--dry-run]
+       modrinth_sync.py --delete-versions <mod version> [--dry-run]
 
   --icon      also upload the icon
   --gallery   also upload the gallery images whose title is not there yet
-  --versions  also list the uploaded versions (to check a release)
+  --versions  also list the uploaded versions, newest first (to check a release)
   --dry-run   only print what would change
+  --delete-versions <mod version>
+              only delete the versions of that mod version (1.0.0 deletes
+              1.0.0+26.2 and so on), so that a release can be uploaded again
 
 Environment: MODRINTH_TOKEN (needs the "Read projects" and "Write projects"
-scopes, and "Read versions" for --versions), MODRINTH_PROJECT_ID, and optionally MODRINTH_API for another API
-(https://docs.modrinth.com/api/ lists a staging one).
+scopes, "Read versions" for --versions and "Delete versions" for
+--delete-versions), MODRINTH_PROJECT_ID, and optionally MODRINTH_API for
+another API (https://docs.modrinth.com/api/ lists a staging one).
 """
 
 import argparse
@@ -88,18 +93,30 @@ def print_versions(project_id):
 	"""Lists what a release uploaded: Modrinth shows none of it for a project that is not public yet."""
 	versions = json.loads(request("GET", f"/project/{project_id}/version"))
 	names = {}
-	for version in sorted(versions, key=lambda v: v["version_number"]):
+	# Newest first, the order of the version list on Modrinth.
+	for version in sorted(versions, key=lambda v: v["date_published"], reverse=True):
 		dependencies = []
 		for dependency in version.get("dependencies") or []:
 			dependency_id = dependency.get("project_id")
 			if dependency_id and dependency_id not in names:
 				names[dependency_id] = json.loads(request("GET", f"/project/{dependency_id}"))["slug"]
 			dependencies.append(f"{names.get(dependency_id, dependency_id)}({dependency.get('dependency_type')})")
-		print(f"version {version['version_number']}: name={version['name']!r} type={version['version_type']}"
+		print(f"version {version['version_number']}: published={version['date_published']}"
+				f" name={version['name']!r} type={version['version_type']}"
 				f" status={version.get('status')} loaders={version['loaders']} game={version['game_versions']}"
 				f" environment={version.get('environment')} dependencies={dependencies}"
 				f" files={[f['filename'] for f in version['files']]}")
 	print(f"versions: {len(versions)}")
+
+
+def delete_versions(project_id, mod_version, dry_run):
+	versions = json.loads(request("GET", f"/project/{project_id}/version"))
+	matching = [v for v in versions if v["version_number"] == mod_version or v["version_number"].startswith(mod_version + "+")]
+	for version in sorted(matching, key=lambda v: v["version_number"]):
+		print(f"delete version {version['version_number']} ({version['id']})")
+		if not dry_run:
+			request("DELETE", f"/version/{version['id']}")
+	print(f"versions: {len(matching)} of {len(versions)} {'would be deleted' if dry_run else 'deleted'}")
 
 
 def main():
@@ -108,9 +125,13 @@ def main():
 	parser.add_argument("--gallery", action="store_true")
 	parser.add_argument("--versions", action="store_true")
 	parser.add_argument("--dry-run", action="store_true")
+	parser.add_argument("--delete-versions", metavar="MOD_VERSION")
 	args = parser.parse_args()
 
 	project_id = urllib.parse.quote(os.environ["MODRINTH_PROJECT_ID"], safe="")
+	if args.delete_versions:
+		delete_versions(project_id, args.delete_versions, args.dry_run)
+		return
 	config = json.loads(CONFIG.read_text(encoding="utf-8"))
 	project = json.loads(request("GET", f"/project/{project_id}"))
 	print(f"project: {project.get('slug')} (status: {project.get('status')})")

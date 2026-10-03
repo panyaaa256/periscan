@@ -1,0 +1,114 @@
+# Uploads the jars of a GitHub Release to Modrinth, each as its own version.
+# The release workflow calls it for every release. It can also be run by hand
+# from the Actions tab for a tag, for example to upload a release again (see
+# docs/releasing.md).
+#
+# The jars go up one at a time, oldest Minecraft version first: Modrinth lists
+# versions by upload time, so the newest Minecraft version ends up on top.
+
+name: modrinth upload
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The release tag to upload
+        type: string
+        required: true
+      replace:
+        description: Delete the versions of this release that are already on Modrinth first
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to upload, for example v1.0.0
+        type: string
+        required: true
+      replace:
+        description: Delete the versions of this release that are already on Modrinth first
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  jars:
+    runs-on: ubuntu-24.04
+    outputs:
+      jars: ${{ steps.jars.outputs.jars }}
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      # The jar names as a JSON array, sorted by Minecraft version (1.21.8
+      # before 1.21.10).
+      - name: list the jars
+        id: jars
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          jars=$(gh release view "$TAG" --json assets --jq '.assets[].name | select(endswith(".jar"))' | sort -V | jq -R . | jq -cs .)
+          echo "$jars"
+          if [ "$jars" = "[]" ]; then
+            echo "::error::release $TAG has no jars"
+            exit 1
+          fi
+          echo "jars=$jars" >> "$GITHUB_OUTPUT"
+      # v1.0.0 -> the versions 1.0.0+<minecraft> on Modrinth.
+      - name: delete the versions already on modrinth
+        if: inputs.replace
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          TAG: ${{ inputs.tag }}
+        run: python3 .github/scripts/modrinth_sync.py --delete-versions "${TAG#v}"
+
+  upload:
+    needs: jars
+    runs-on: ubuntu-24.04
+    strategy:
+      # One at a time, in the order of the list. A failed upload stops the
+      # rest, so that "Re-run failed jobs" continues in the same order.
+      max-parallel: 1
+      fail-fast: true
+      matrix:
+        jar: ${{ fromJSON(needs.jars.outputs.jars) }}
+    steps:
+      # CHANGELOG.md of the release.
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+      - name: download the jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release download "$TAG" --pattern "${{ matrix.jar }}" --dir release
+      # periscan-1.0.0+26.2.jar -> 1.0.0+26.2. Without it mc-publish would use
+      # the tag, giving every jar the same version number.
+      - name: read the version
+        id: version
+        run: |
+          version="${{ matrix.jar }}"
+          version="${version#periscan-}"
+          echo "version=${version%.jar}" >> "$GITHUB_OUTPUT"
+      # The Minecraft versions, loader and environment are read from the
+      # jar's fabric.mod.json. The dependencies are listed here because YACL's
+      # mod id (yet_another_config_lib_v3) is not its Modrinth slug (yacl).
+      - name: upload to modrinth
+        uses: Kira-NT/mc-publish@v3.3.1
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: release/${{ matrix.jar }}
+          name: PeriScan ${{ steps.version.outputs.version }}
+          version: ${{ steps.version.outputs.version }}
+          version-type: release
+          changelog-file: CHANGELOG.md
+          game-version-filter: releases
+          modrinth-dependencies: |
+            fabric-api(required)
+            yet_another_config_lib_v3(required){modrinth:yacl}
+            litematica(optional)
+            modmenu(optional)

@@ -50,3 +50,7 @@ replay_*.log
 # windows (files copied into WSL)
 
 *:Zone.Identifier
+
+# node (textlint)
+
+node_modules/

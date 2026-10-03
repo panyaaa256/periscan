@@ -7,32 +7,5 @@
 	"license_id": "MIT",
 	"source_url": "https://github.com/panyaaa256/periscan",
 	"issues_url": "https://github.com/panyaaa256/periscan/issues",
-	"wiki_url": "https://github.com/panyaaa256/periscan/blob/main/docs/usage.md",
-	"icon_file": "docs/assets/modrinth_512.png",
-	"gallery": [
-		{
-			"file": "docs/assets/screenshots/trial-chamber.png",
-			"title": "Highlights through walls",
-			"description": "Vaults and trial spawners in a trial chamber, highlighted in red through the walls.",
-			"featured": true
-		},
-		{
-			"file": "docs/assets/screenshots/perimeter-overview.png",
-			"title": "The whole perimeter from above",
-			"description": "The trench zones along the edges and the eater area inside, each in its own color.",
-			"featured": false
-		},
-		{
-			"file": "docs/assets/screenshots/shipwreck.png",
-			"title": "A shipwreck in the eater area",
-			"description": "A sunken shipwreck in the eater area, highlighted in red.",
-			"featured": false
-		},
-		{
-			"file": "docs/assets/screenshots/trenches-from-below.png",
-			"title": "Trench zones from underground",
-			"description": "Highlights of the trench zones in green and yellow, seen from underground.",
-			"featured": false
-		}
-	]
+	"wiki_url": "https://github.com/panyaaa256/periscan/blob/main/docs/usage.md"
 }

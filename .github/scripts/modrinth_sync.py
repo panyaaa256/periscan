@@ -7,14 +7,15 @@ icon and the gallery images. Only fields that differ from the project are
 sent. The environment (client only) is not set here: Modrinth takes it from
 the versions, which get it from the jar's fabric.mod.json on upload.
 
-Usage: modrinth_sync.py [--icon] [--gallery] [--dry-run]
+Usage: modrinth_sync.py [--icon] [--gallery] [--versions] [--dry-run]
 
-  --icon     also upload the icon
-  --gallery  also upload the gallery images whose title is not there yet
-  --dry-run  only print what would change
+  --icon      also upload the icon
+  --gallery   also upload the gallery images whose title is not there yet
+  --versions  also list the uploaded versions (to check a release)
+  --dry-run   only print what would change
 
 Environment: MODRINTH_TOKEN (needs the "Read projects" and "Write projects"
-scopes), MODRINTH_PROJECT_ID, and optionally MODRINTH_API for another API
+scopes, and "Read versions" for --versions), MODRINTH_PROJECT_ID, and optionally MODRINTH_API for another API
 (https://docs.modrinth.com/api/ lists a staging one).
 """
 
@@ -83,10 +84,29 @@ def image_type(path):
 	return "jpeg" if path.suffix.lower() in (".jpg", ".jpeg") else path.suffix.lower().lstrip(".")
 
 
+def print_versions(project_id):
+	"""Lists what a release uploaded: Modrinth shows none of it for a project that is not public yet."""
+	versions = json.loads(request("GET", f"/project/{project_id}/version"))
+	names = {}
+	for version in sorted(versions, key=lambda v: v["version_number"]):
+		dependencies = []
+		for dependency in version.get("dependencies") or []:
+			dependency_id = dependency.get("project_id")
+			if dependency_id and dependency_id not in names:
+				names[dependency_id] = json.loads(request("GET", f"/project/{dependency_id}"))["slug"]
+			dependencies.append(f"{names.get(dependency_id, dependency_id)}({dependency.get('dependency_type')})")
+		print(f"version {version['version_number']}: name={version['name']!r} type={version['version_type']}"
+				f" status={version.get('status')} loaders={version['loaders']} game={version['game_versions']}"
+				f" environment={version.get('environment')} dependencies={dependencies}"
+				f" files={[f['filename'] for f in version['files']]}")
+	print(f"versions: {len(versions)}")
+
+
 def main():
 	parser = argparse.ArgumentParser(description="Brings the Modrinth project page in line with the repository.")
 	parser.add_argument("--icon", action="store_true")
 	parser.add_argument("--gallery", action="store_true")
+	parser.add_argument("--versions", action="store_true")
 	parser.add_argument("--dry-run", action="store_true")
 	args = parser.parse_args()
 
@@ -129,6 +149,9 @@ def main():
 				"ordering": ordering,
 			})
 			request("POST", f"/project/{project_id}/gallery?{query}", path.read_bytes(), f"image/{image_type(path)}")
+
+	if args.versions:
+		print_versions(project_id)
 
 	if args.dry_run:
 		print("dry run: nothing was changed")

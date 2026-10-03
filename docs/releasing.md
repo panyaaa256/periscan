@@ -36,10 +36,10 @@
 
 ## リリースの流れ
 
-1. **バージョンを上げる**: main と各 `mc/*` ブランチの `stonecutter.properties.toml` の `mod.version` を変え、それぞれ push する。
-2. **変更点を確定する**: `CHANGELOG.md` を見直し、`CHANGELOG.ja.md` の「未リリース」をバージョン見出しに変える。
-3. **ビルドと確認**: 各ブランチで `./gradlew build` を実行し、テストが通ることと、ゲーム内の動作を確かめる。
-4. **タグ**: main のリリース用コミットに `v<バージョン>` のタグを付けて push する。
+1. バージョンを上げる: main と各 `mc/*` ブランチの `stonecutter.properties.toml` の `mod.version` を変え、それぞれ push する。
+2. 変更点を確定する: `CHANGELOG.md` を見直し、`CHANGELOG.ja.md` の「未リリース」をバージョン見出しに変える。
+3. ビルドと確認: 各ブランチで `./gradlew build` を実行し、テストが通ることと、ゲーム内の動作を確かめる。
+4. タグ: main のリリース用コミットに `v<バージョン>` のタグを付けて push する。
 
 タグを push すると `.github/workflows/release.yml` が動き、次を行う。
 

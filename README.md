@@ -2,19 +2,18 @@
 
 [日本語](README.ja.md)
 
-A Fabric mod that highlights the blocks you need to clear out before running a world eater or trencher. Give it a perimeter's area and it shows the problem blocks, even through walls.
+A Fabric mod that highlights the blocks you need to clear out before running a World Eater or trencher. Give it the area of your perimeter and it shows the problem blocks, even through walls.
 
-- Highlights blocks that would stop a trencher or world eater (obsidian, chests, spawners, sculk sensors, lava, waterlogged blocks, long runs of sand and gravel, …)
-- Separate block lists and colors for the trenches, the area around them and the inside of the perimeter
-- Highlights update by themselves as blocks are removed
-- Areas are saved per world as named profiles
-- With Litematica, places all of your perimeter schematics at once
+- Highlights blocks that would stop a trencher or World Eater
+- Separate block lists and colors for the trenches, the area around them and the perimeter's area
+- Areas can be saved per world as named profiles
+- Places schematics in bulk with Litematica
 
-See **[the usage guide](docs/usage.md)** for how to use it.
+See [the usage guide](docs/usage.md) for how to use it.
 
-## Minecraft versions
+## Supported Minecraft versions
 
-| Minecraft | Jar | Branch |
+| Version | Jar | Branch |
 |---|---|---|
 | 26.3 | `periscan-<version>+26.3.jar` | `main` |
 | 26.2 | `periscan-<version>+26.2.jar` | `main` |
@@ -38,10 +37,10 @@ See **[the usage guide](docs/usage.md)** for how to use it.
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) for your Minecraft version
-- Optional: [Litematica](https://modrinth.com/mod/litematica), for placing schematics
-- Optional: [Mod Menu](https://modrinth.com/mod/modmenu), for opening the settings from the mod list
+- Optional: [Litematica](https://modrinth.com/mod/litematica), needed for placing schematics in bulk
+- Optional: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-PeriScan only needs to be installed on your own game. It also works on servers that do not have it.
+PeriScan only needs to be installed on the client. It does not need to be installed on the server.
 
 ## Installing
 
@@ -59,9 +58,9 @@ cd periscan
 
 On Windows, use `gradlew.bat buildAndCollect` instead of `./gradlew buildAndCollect`.
 
-This builds every Minecraft version from 1.21.9 to 26.3. For older Minecraft versions, clone the matching `mc/<range>` branch instead.
+On the default branch, this builds the versions for Minecraft 1.21.9 to 26.3. For older Minecraft versions, clone the matching `mc/<range>` branch instead.
 
-The mods are built to `build/libs/<version>/periscan-<version>+<Minecraft version>.jar` (the file ending in `-sources.jar` is not the mod).
+The mods are built to `build/libs/<version>/`.
 
 ## License
 

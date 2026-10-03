@@ -2,19 +2,18 @@
 
 [English](README.md)
 
-ワールドイーターやトレンチャーを動かす前に取り除くべきブロックを、ハイライトする Fabric mod です。ペリメータの範囲を指定すると、邪魔になるブロックが壁越しにも見えるようになります。
+World Eater や trencher を動かす前に取り除くべきブロックを、ハイライトする Fabric mod です。露天掘りの範囲を指定すると、邪魔になるブロックが壁越しにも見えるようになります。
 
-- トレンチャーやワールドイーターを止めてしまうブロック（黒曜石、チェスト、スポナー、スカルクセンサー、溶岩、水没したブロック、長く連なった砂や砂利など）をハイライト
-- トレンチ、その周り、ペリメータの内側で、ハイライトするブロックと色を別々に設定可能
-- ブロックを取り除くと、ハイライトも自動で消える
-- 範囲は名前付きのプロファイルとしてワールドごとに保存
-- Litematica があれば、ペリメータ用のスケマティックをまとめて配置
+- trencher や World Eater を止めてしまうブロックをハイライト
+- トレンチ、その周り、露天掘りの範囲で、ハイライトするブロックと色を別々に設定可能
+- 範囲は名前付きのプロファイルとしてワールドごとに保存可能
+- Litematica を使用した設計図の一括配置
 
-使い方は **[使い方ガイド](docs/usage.ja.md)** を見てください。
+使い方は[使い方ガイド](docs/usage.ja.md)を確認してください。
 
-## 対応する Minecraft のバージョン
+## 対応済みの Minecraft のバージョン
 
-| Minecraft | jar | ブランチ |
+| バージョン | jar | ブランチ |
 |---|---|---|
 | 26.3 | `periscan-<version>+26.3.jar` | `main` |
 | 26.2 | `periscan-<version>+26.2.jar` | `main` |
@@ -32,16 +31,16 @@
 
 1.20.2 は、YACL に beta 版しかないため対象外です。
 
-## 必要なもの
+## 必要な環境
 
 - Minecraft 1.20〜26.3（上の表を参照）
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 以降
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)（Minecraft のバージョンに合うもの）
-- 任意: [Litematica](https://modrinth.com/mod/litematica)（スケマティックの配置に使います）
-- 任意: [Mod Menu](https://modrinth.com/mod/modmenu)（mod 一覧から設定画面を開けます）
+- 任意: [Litematica](https://modrinth.com/mod/litematica)（設計図の一括配置で必要）
+- 任意: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-PeriScan は自分のゲームに入れるだけで使えます。PeriScan が入っていないサーバーでも動きます。
+PeriScan はクライアント側に導入するだけで使えます。サーバー側に入れる必要はありません。
 
 ## 導入
 
@@ -59,9 +58,9 @@ cd periscan
 
 Windows では `./gradlew buildAndCollect` の代わりに `gradlew.bat buildAndCollect` を使ってください。
 
-これで Minecraft 1.21.9〜26.3 の全バージョンがビルドされます。それより古いバージョンは、対応する `mc/<範囲>` ブランチを clone してください。
+デフォルトブランチにおいては Minecraft 1.21.9〜26.3 に対応するバージョンがビルドされます。それより古いバージョンは、対応する `mc/<範囲>` ブランチを clone してください。
 
-mod は `build/libs/<バージョン>/periscan-<バージョン>+<Minecraftのバージョン>.jar` に作られます（`-sources.jar` で終わるファイルは mod ではありません）。
+mod は `build/libs/<バージョン>/` に作られます。
 
 ## ライセンス
 

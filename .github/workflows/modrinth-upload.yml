@@ -110,6 +110,9 @@ jobs:
           version-type: release
           changelog-file: tag/CHANGELOG.md
           game-version-filter: releases
+          # Modrinth sometimes answers 502 for a few minutes.
+          retry-attempts: 5
+          retry-delay: 30000
           modrinth-dependencies: |
             fabric-api(required)
             yet_another_config_lib_v3(required){modrinth:yacl}

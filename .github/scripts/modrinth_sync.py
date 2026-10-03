@@ -2,9 +2,10 @@
 """Brings the Modrinth project page in line with the repository.
 
 The page is described by .github/modrinth/project.json: the name, summary,
-categories, environment, license and links, plus the files holding the
-description, the icon and the gallery images. Only fields that differ from
-the project are sent.
+categories, license and links, plus the files holding the description, the
+icon and the gallery images. Only fields that differ from the project are
+sent. The environment (client only) is not set here: Modrinth takes it from
+the versions, which get it from the jar's fabric.mod.json on upload.
 
 Usage: modrinth_sync.py [--icon] [--gallery] [--dry-run]
 
@@ -32,8 +33,8 @@ CONFIG = ROOT / ".github" / "modrinth" / "project.json"
 USER_AGENT = "panyaaa256/periscan (https://github.com/panyaaa256/periscan)"
 # Fields of project.json sent as they are; the description is read from body_file.
 FIELDS = (
-	"title", "description", "categories", "additional_categories", "client_side",
-	"server_side", "license_id", "source_url", "issues_url", "wiki_url",
+	"title", "description", "categories", "additional_categories", "license_id",
+	"source_url", "issues_url", "wiki_url",
 )
 # Categories are compared without their order.
 UNORDERED = ("categories", "additional_categories")

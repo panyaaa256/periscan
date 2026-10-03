@@ -4,8 +4,6 @@
 	"body_file": "docs/modrinth.md",
 	"categories": ["utility"],
 	"additional_categories": [],
-	"client_side": "required",
-	"server_side": "unsupported",
 	"license_id": "MIT",
 	"source_url": "https://github.com/panyaaa256/periscan",
 	"issues_url": "https://github.com/panyaaa256/periscan/issues",

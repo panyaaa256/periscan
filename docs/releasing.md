@@ -64,6 +64,7 @@
 - `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` と `modrinth-page` のジョブを飛ばし、GitHub Release だけを作る。
 - 依存 Mod は `release.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `release.yml` も直す。
 - プロジェクトページの内容はリポジトリに置いてある。説明文は `docs/modrinth.md`、それ以外（名前、概要、タグ、ライセンス、リンク、アイコン、ギャラリー）は `.github/modrinth/project.json`。
+- 動作環境（クライアント専用）はページの設定ではなく、バージョンごとに決まる。jar を上げるときに、`fabric.mod.json` の `environment` から自動で入る。
 - 説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
 - ページの内容はリリースのたびに反映される。リリースを待たずに反映するときは、Actions の「modrinth page」を手で実行する。アイコンとギャラリーは、このワークフローで `icon` や `gallery` にチェックを入れたときだけ上げる。
 - AI 利用の開示（Contains AI-generated content）と審査への提出は、Modrinth の画面で行う。

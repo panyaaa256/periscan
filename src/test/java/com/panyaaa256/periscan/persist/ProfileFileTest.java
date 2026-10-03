@@ -116,6 +116,8 @@ class ProfileFileTest {
 					"{\"minX\":\"0\",\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
 					"{\"minX\":1.5,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
 					"{\"minX\":3000000000,\"minZ\":0,\"maxX\":1,\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
+					"{\"minX\":0,\"minZ\":0,\"maxX\":" + (PeriProfile.MAX_CHUNK_COORD + 1)
+							+ ",\"maxZ\":1,\"dimension\":\"minecraft:overworld\"}",
 			};
 			for (String entry : invalid) {
 				Data data = readWithProfile(entry);
@@ -128,6 +130,14 @@ class ProfileFileTest {
 		void missingCreatedAtIsAllowed() throws IOException {
 			Data data = readWithProfile("{\"minX\":-1,\"minZ\":2,\"maxX\":3,\"maxZ\":4,\"dimension\":\"minecraft:the_nether\"}");
 			assertEquals(new SavedProfile(-1, 2, 3, 4, "minecraft:the_nether", null), data.profiles.get("bad"));
+		}
+
+		@Test
+		void coordinatesAtTheWorldEdgeAreAccepted() throws IOException {
+			int edge = PeriProfile.MAX_CHUNK_COORD;
+			Data data = readWithProfile("{\"minX\":" + -edge + ",\"minZ\":" + -edge + ",\"maxX\":" + edge
+					+ ",\"maxZ\":" + edge + ",\"dimension\":\"minecraft:overworld\"}");
+			assertEquals(new SavedProfile(-edge, -edge, edge, edge, "minecraft:overworld", null), data.profiles.get("bad"));
 		}
 
 		@Test

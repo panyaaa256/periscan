@@ -60,6 +60,14 @@ class PeriProfileTest {
 	}
 
 	@Test
+	void blockCoordinatesAtTheWorldEdgeFitInAnInt() {
+		int edge = PeriProfile.MAX_CHUNK_COORD;
+		PeriProfile profile = PeriProfile.of("p", new ChunkPos(-edge, -edge), new ChunkPos(edge, edge), "minecraft:overworld");
+		assertEquals(-edge * 16L, profile.minBlockX());
+		assertEquals(edge * 16L + 15, profile.maxBlockZ());
+	}
+
+	@Test
 	void extremeCoordinatesFromDiskDoNotOverflow() {
 		PeriProfile profile = new PeriProfile("p", Integer.MIN_VALUE, 0, Integer.MAX_VALUE, 0,
 				"minecraft:overworld", null);

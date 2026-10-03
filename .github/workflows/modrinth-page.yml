@@ -1,0 +1,40 @@
+# Brings the Modrinth project page (name, summary, description, categories,
+# license, links) in line with .github/modrinth/project.json and
+# docs/modrinth.md. Run it by hand from the Actions tab; the release workflow
+# also updates the page after every release (see docs/releasing.md).
+
+name: modrinth page
+on:
+  workflow_dispatch:
+    inputs:
+      icon:
+        description: Also upload the icon
+        type: boolean
+        default: false
+      gallery:
+        description: Also upload the gallery images that are not there yet
+        type: boolean
+        default: false
+      dry-run:
+        description: Only show what would change
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: update the project page
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+        run: >-
+          python3 .github/scripts/modrinth_sync.py
+          ${{ inputs.icon && '--icon' || '' }}
+          ${{ inputs.gallery && '--gallery' || '' }}
+          ${{ inputs.dry-run && '--dry-run' || '' }}

@@ -16,6 +16,7 @@ import com.panyaaa256.periscan.persist.ProfileStore;
 import com.panyaaa256.periscan.scan.ScanManager;
 import com.panyaaa256.periscan.schematic.SchematicEntry;
 import com.panyaaa256.periscan.schematic.SchematicPlanner;
+import com.panyaaa256.periscan.schematic.SchematicProfile;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore;
 import com.panyaaa256.periscan.schematic.SchematicProfileStore.UpdateResult;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -37,7 +38,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 /**
  * The /peri command: peri profiles (add/remove/list), scanning bound to them
  * (scan start/clear/reload), schematic profiles and their litematica
- * placement (schematic edit/place/clear/list/copy/remove) and the config
+ * placement (schematic create/edit/place/clear/list/copy/remove) and the config
  * screen (config).
  */
 public final class PeriCommand {
@@ -97,6 +98,9 @@ public final class PeriCommand {
 								.then(literal("clear").executes(ctx -> scanClear(ctx.getSource())))
 								.then(literal("reload").executes(ctx -> scanReload(ctx.getSource()))))
 						.then(literal("schematic")
+								.then(literal("create")
+										.then(argument("profile", StringArgumentType.word())
+												.executes(PeriCommand::schematicCreate)))
 								.then(literal("edit")
 										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
 												.executes(PeriCommand::schematicEdit)))
@@ -307,10 +311,13 @@ public final class PeriCommand {
 		return false;
 	}
 
-	/** Opens the settings screen of a schematic profile; saving there creates the profile. */
-	private static int schematicEdit(CommandContext<FabricClientCommandSource> ctx) {
+	/**
+	 * Creates an empty schematic profile and opens its settings screen. The
+	 * profile exists from now on, even if the screen is closed without saving.
+	 */
+	private static int schematicCreate(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		// Schematics are imported from litematica's schematics folder.
+		// Checked first: without litematica the profile could not be filled.
 		if (rejectWithoutLitematica(source)) {
 			return 0;
 		}
@@ -319,9 +326,41 @@ public final class PeriCommand {
 			source.sendError(Component.translatable("periscan.msg.schem_profile_invalid_name", schematicProfile));
 			return 0;
 		}
+		Path root = SchematicProfileStore.root();
+		if (SchematicProfileStore.exists(root, schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.schem_profile_exists", schematicProfile));
+			return 0;
+		}
+		SchematicProfileStore.update(root, schematicProfile, SchematicProfile.EMPTY, List.of());
+		// update() only logs a failed write, so check that the profile is there.
+		if (!SchematicProfileStore.exists(root, schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.schem_profile_create_failed", schematicProfile));
+			return 0;
+		}
+		source.sendFeedback(Component.translatable("periscan.msg.schem_profile_created", schematicProfile));
+		openSchematicProfileScreen(schematicProfile);
+		return 1;
+	}
+
+	/** Opens the settings screen of an existing schematic profile; new ones are made with create. */
+	private static int schematicEdit(CommandContext<FabricClientCommandSource> ctx) {
+		FabricClientCommandSource source = ctx.getSource();
+		// Schematics are imported from litematica's schematics folder.
+		if (rejectWithoutLitematica(source)) {
+			return 0;
+		}
+		String schematicProfile = StringArgumentType.getString(ctx, "profile");
+		if (!SchematicProfileStore.exists(SchematicProfileStore.root(), schematicProfile)) {
+			source.sendError(Component.translatable("periscan.msg.no_schem_profile", schematicProfile));
+			return 0;
+		}
+		openSchematicProfileScreen(schematicProfile);
+		return 1;
+	}
+
+	private static void openSchematicProfileScreen(String schematicProfile) {
 		Path sourceRoot = LitematicaIntegration.schematicsBaseDirectory();
 		PeriScanClient.scheduleScreen(() -> SchematicProfileScreen.create(null, schematicProfile, sourceRoot));
-		return 1;
 	}
 
 	/**

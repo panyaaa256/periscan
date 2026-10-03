@@ -46,3 +46,7 @@ replay_*.log
 # local downloads
 
 *.deb
+
+# windows (files copied into WSL)
+
+*:Zone.Identifier

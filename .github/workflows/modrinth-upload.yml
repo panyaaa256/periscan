@@ -38,8 +38,6 @@ jobs:
     outputs:
       jars: ${{ steps.jars.outputs.jars }}
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v6
       # The jar names as a JSON array, sorted by Minecraft version (1.21.8
       # before 1.21.10).
       - name: list the jars
@@ -55,14 +53,6 @@ jobs:
             exit 1
           fi
           echo "jars=$jars" >> "$GITHUB_OUTPUT"
-      # v1.0.0 -> the versions 1.0.0+<minecraft> on Modrinth.
-      - name: delete the versions already on modrinth
-        if: inputs.replace
-        env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
-          TAG: ${{ inputs.tag }}
-        run: python3 .github/scripts/modrinth_sync.py --delete-versions "${TAG#v}"
 
   upload:
     needs: jars
@@ -75,11 +65,14 @@ jobs:
       matrix:
         jar: ${{ fromJSON(needs.jars.outputs.jars) }}
     steps:
-      # CHANGELOG.md of the release.
       - name: checkout repository
+        uses: actions/checkout@v6
+      # CHANGELOG.md of the release.
+      - name: checkout the release
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.tag }}
+          path: tag
       - name: download the jar
         env:
           GH_TOKEN: ${{ github.token }}
@@ -93,6 +86,14 @@ jobs:
           version="${{ matrix.jar }}"
           version="${version#periscan-}"
           echo "version=${version%.jar}" >> "$GITHUB_OUTPUT"
+      # Deleted right before its replacement is uploaded, never all at once:
+      # Modrinth refuses to delete the last version of a project.
+      - name: delete the version already on modrinth
+        if: inputs.replace
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+        run: python3 .github/scripts/modrinth_sync.py --delete-versions "${{ steps.version.outputs.version }}"
       # The Minecraft versions, loader and environment are read from the
       # jar's fabric.mod.json. The dependencies are listed here because YACL's
       # mod id (yet_another_config_lib_v3) is not its Modrinth slug (yacl).
@@ -105,7 +106,7 @@ jobs:
           name: PeriScan ${{ steps.version.outputs.version }}
           version: ${{ steps.version.outputs.version }}
           version-type: release
-          changelog-file: CHANGELOG.md
+          changelog-file: tag/CHANGELOG.md
           game-version-filter: releases
           modrinth-dependencies: |
             fabric-api(required)

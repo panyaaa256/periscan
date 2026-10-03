@@ -14,9 +14,11 @@ Usage: modrinth_sync.py [--icon] [--gallery] [--versions] [--dry-run]
   --gallery   also upload the gallery images whose title is not there yet
   --versions  also list the uploaded versions, newest first (to check a release)
   --dry-run   only print what would change
-  --delete-versions <mod version>
-              only delete the versions of that mod version (1.0.0 deletes
-              1.0.0+26.2 and so on), so that a release can be uploaded again
+  --delete-versions <version>
+              only delete that version (1.0.0+26.2), or every version of a mod
+              version (1.0.0 deletes 1.0.0+26.2 and so on), so that it can be
+              uploaded again. Modrinth refuses to delete a project's last
+              version.
 
 Environment: MODRINTH_TOKEN (needs the "Read projects" and "Write projects"
 scopes, "Read versions" for --versions and "Delete versions" for
@@ -125,7 +127,7 @@ def main():
 	parser.add_argument("--gallery", action="store_true")
 	parser.add_argument("--versions", action="store_true")
 	parser.add_argument("--dry-run", action="store_true")
-	parser.add_argument("--delete-versions", metavar="MOD_VERSION")
+	parser.add_argument("--delete-versions", metavar="VERSION")
 	args = parser.parse_args()
 
 	project_id = urllib.parse.quote(os.environ["MODRINTH_PROJECT_ID"], safe="")

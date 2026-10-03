@@ -53,7 +53,7 @@
 
 `modrinth` ジョブのどれかが失敗すると、残りの jar は上げずに止まる。Actions の画面で「Re-run failed jobs」を押すと、失敗した jar から順に続きを上げる。
 
-リリースを Modrinth に上げ直すときは、Actions の「modrinth upload」を手で実行する。`tag` にタグ（例: `v1.0.0`）を入れ、`replace` にチェックを入れると、そのリリースのバージョンを Modrinth から消してから上げ直す。
+リリースを Modrinth に上げ直すときは、Actions の「modrinth upload」を手で実行する。`tag` にタグ（例: `v1.0.0`）を入れ、`replace` にチェックを入れると、jar を上げる直前に、同じバージョンを Modrinth から消す。Modrinth はプロジェクトの最後の 1 つのバージョンを消させないので、まとめて消すことはしない。
 
 ## Modrinth の準備
 

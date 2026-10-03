@@ -47,30 +47,28 @@
 - 全ブランチの全 Minecraft バージョンをビルドする。main はタグのコミット、`mc/*` はブランチの先頭を使う。
 - ビルドしたコミットに `v<バージョン>+<範囲>` のタグを付ける（例: `v0.4.0+1.20.5-1.21.4`）。
 - `v<バージョン>` の GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`、本文は `CHANGELOG.md` をそのまま使う。
-- GitHub Release を作ったあと、その jar を 1 つずつ Modrinth に上げる（`modrinth` ジョブ）。jar ごとに Modrinth のバージョンが 1 つでき、名前は `PeriScan <バージョン>+<MC>`、変更点は `CHANGELOG.md` になる。対応する Minecraft のバージョンは、jar の `fabric.mod.json` の範囲から決まる。
+- GitHub Release を作ったあと、jar を 1 つずつ Modrinth に上げる（`modrinth` ジョブ）。jar ごとに Modrinth のバージョンが 1 つでき、名前は `PeriScan <バージョン>+<MC>`、変更点は `CHANGELOG.md` になる。対応する Minecraft のバージョンは、jar の `fabric.mod.json` の範囲から決まる。
 - Modrinth のバージョン一覧は上げた時刻の順に並ぶ。新しい Minecraft が上に来るよう、古い Minecraft の jar から順に上げる。
 - Modrinth のプロジェクトページを、タグのコミットの内容に合わせる（`modrinth-page` ジョブ）。対象は名前、概要、説明文、タグ、ライセンス、リンク。
 
 `modrinth` ジョブのどれかが失敗すると、残りの jar は上げずに止まる。Actions の画面で「Re-run failed jobs」を押すと、失敗した jar から順に続きを上げる。
 
-リリースを Modrinth に上げ直すときは、Actions の「modrinth upload」を手で実行する。`tag` にタグ（例: `v1.0.0`）を入れ、`replace` にチェックを入れると、jar を上げる直前に、同じバージョンを Modrinth から消す。Modrinth はプロジェクトの最後の 1 つのバージョンを消させないので、まとめて消すことはしない。
-
 ## Modrinth の準備
 
-`modrinth` ジョブ（`modrinth-upload.yml`）は[mc-publish](https://github.com/Kira-NT/mc-publish)で jar を上げる。次の 2 つを GitHub のリポジトリ設定（Settings → Secrets and variables → Actions）に登録する。
+`modrinth` ジョブは[mc-publish](https://github.com/Kira-NT/mc-publish)で jar を上げる。次の 2 つを GitHub のリポジトリ設定（Settings → Secrets and variables → Actions）に登録する。
 
 | 種類 | 名前 | 中身 |
 |---|---|---|
 | Variables | `MODRINTH_PROJECT_ID` | Modrinth のプロジェクト ID |
-| Secrets | `MODRINTH_TOKEN` | Modrinth の API トークン（権限は Create versions、Read versions、Write versions、Read projects、Write projects。上げ直しで消すときは Delete versions も） |
+| Secrets | `MODRINTH_TOKEN` | Modrinth の API トークン（権限は Create versions、Read versions、Write versions、Read projects、Write projects） |
 
 - `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` と `modrinth-page` のジョブを飛ばし、GitHub Release だけを作る。
-- 依存 Mod は `modrinth-upload.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `modrinth-upload.yml` も直す。
-- プロジェクトページの内容はリポジトリに置いてある。説明文は `docs/modrinth.md`、それ以外（名前、概要、タグ、ライセンス、リンク、アイコン、ギャラリー）は `.github/modrinth/project.json`。
+- 依存 Mod は `release.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `release.yml` も直す。
+- プロジェクトページの内容はリポジトリに置いてある。説明文は `docs/modrinth.md`、それ以外（名前、概要、タグ、ライセンス、リンク）は `.github/modrinth/project.json`。
 - 動作環境（クライアント専用）はページの設定ではなく、バージョンごとに決まる。jar を上げるときに、`fabric.mod.json` の `environment` から自動で入る。
 - 説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
-- ページの内容はリリースのたびに反映される。リリースを待たずに反映するときは、Actions の「modrinth page」を手で実行する。アイコンとギャラリーは、このワークフローで `icon` や `gallery` にチェックを入れたときだけ上げる。
-- AI 利用の開示（Contains AI-generated content）と審査への提出は、Modrinth の画面で行う。
+- ページの内容は、リリースのときにだけ反映される。
+- アイコン、ギャラリー、AI 利用の開示（Contains AI-generated content）は、Modrinth の画面で変える。
 
 ## ブランチ
 

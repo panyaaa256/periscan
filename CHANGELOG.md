@@ -8,3 +8,6 @@ Adds keys, and lets you hide highlights without stopping the scan: all of them a
   - Rescan (same as `/peri scan reload`)
   - Clear Scan (same as `/peri scan clear`)
 - Add "Show highlights" (General) and "Show this zone" (each zone) to the settings. They are the same switches as the keys, and are kept when the game restarts
+
+### Changed
+- Replace the placeholder mod icon with the PeriScan icon

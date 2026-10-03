@@ -47,6 +47,21 @@
 - 全ブランチの全 Minecraft バージョンをビルドする。main はタグのコミット、`mc/*` はブランチの先頭を使う。
 - ビルドしたコミットに `v<バージョン>+<範囲>` のタグを付ける（例: `v0.4.0+1.20.5-1.21.4`）。
 - `v<バージョン>` の GitHub Release を**1つだけ**作り、全 Minecraft バージョンの jar を添付する。タイトルはタグと同じ `v<バージョン>`、本文は `CHANGELOG.md` をそのまま使う。
+- GitHub Release を作ったあと、jar を 1 つずつ Modrinth に上げる（`modrinth` ジョブ）。jar ごとに Modrinth のバージョンが 1 つでき、名前は `PeriScan <バージョン>+<MC>`、変更点は `CHANGELOG.md` になる。対応する Minecraft のバージョンは、jar の `fabric.mod.json` の範囲から決まる。
+
+`modrinth` ジョブのどれかが失敗したら、Actions の画面で「Re-run failed jobs」を押す。失敗した jar だけが上げ直される。
+
+## Modrinth の準備
+
+`modrinth` ジョブは[mc-publish](https://github.com/Kira-NT/mc-publish)で jar を上げる。次の 2 つを GitHub のリポジトリ設定（Settings → Secrets and variables → Actions）に登録する。
+
+| 種類 | 名前 | 中身 |
+|---|---|---|
+| Variables | `MODRINTH_PROJECT_ID` | Modrinth のプロジェクト ID |
+| Secrets | `MODRINTH_TOKEN` | Modrinth の API トークン（権限は Create versions、Read versions、Write versions） |
+
+- `MODRINTH_PROJECT_ID` が空のあいだは `modrinth` ジョブを飛ばし、GitHub Release だけを作る。
+- 依存 Mod は `release.yml` に書いてある。必須は Fabric API と YACL、任意は Litematica と Mod Menu。依存を変えたら `release.yml` も直す。
 
 ## ブランチ
 

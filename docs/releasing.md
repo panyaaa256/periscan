@@ -80,6 +80,7 @@
 | Secrets | `DISCORD_WEBHOOK_URL` | Discord のウェブフックの URL |
 
 - 投稿は埋め込み 1 つだけ。タイトルは `PeriScan v<バージョン>` で GitHub Release にリンクする。中身は `CHANGELOG.md` そのままで、最後に Modrinth のページへのリンクを 1 行足す。
+- フッターには名前（ぱんや）とアイコンを出す。アイコンは `docs/assets/discord_footer_icon.png` で、main の画像を GitHub の絶対 URL で参照する。名前は `release.yml` の `footer_title` に書いてある。
 - 中身が 4096 文字を超えると、超えた分を切り捨てて GitHub Release へのリンクを付ける。このとき Modrinth へのリンクは消える。
 - `discord` ジョブは `modrinth` ジョブのあとに動く。`MODRINTH_PROJECT_ID` が空で `modrinth` ジョブを飛ばしたときは、`discord` ジョブも飛ばす。
 - `DISCORD_WEBHOOK_URL` を登録していないと `discord` ジョブだけが失敗する。GitHub Release と Modrinth への公開はその前に終わっている。

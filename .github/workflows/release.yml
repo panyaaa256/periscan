@@ -213,3 +213,5 @@ jobs:
           release_name: PeriScan ${{ github.ref_name }}
           release_body: ${{ steps.changelog.outputs.body }}
           release_html_url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+          footer_title: ぱんや
+          footer_icon_url: https://raw.githubusercontent.com/${{ github.repository }}/main/docs/assets/discord_footer_icon.png

@@ -1,0 +1,45 @@
+# Temporary: posts the changelog of an existing release to Discord, to try the
+# discord job of release.yml on its own. Run it by hand with the tag of the
+# release (Actions > discord-test > Run workflow). Remove it once the post
+# looks right.
+
+name: discord-test
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the release to post (for example v1.0.0)
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: read
+
+jobs:
+  # The same steps as the discord job of release.yml, with the tag taken from
+  # the input instead of the pushed tag.
+  discord:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+      - name: read the changelog
+        id: changelog
+        env:
+          MODRINTH_URL: https://modrinth.com/mod/${{ vars.MODRINTH_PROJECT_ID }}
+        run: |
+          {
+            echo 'body<<CHANGELOG_EOF'
+            cat CHANGELOG.md
+            printf '\n\n[Download on Modrinth](%s)\n' "$MODRINTH_URL"
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: post to discord
+        uses: SethCohen/github-releases-to-discord@v1.20.0
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          release_name: PeriScan ${{ inputs.tag }}
+          release_body: ${{ steps.changelog.outputs.body }}
+          release_html_url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ inputs.tag }}

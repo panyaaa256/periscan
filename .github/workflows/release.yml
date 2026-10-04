@@ -1,8 +1,8 @@
 # Publishes one GitHub Release per mod version with the jars of every supported
-# Minecraft version, then uploads each jar to Modrinth as its own version and
-# updates the Modrinth project page. Push the tag v<version> on main to run it
-# (see docs/releasing.md); every branch below must already have that
-# mod.version.
+# Minecraft version, then uploads each jar to Modrinth as its own version,
+# updates the Modrinth project page and posts the changelog to Discord. Push
+# the tag v<version> on main to run it (see docs/releasing.md); every branch
+# below must already have that mod.version.
 
 name: release
 on:
@@ -180,3 +180,36 @@ jobs:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
         run: python3 .github/scripts/modrinth_sync.py
+
+  # Posts CHANGELOG.md to Discord once every jar is on Modrinth, followed by a
+  # link to the Modrinth page. Needs the secret DISCORD_WEBHOOK_URL (see
+  # docs/releasing.md).
+  discord:
+    needs: modrinth
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      # The changelog, a blank line, then the Modrinth link. The link goes in
+      # the embed's description because that is the only place below the
+      # changelog where Discord renders a link.
+      - name: read the changelog
+        id: changelog
+        env:
+          MODRINTH_URL: https://modrinth.com/mod/${{ vars.MODRINTH_PROJECT_ID }}
+        run: |
+          {
+            echo 'body<<CHANGELOG_EOF'
+            cat CHANGELOG.md
+            printf '\n\n[Download on Modrinth](%s)\n' "$MODRINTH_URL"
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+      # The embed's title links to the GitHub Release. There is no release
+      # event on a tag push, so the release is passed in through the inputs.
+      - name: post to discord
+        uses: SethCohen/github-releases-to-discord@v1.20.0
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          release_name: PeriScan ${{ github.ref_name }}
+          release_body: ${{ steps.changelog.outputs.body }}
+          release_html_url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}

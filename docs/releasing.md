@@ -50,8 +50,9 @@
 - GitHub Release を作ったあと、jar を 1 つずつ Modrinth に上げる（`modrinth` ジョブ）。jar ごとに Modrinth のバージョンが 1 つでき、名前は `PeriScan <バージョン>+<MC>`、変更点は `CHANGELOG.md` になる。対応する Minecraft のバージョンは、jar の `fabric.mod.json` の範囲から決まる。
 - Modrinth のバージョン一覧は上げた時刻の順に並ぶ。新しい Minecraft が上に来るよう、古い Minecraft の jar から順に上げる。
 - Modrinth のプロジェクトページを、タグのコミットの内容に合わせる（`modrinth-page` ジョブ）。対象は名前、概要、説明文、タグ、ライセンス、リンク。
+- 全部の jar を Modrinth に上げ終えたあと、`CHANGELOG.md` を Discord に投稿する（`discord` ジョブ）。
 
-`modrinth` ジョブのどれかが失敗すると、残りの jar は上げずに止まる。Actions の画面で「Re-run failed jobs」を押すと、失敗した jar から順に続きを上げる。
+`modrinth` ジョブのどれかが失敗すると、残りの jar は上げずに止まり、Discord にも投稿しない。Actions の画面で「Re-run failed jobs」を押すと、失敗した jar から順に続きを上げ、最後に Discord へ投稿する。
 
 ## Modrinth の準備
 
@@ -69,6 +70,19 @@
 - 説明文の画像は `docs/assets/screenshots/` に置き、GitHub の絶対 URL で参照する。
 - ページの内容は、リリースのときにだけ反映される。
 - アイコン、ギャラリー、AI 利用の開示（Contains AI-generated content）は、Modrinth の画面で変える。
+
+## Discord の準備
+
+`discord` ジョブは[github-releases-to-discord](https://github.com/SethCohen/github-releases-to-discord)で投稿する。Discord のサーバー設定（連携サービス → ウェブフック）で投稿先チャンネルのウェブフックを作り、その URL を GitHub のリポジトリ設定に登録する。
+
+| 種類 | 名前 | 中身 |
+|---|---|---|
+| Secrets | `DISCORD_WEBHOOK_URL` | Discord のウェブフックの URL |
+
+- 投稿は埋め込み 1 つだけ。タイトルは `PeriScan v<バージョン>` で GitHub Release にリンクする。中身は `CHANGELOG.md` そのままで、最後に Modrinth のページへのリンクを 1 行足す。
+- 中身が 4096 文字を超えると、超えた分を切り捨てて GitHub Release へのリンクを付ける。このとき Modrinth へのリンクは消える。
+- `discord` ジョブは `modrinth` ジョブのあとに動く。`MODRINTH_PROJECT_ID` が空で `modrinth` ジョブを飛ばしたときは、`discord` ジョブも飛ばす。
+- `DISCORD_WEBHOOK_URL` を登録していないと `discord` ジョブだけが失敗する。GitHub Release と Modrinth への公開はその前に終わっている。
 
 ## ブランチ
 

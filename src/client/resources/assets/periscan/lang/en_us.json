@@ -79,6 +79,7 @@
 	"periscan.msg.no_last_profile": "PeriScan: nothing scanned yet. Run /peri scan start <name> first.",
 	"periscan.msg.end_not_supported": "PeriScan: peris are not built in the end; this command cannot be used here.",
 	"periscan.msg.litematica_missing": "PeriScan: litematica is not installed (or is an incompatible version), so schematic placement is unavailable.",
+	"periscan.msg.yacl_missing": "PeriScan: YetAnotherConfigLib (YACL) is not installed, so the settings screens cannot be opened. The default settings are used.",
 	"periscan.msg.schem_profile_invalid_name": "PeriScan: '%s' cannot be used as a schematic profile name",
 	"periscan.msg.no_schem_profile": "PeriScan: no schematic profile named '%s'. Create it with /peri schematic create <profile>.",
 	"periscan.msg.no_schem_profiles": "PeriScan: no schematic profiles yet. Create one with /peri schematic create <profile>.",

@@ -2,14 +2,19 @@ package com.panyaaa256.periscan.server;
 
 import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.compat.ChunkPosCompat;
+import com.panyaaa256.periscan.network.BlockUpdatesPayload;
 import com.panyaaa256.periscan.network.ChunkResultPayload;
 import com.panyaaa256.periscan.network.ScanFinishedPayload;
 import com.panyaaa256.periscan.network.ScanStartPayload;
 import com.panyaaa256.periscan.scan.ZoneScanner;
 import com.panyaaa256.periscan.zone.Zone;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -29,6 +34,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * at a time (see scanSome): loaded chunks as they are in memory, the others
  * from the save, read in the background. Each chunk's highlights are sent to
  * the player as soon as it is scanned, and ScanFinishedPayload follows the last.
+ * Blocks that change in scanned chunks afterwards are sent each tick (see
+ * sendBlockUpdates), until the session ends.
  */
 final class ServerScanSession {
 	// Chunks being read from the save at once, so a large region does not flood
@@ -47,6 +54,10 @@ final class ServerScanSession {
 	private final LongArrayList ungenerated = new LongArrayList();
 	private final LongArrayList unreadable = new LongArrayList();
 	private boolean finished;
+	// Chunks whose highlights the player has (ChunkResultPayload sent).
+	private final LongOpenHashSet scanned = new LongOpenHashSet();
+	// Positions (BlockPos longs) in the region's zone columns whose block changed this tick.
+	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
 
 	ServerScanSession(UUID player, ScanStartPayload request) {
 		this.player = player;
@@ -63,6 +74,58 @@ final class ServerScanSession {
 	/** Whether every chunk has had its turn and the player has been told. */
 	boolean done() {
 		return finished;
+	}
+
+	/** Remembers a block change in this session's dimension and zone columns (see LevelChunkMixin). */
+	void onBlockChanged(ResourceKey<Level> level, BlockPos pos) {
+		if (level == dimension && scanner.layout().containsColumn(pos.getX(), pos.getZ())) {
+			changedBlocks.add(pos.asLong());
+		}
+	}
+
+	/**
+	 * Sends the zones of the blocks that changed this tick in scanned chunks.
+	 * Chunks not scanned yet show their blocks as they are when they are.
+	 */
+	void sendBlockUpdates(MinecraftServer server) {
+		if (changedBlocks.isEmpty()) {
+			return;
+		}
+		ServerPlayer target = server.getPlayerList().getPlayer(player);
+		ServerLevel level = server.getLevel(dimension);
+		if (target == null || level == null) {
+			changedBlocks.clear();
+			return;
+		}
+		int minY = ZoneScanner.minY(level);
+		int maxY = scanner.maxY(level);
+		LongArrayList positions = new LongArrayList();
+		ByteArrayList zoneMasks = new ByteArrayList();
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		LongIterator it = changedBlocks.iterator();
+		while (it.hasNext()) {
+			long key = it.nextLong();
+			pos.set(BlockPos.getX(key), BlockPos.getY(key), BlockPos.getZ(key));
+			int chunkX = pos.getX() >> 4;
+			int chunkZ = pos.getZ() >> 4;
+			if (pos.getY() < minY || pos.getY() > maxY
+					|| !scanned.contains(ChunkPosCompat.chunkKey(new ChunkPos(chunkX, chunkZ)))) {
+				continue;
+			}
+			LevelChunk chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+			if (chunk == null) {
+				continue;
+			}
+			int[] mask = {0};
+			scanner.scanBlock(pos.getX(), pos.getY(), pos.getZ(), chunk.getBlockState(pos), minY,
+					(zone, ignored) -> mask[0] |= zone.mask());
+			positions.add(key);
+			zoneMasks.add((byte) mask[0]);
+		}
+		changedBlocks.clear();
+		if (!positions.isEmpty()) {
+			ServerPlayNetworking.send(target, new BlockUpdatesPayload(scanId, positions.toLongArray(), zoneMasks.toByteArray()));
+		}
 	}
 
 	/**
@@ -146,5 +209,6 @@ final class ServerScanSession {
 			positions[i] = found[i].toLongArray();
 		}
 		ServerPlayNetworking.send(target, new ChunkResultPayload(scanId, chunkX, chunkZ, positions));
+		scanned.add(ChunkPosCompat.chunkKey(new ChunkPos(chunkX, chunkZ)));
 	}
 }

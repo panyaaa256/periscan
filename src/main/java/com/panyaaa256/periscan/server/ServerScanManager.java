@@ -7,7 +7,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
@@ -55,9 +57,25 @@ public final class ServerScanManager {
 		}
 	}
 
+	/**
+	 * Called for every block change of the server's loaded chunks (see
+	 * LevelChunkMixin). Changes made off the server thread (by other mods) are
+	 * not seen, as the sessions are only touched there.
+	 */
+	public static void onBlockChanged(ServerLevel level, BlockPos pos) {
+		if (SESSIONS.isEmpty() || !level.getServer().isSameThread()) {
+			return;
+		}
+		for (ServerScanSession session : SESSIONS.values()) {
+			session.onBlockChanged(level.dimension(), pos);
+		}
+	}
+
 	private static void onTick(MinecraftServer server) {
+		// Before scanning: a chunk scanned below already shows this tick's changes.
 		List<ServerScanSession> scanning = new ArrayList<>();
 		for (ServerScanSession session : SESSIONS.values()) {
+			session.sendBlockUpdates(server);
 			if (!session.done()) {
 				scanning.add(session);
 			}

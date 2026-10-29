@@ -3,6 +3,7 @@ package com.panyaaa256.periscan.scan;
 import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
+import com.panyaaa256.periscan.network.BlockUpdatesPayload;
 import com.panyaaa256.periscan.network.ChunkResultPayload;
 import com.panyaaa256.periscan.network.ScanFinishedPayload;
 import com.panyaaa256.periscan.network.ScanStartPayload;
@@ -77,6 +78,7 @@ public class ScanManager {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
 		ClientPlayNetworking.registerGlobalReceiver(ChunkResultPayload.TYPE, (payload, context) -> onChunkResult(payload));
 		ClientPlayNetworking.registerGlobalReceiver(ScanFinishedPayload.TYPE, (payload, context) -> onScanFinished(payload));
+		ClientPlayNetworking.registerGlobalReceiver(BlockUpdatesPayload.TYPE, (payload, context) -> onBlockUpdates(payload));
 	}
 
 	public boolean isActive() {
@@ -323,6 +325,25 @@ public class ScanManager {
 			ChunkIndexedPositions set = highlights.get(zone);
 			for (long pos : result.positions()[zone.ordinal()]) {
 				set.add(pos);
+			}
+		}
+	}
+
+	/** Blocks of scanned chunks that changed on the server (remote mode), with their zones now. */
+	private void onBlockUpdates(BlockUpdatesPayload updates) {
+		if (!remote || updates.scanId() != scanId) {
+			return;
+		}
+		long[] positions = updates.positions();
+		byte[] zoneMasks = updates.zoneMasks();
+		for (int i = 0; i < positions.length; i++) {
+			for (Zone zone : Zone.VALUES) {
+				ChunkIndexedPositions set = highlights.get(zone);
+				if ((zoneMasks[i] & zone.mask()) != 0) {
+					set.add(positions[i]);
+				} else {
+					set.remove(positions[i]);
+				}
 			}
 		}
 	}

@@ -17,6 +17,7 @@
 	"environment": "*",
 	"accessWidener": "periscan.accesswidener",
 	"mixins": [
+		"periscan.mixins.json",
 		{
 			"config": "periscan.client.mixins.json",
 			"environment": "client"

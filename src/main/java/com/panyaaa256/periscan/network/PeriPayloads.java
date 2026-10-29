@@ -13,6 +13,8 @@ public final class PeriPayloads {
 	private static final int MAX_CHUNK_RESULT_SIZE = 16 << 20;
 	// Every chunk of the largest region (512 x 512) listed once, 8 bytes each, with room to spare.
 	private static final int MAX_SCAN_FINISHED_SIZE = 4 << 20;
+	// Changed blocks of one tick, 9 bytes each.
+	private static final int MAX_BLOCK_UPDATES_SIZE = 16 << 20;
 
 	private PeriPayloads() {
 	}
@@ -23,5 +25,7 @@ public final class PeriPayloads {
 		PayloadTypeRegistry.clientboundPlay().registerLarge(ChunkResultPayload.TYPE, ChunkResultPayload.CODEC, MAX_CHUNK_RESULT_SIZE);
 		// Lists chunks by the thousand when a large region is mostly ungenerated.
 		PayloadTypeRegistry.clientboundPlay().registerLarge(ScanFinishedPayload.TYPE, ScanFinishedPayload.CODEC, MAX_SCAN_FINISHED_SIZE);
+		// A world eater or a large explosion changes thousands of blocks in one tick.
+		PayloadTypeRegistry.clientboundPlay().registerLarge(BlockUpdatesPayload.TYPE, BlockUpdatesPayload.CODEC, MAX_BLOCK_UPDATES_SIZE);
 	}
 }

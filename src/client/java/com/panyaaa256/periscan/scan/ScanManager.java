@@ -1,5 +1,6 @@
 package com.panyaaa256.periscan.scan;
 
+import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.zone.Zone;
@@ -137,7 +138,7 @@ public class ScanManager {
 
 		clearScanResults();
 		for (ChunkPos chunk : layout.chunks()) {
-			pendingChunks.add(VersionCompat.chunkKey(chunk));
+			pendingChunks.add(ChunkPosCompat.chunkKey(chunk));
 		}
 
 		// Scan whatever is already loaded; the rest is picked up by CHUNK_LOAD.
@@ -219,7 +220,7 @@ public class ScanManager {
 		if (layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
 			return;
 		}
-		pendingChunks.remove(VersionCompat.chunkKey(chunk.getPos()));
+		pendingChunks.remove(ChunkPosCompat.chunkKey(chunk.getPos()));
 		// Remove stale highlights from this chunk before rescanning it (covers
 		// changes that happened while the chunk was unloaded).
 		clearChunkHighlights(chunk.getPos());
@@ -256,7 +257,7 @@ public class ScanManager {
 			int y = BlockPos.getY(key);
 			int z = BlockPos.getZ(key);
 			// A chunk that is not scanned yet gets all its blocks when it is.
-			if (pendingChunks.contains(VersionCompat.chunkKey(new ChunkPos(x >> 4, z >> 4)))
+			if (pendingChunks.contains(ChunkPosCompat.chunkKey(new ChunkPos(x >> 4, z >> 4)))
 					|| !level.getChunkSource().hasChunk(x >> 4, z >> 4)) {
 				continue;
 			}
@@ -279,15 +280,15 @@ public class ScanManager {
 
 	private void clearChunkHighlights(ChunkPos pos) {
 		for (ChunkIndexedPositions set : highlights.values()) {
-			set.removeChunk(VersionCompat.chunkX(pos), VersionCompat.chunkZ(pos));
+			set.removeChunk(ChunkPosCompat.chunkX(pos), ChunkPosCompat.chunkZ(pos));
 		}
-		fallingRuns.clearChunk(VersionCompat.chunkX(pos), VersionCompat.chunkZ(pos));
+		fallingRuns.clearChunk(ChunkPosCompat.chunkX(pos), ChunkPosCompat.chunkZ(pos));
 	}
 
 	private void scanChunk(ClientLevel level, LevelChunk chunk) {
 		ChunkPos cp = chunk.getPos();
-		int chunkX = VersionCompat.chunkX(cp);
-		int chunkZ = VersionCompat.chunkZ(cp);
+		int chunkX = ChunkPosCompat.chunkX(cp);
+		int chunkZ = ChunkPosCompat.chunkZ(cp);
 		int minY = scanMinY(level);
 		int maxY = scanner.maxY(level);
 		if (!scanner.scanChunk(chunkX, chunkZ, chunk.getSections(), chunk.getMinSectionY(), minY, maxY, addHighlight)) {

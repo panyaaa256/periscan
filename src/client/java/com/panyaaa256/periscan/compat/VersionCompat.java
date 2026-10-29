@@ -8,7 +8,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.ChunkPos;
 
 import java.util.stream.Stream;
 
@@ -16,36 +15,13 @@ import java.util.stream.Stream;
  * Calls whose shape (not just name) differs between the Minecraft versions this
  * branch builds. Keeping them here keeps version conditions out of the rest of
  * the code; plain renames are handled by replacements in stonecutter.gradle.kts.
+ * The ChunkPos ones, which the server needs too, are in ChunkPosCompat.
  */
 public final class VersionCompat {
 	// Own id, so the toast does not replace (or get replaced by) a vanilla one.
 	private static final SystemToast.SystemToastId INVALID_ENTRIES = new SystemToast.SystemToastId();
 
 	private VersionCompat() {
-	}
-
-	/** Chunk X coordinate; ChunkPos became a record in 26.1. */
-	public static int chunkX(ChunkPos pos) {
-		//? if >=26.1 {
-		return pos.x();
-		//?} else
-		//return pos.x;
-	}
-
-	/** Chunk Z coordinate; ChunkPos became a record in 26.1. */
-	public static int chunkZ(ChunkPos pos) {
-		//? if >=26.1 {
-		return pos.z();
-		//?} else
-		//return pos.z;
-	}
-
-	/** The chunk position packed into a long, as used by ChunkPos.getX/getZ(long). */
-	public static long chunkKey(ChunkPos pos) {
-		//? if >=26.1 {
-		return pos.pack();
-		//?} else
-		//return pos.toLong();
 	}
 
 	/** Shows a message in the chat. */

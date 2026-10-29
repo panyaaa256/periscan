@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.persist;
 
-import com.panyaaa256.periscan.compat.VersionCompat;
+import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
@@ -29,10 +29,10 @@ public record PeriProfile(String name, int minX, int minZ, int maxX, int maxZ, S
 	/** Creates a profile from two arbitrary corner chunks, normalizing them. */
 	public static PeriProfile of(String name, ChunkPos a, ChunkPos b, String dimension) {
 		return new PeriProfile(name,
-				Math.min(VersionCompat.chunkX(a), VersionCompat.chunkX(b)),
-				Math.min(VersionCompat.chunkZ(a), VersionCompat.chunkZ(b)),
-				Math.max(VersionCompat.chunkX(a), VersionCompat.chunkX(b)),
-				Math.max(VersionCompat.chunkZ(a), VersionCompat.chunkZ(b)),
+				Math.min(ChunkPosCompat.chunkX(a), ChunkPosCompat.chunkX(b)),
+				Math.min(ChunkPosCompat.chunkZ(a), ChunkPosCompat.chunkZ(b)),
+				Math.max(ChunkPosCompat.chunkX(a), ChunkPosCompat.chunkX(b)),
+				Math.max(ChunkPosCompat.chunkZ(a), ChunkPosCompat.chunkZ(b)),
 				dimension, LocalDate.now().toString());
 	}
 

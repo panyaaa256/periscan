@@ -1,5 +1,6 @@
 package com.panyaaa256.periscan.integration.modmenu;
 
+import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.config.PeriScanConfigScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
@@ -12,6 +13,7 @@ import com.terraformersmc.modmenu.api.ModMenuApi;
 public final class PeriScanModMenu implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
-		return PeriScanConfigScreen::create;
+		// The screen is made with YACL, which is optional; null opens nothing.
+		return parent -> PeriScanConfig.yaclLoaded() ? PeriScanConfigScreen.create(parent) : null;
 	}
 }

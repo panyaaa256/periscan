@@ -34,7 +34,7 @@ public final class PeriKeybinds {
 	}
 
 	public static void register() {
-		add("open_config", client -> client.setScreen(PeriScanConfigScreen.create(null)));
+		add("open_config", PeriKeybinds::openConfig);
 		add("toggle_highlights", PeriKeybinds::toggleHighlights);
 		add("rescan", PeriKeybinds::rescan);
 		add("clear_scan", client -> PeriCommand.scanClear(chat(client.player)));
@@ -70,10 +70,18 @@ public final class PeriKeybinds {
 		return Component.empty().append(message).withStyle(ChatFormatting.RED);
 	}
 
+	private static void openConfig(Minecraft client) {
+		if (!PeriScanConfig.yaclLoaded()) {
+			VersionCompat.sendOverlay(client.player, error(Component.translatable("periscan.msg.yacl_missing")));
+			return;
+		}
+		client.setScreen(PeriScanConfigScreen.create(null));
+	}
+
 	private static void toggleHighlights(Minecraft client) {
 		PeriScanConfig config = PeriScanConfig.get();
 		config.showHighlights = !config.showHighlights;
-		PeriScanConfig.handler().save();
+		PeriScanConfig.save();
 		VersionCompat.sendOverlay(client.player, Component.translatable(
 				config.showHighlights ? "periscan.msg.highlights_shown" : "periscan.msg.highlights_hidden"));
 	}
@@ -93,7 +101,7 @@ public final class PeriKeybinds {
 			return;
 		}
 		settings.visible = !settings.visible;
-		PeriScanConfig.handler().save();
+		PeriScanConfig.save();
 		String message;
 		if (!settings.visible) {
 			message = "periscan.msg.zone_hidden";

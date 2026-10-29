@@ -43,6 +43,10 @@ replay_*.log
 
 .claude/
 
+# agent skills
+
+.agents/
+
 # local downloads
 
 *.deb

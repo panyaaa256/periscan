@@ -227,6 +227,21 @@ class FallingRunTrackerTest {
 		}
 
 		@Test
+		void flushPastItsDeadlineLeavesTheLinesDirty() {
+			FakeWorld world = new FakeWorld().row(2, 4, RunBlock.COUNTS);
+			FallingRunTracker tracker = new FallingRunTracker();
+			tracker.markPosition(List.of(new ZoneLayout.TrenchStrip(ONE_CHUNK, true)), 3, Y, Z, Y, Y);
+
+			assertFalse(tracker.flush(world, ONE_CHUNK, 3, System.nanoTime() - 1));
+			assertTrue(tracker.hasDirtyLines());
+			assertTrue(tracker.alongX().isEmpty());
+
+			assertTrue(tracker.flush(world, ONE_CHUNK, 3, System.nanoTime() + 1_000_000_000L));
+			assertFalse(tracker.hasDirtyLines());
+			assertEquals(Set.of(2, 3, 4), highlightedX(tracker));
+		}
+
+		@Test
 		void clearChunkOnlyDropsThatChunk() {
 			FakeWorld world = new FakeWorld().row(14, 17, RunBlock.COUNTS);
 			FallingRunTracker tracker = new FallingRunTracker();

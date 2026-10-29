@@ -166,13 +166,31 @@ public final class FallingRunTracker {
 	 * full region length on their axis). Thresholds below 1 are treated as 1.
 	 */
 	public void flush(BlockView view, ZoneLayout.Rect region, int threshold) {
+		flush(view, region, threshold, Long.MAX_VALUE);
+	}
+
+	/**
+	 * Like {@link #flush(BlockView, ZoneLayout.Rect, int)}, but stops once
+	 * System.nanoTime() reaches the deadline: the lines not recomputed yet stay
+	 * dirty for a later flush. Returns whether every dirty line was recomputed.
+	 */
+	public boolean flush(BlockView view, ZoneLayout.Rect region, int threshold, long deadline) {
 		int minRun = Math.max(1, threshold);
 		LongIterator it = dirtyLines.iterator();
 		while (it.hasNext()) {
+			if (deadline != Long.MAX_VALUE && System.nanoTime() >= deadline) {
+				return false;
+			}
 			long key = it.nextLong();
+			it.remove();
 			recomputeLine(view, region, minRun, lineAlongX(key), lineCross(key), lineY(key));
 		}
-		dirtyLines.clear();
+		return true;
+	}
+
+	/** Whether some lines wait for a flush. */
+	public boolean hasDirtyLines() {
+		return !dirtyLines.isEmpty();
 	}
 
 	/**

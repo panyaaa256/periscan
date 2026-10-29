@@ -11,6 +11,8 @@ public final class PeriPayloads {
 	// common blocks can highlight most of a chunk: 16x16 columns times the scan
 	// height (up to about 2000 layers) times 8 bytes, for more than one zone.
 	private static final int MAX_CHUNK_RESULT_SIZE = 16 << 20;
+	// Every chunk of the largest region (512 x 512) listed once, 8 bytes each, with room to spare.
+	private static final int MAX_SCAN_FINISHED_SIZE = 4 << 20;
 
 	private PeriPayloads() {
 	}
@@ -19,5 +21,7 @@ public final class PeriPayloads {
 		PayloadTypeRegistry.serverboundPlay().registerLarge(ScanStartPayload.TYPE, ScanStartPayload.CODEC, MAX_SCAN_START_SIZE);
 		PayloadTypeRegistry.serverboundPlay().register(ScanStopPayload.TYPE, ScanStopPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().registerLarge(ChunkResultPayload.TYPE, ChunkResultPayload.CODEC, MAX_CHUNK_RESULT_SIZE);
+		// Lists chunks by the thousand when a large region is mostly ungenerated.
+		PayloadTypeRegistry.clientboundPlay().registerLarge(ScanFinishedPayload.TYPE, ScanFinishedPayload.CODEC, MAX_SCAN_FINISHED_SIZE);
 	}
 }

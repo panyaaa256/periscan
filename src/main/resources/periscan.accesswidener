@@ -6,3 +6,7 @@ classTweaker v1 official
 #accessible class net/minecraft/client/renderer/RenderType$CompositeRenderType
 #accessible method net/minecraft/client/renderer/RenderType$CompositeState$CompositeStateBuilder createCompositeState (Z)Lnet/minecraft/client/renderer/RenderType$CompositeState;
 #?}
+
+# The server side reads chunks it has not loaded straight from the save, with
+# the same upgrade (data fixing) as when the chunk is loaded.
+accessible method net/minecraft/server/level/ChunkMap readChunk (Lnet/minecraft/world/level/ChunkPos;)Ljava/util/concurrent/CompletableFuture;

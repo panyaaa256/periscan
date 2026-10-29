@@ -4,6 +4,7 @@ import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.network.ChunkResultPayload;
+import com.panyaaa256.periscan.network.ScanFinishedPayload;
 import com.panyaaa256.periscan.network.ScanStartPayload;
 import com.panyaaa256.periscan.network.ScanStopPayload;
 import com.panyaaa256.periscan.zone.Zone;
@@ -17,6 +18,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -73,6 +75,7 @@ public class ScanManager {
 		// The server ends the scan itself when the player leaves.
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
 		ClientPlayNetworking.registerGlobalReceiver(ChunkResultPayload.TYPE, (payload, context) -> onChunkResult(payload));
+		ClientPlayNetworking.registerGlobalReceiver(ScanFinishedPayload.TYPE, (payload, context) -> onScanFinished(payload));
 	}
 
 	public boolean isActive() {
@@ -323,6 +326,33 @@ public class ScanManager {
 		}
 	}
 
+	/**
+	 * The server has scanned every chunk it could (remote mode). The chunks it
+	 * could not scan are no longer pending, so they show no box; the chat says
+	 * how many there are.
+	 */
+	private void onScanFinished(ScanFinishedPayload finished) {
+		if (!remote || finished.scanId() != scanId) {
+			return;
+		}
+		for (long key : finished.ungenerated()) {
+			pendingChunks.remove(key);
+		}
+		for (long key : finished.unreadable()) {
+			pendingChunks.remove(key);
+		}
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null) {
+			return;
+		}
+		if (finished.ungenerated().length > 0) {
+			VersionCompat.sendChat(player, Component.translatable("periscan.msg.ungenerated_chunks", finished.ungenerated().length));
+		}
+		if (finished.unreadable().length > 0) {
+			VersionCompat.sendChat(player, Component.translatable("periscan.msg.unreadable_chunks", finished.unreadable().length));
+		}
+	}
+
 	private void clearChunkHighlights(ChunkPos pos) {
 		for (ChunkIndexedPositions set : highlights.values()) {
 			set.removeChunk(ChunkPosCompat.chunkX(pos), ChunkPosCompat.chunkZ(pos));
@@ -416,8 +446,9 @@ public class ScanManager {
 		}
 
 		if (!pendingChunks.isEmpty() && tickCounter % 20 == 0 && client.player != null) {
-			VersionCompat.sendOverlay(client.player,
-					Component.translatable("periscan.msg.pending_chunks", pendingChunks.size()));
+			// Remote: the server scans every chunk on its own; local: only chunks this client loads get scanned.
+			VersionCompat.sendOverlay(client.player, Component.translatable(
+					remote ? "periscan.msg.remote_pending_chunks" : "periscan.msg.pending_chunks", pendingChunks.size()));
 		}
 	}
 

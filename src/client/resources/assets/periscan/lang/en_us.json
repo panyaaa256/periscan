@@ -110,5 +110,8 @@
 	"periscan.msg.invalid_entry": "PeriScan: ignored invalid config entry: %s",
 	"periscan.msg.unknown_tag": "PeriScan: this world has no tag %s, so it matches nothing. Check the spelling.",
 	"periscan.msg.pending_chunks": "PeriScan: %s chunks not loaded yet - approach them to scan",
+	"periscan.msg.remote_pending_chunks": "PeriScan: the server is scanning - %s chunks left",
+	"periscan.msg.ungenerated_chunks": "PeriScan: %s chunks of the region are not generated yet, so they were not scanned. Run /peri scan reload once they are.",
+	"periscan.msg.unreadable_chunks": "PeriScan: %s chunks could not be read from the server's save, so they were not scanned. The server log has the details.",
 	"periscan.msg.all_disabled": "PeriScan: all zones are disabled. Enable at least one zone in the config."
 }

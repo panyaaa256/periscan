@@ -110,5 +110,8 @@
 	"periscan.msg.invalid_entry": "PeriScan: 不正なconfigエントリを無視しました: %s",
 	"periscan.msg.unknown_tag": "PeriScan: タグ %s はこのワールドにないため、何にも一致しません。綴りを確認してください。",
 	"periscan.msg.pending_chunks": "PeriScan: 未ロードチャンクが %s 個あります - 近づくとスキャンされます",
+	"periscan.msg.remote_pending_chunks": "PeriScan: サーバーで走査中です - 残り %s チャンク",
+	"periscan.msg.ungenerated_chunks": "PeriScan: 範囲内の %s チャンクは未生成のため走査していません。生成されたら /peri scan reload を実行してください。",
+	"periscan.msg.unreadable_chunks": "PeriScan: %s チャンクはサーバーのセーブデータを読み込めなかったため走査していません。詳細はサーバーのログにあります。",
 	"periscan.msg.all_disabled": "PeriScan: すべてのゾーンが無効です。configで少なくとも1つのゾーンを有効にしてください。"
 }

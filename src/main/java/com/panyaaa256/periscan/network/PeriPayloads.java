@@ -15,6 +15,8 @@ public final class PeriPayloads {
 	private static final int MAX_SCAN_FINISHED_SIZE = 4 << 20;
 	// Changed blocks of one tick, 9 bytes each.
 	private static final int MAX_BLOCK_UPDATES_SIZE = 16 << 20;
+	// Run highlights of the chunks changed in one tick, 8 bytes each.
+	private static final int MAX_FALLING_RUNS_SIZE = 16 << 20;
 
 	private PeriPayloads() {
 	}
@@ -27,5 +29,7 @@ public final class PeriPayloads {
 		PayloadTypeRegistry.clientboundPlay().registerLarge(ScanFinishedPayload.TYPE, ScanFinishedPayload.CODEC, MAX_SCAN_FINISHED_SIZE);
 		// A world eater or a large explosion changes thousands of blocks in one tick.
 		PayloadTypeRegistry.clientboundPlay().registerLarge(BlockUpdatesPayload.TYPE, BlockUpdatesPayload.CODEC, MAX_BLOCK_UPDATES_SIZE);
+		// The first flush after a scan can cover every chunk of the trench strips.
+		PayloadTypeRegistry.clientboundPlay().registerLarge(FallingRunsPayload.TYPE, FallingRunsPayload.CODEC, MAX_FALLING_RUNS_SIZE);
 	}
 }

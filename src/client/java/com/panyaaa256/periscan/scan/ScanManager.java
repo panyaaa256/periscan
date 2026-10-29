@@ -5,6 +5,7 @@ import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.network.BlockUpdatesPayload;
 import com.panyaaa256.periscan.network.ChunkResultPayload;
+import com.panyaaa256.periscan.network.FallingRunsPayload;
 import com.panyaaa256.periscan.network.ScanFinishedPayload;
 import com.panyaaa256.periscan.network.ScanStartPayload;
 import com.panyaaa256.periscan.network.ScanStopPayload;
@@ -79,6 +80,7 @@ public class ScanManager {
 		ClientPlayNetworking.registerGlobalReceiver(ChunkResultPayload.TYPE, (payload, context) -> onChunkResult(payload));
 		ClientPlayNetworking.registerGlobalReceiver(ScanFinishedPayload.TYPE, (payload, context) -> onScanFinished(payload));
 		ClientPlayNetworking.registerGlobalReceiver(BlockUpdatesPayload.TYPE, (payload, context) -> onBlockUpdates(payload));
+		ClientPlayNetworking.registerGlobalReceiver(FallingRunsPayload.TYPE, (payload, context) -> onFallingRuns(payload));
 	}
 
 	public boolean isActive() {
@@ -318,14 +320,28 @@ public class ScanManager {
 		if (!remote || result.scanId() != scanId) {
 			return; // a result of a scan stopped or replaced since
 		}
-		ChunkPos chunk = new ChunkPos(result.chunkX(), result.chunkZ());
-		pendingChunks.remove(ChunkPosCompat.chunkKey(chunk));
-		clearChunkHighlights(chunk);
+		pendingChunks.remove(ChunkPosCompat.chunkKey(new ChunkPos(result.chunkX(), result.chunkZ())));
+		// The falling-block runs of the chunk come separately (onFallingRuns).
 		for (Zone zone : Zone.VALUES) {
-			ChunkIndexedPositions set = highlights.get(zone);
-			for (long pos : result.positions()[zone.ordinal()]) {
-				set.add(pos);
-			}
+			replaceChunk(highlights.get(zone), result.chunkX(), result.chunkZ(), result.positions()[zone.ordinal()]);
+		}
+	}
+
+	/** Falling-block runs the server worked out (remote mode), for the chunks whose runs changed. */
+	private void onFallingRuns(FallingRunsPayload runs) {
+		if (!remote || runs.scanId() != scanId) {
+			return;
+		}
+		for (FallingRunsPayload.ChunkRuns chunk : runs.chunks()) {
+			replaceChunk(fallingRuns.alongXIndex(), chunk.chunkX(), chunk.chunkZ(), chunk.alongX());
+			replaceChunk(fallingRuns.alongZIndex(), chunk.chunkX(), chunk.chunkZ(), chunk.alongZ());
+		}
+	}
+
+	private static void replaceChunk(ChunkIndexedPositions set, int chunkX, int chunkZ, long[] positions) {
+		set.removeChunk(chunkX, chunkZ);
+		for (long pos : positions) {
+			set.add(pos);
 		}
 	}
 

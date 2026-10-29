@@ -4,10 +4,14 @@ import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import com.panyaaa256.periscan.network.BlockUpdatesPayload;
 import com.panyaaa256.periscan.network.ChunkResultPayload;
+import com.panyaaa256.periscan.network.FallingRunsPayload;
 import com.panyaaa256.periscan.network.ScanFinishedPayload;
 import com.panyaaa256.periscan.network.ScanStartPayload;
+import com.panyaaa256.periscan.scan.ChunkIndexedPositions;
+import com.panyaaa256.periscan.scan.FallingRunTracker;
 import com.panyaaa256.periscan.scan.ZoneScanner;
 import com.panyaaa256.periscan.zone.Zone;
+import com.panyaaa256.periscan.zone.ZoneLayout;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -21,10 +25,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,12 +41,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * from the save, read in the background. Each chunk's highlights are sent to
  * the player as soon as it is scanned, and ScanFinishedPayload follows the last.
  * Blocks that change in scanned chunks afterwards are sent each tick (see
- * sendBlockUpdates), until the session ends.
+ * sendBlockUpdates), until the session ends. Falling-block runs are worked out
+ * once the scan is done, and kept up to date from then on.
  */
 final class ServerScanSession {
 	// Chunks being read from the save at once, so a large region does not flood
 	// the chunk IO the world itself needs.
 	private static final int MAX_READS_IN_FLIGHT = 32;
+	// Chunks per FallingRunsPayload, so the first flush of a large region is split.
+	private static final int RUN_CHUNKS_PER_PAYLOAD = 256;
 
 	private final UUID player;
 	private final int scanId;
@@ -58,6 +67,10 @@ final class ServerScanSession {
 	private final LongOpenHashSet scanned = new LongOpenHashSet();
 	// Positions (BlockPos longs) in the region's zone columns whose block changed this tick.
 	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
+	private final int fallingRunLength;
+	private final FallingRunTracker fallingRuns = new FallingRunTracker();
+	// Made once the level, and so the scanned height, is known (see runBlocks()).
+	private RunBlockCache runBlocks;
 
 	ServerScanSession(UUID player, ScanStartPayload request) {
 		this.player = player;
@@ -66,14 +79,15 @@ final class ServerScanSession {
 		// Problems with the entries are not reported from here: the client compiles
 		// the same settings itself and shows them.
 		this.scanner = new ZoneScanner(request.cornerA(), request.cornerB(), request.settings(), new ArrayList<>());
+		this.fallingRunLength = request.settings().fallingRunLength();
 		for (ChunkPos chunk : scanner.layout().chunks()) {
 			queue.enqueue(ChunkPosCompat.chunkKey(chunk));
 		}
 	}
 
-	/** Whether every chunk has had its turn and the player has been told. */
+	/** Whether every chunk has had its turn, the player has been told, and the runs are up to date. */
 	boolean done() {
-		return finished;
+		return finished && !fallingRuns.hasDirtyLines();
 	}
 
 	/** Remembers a block change in this session's dimension and zone columns (see LevelChunkMixin). */
@@ -116,11 +130,15 @@ final class ServerScanSession {
 			if (chunk == null) {
 				continue;
 			}
+			BlockState state = chunk.getBlockState(pos);
 			int[] mask = {0};
-			scanner.scanBlock(pos.getX(), pos.getY(), pos.getZ(), chunk.getBlockState(pos), minY,
+			scanner.scanBlock(pos.getX(), pos.getY(), pos.getZ(), state, minY,
 					(zone, ignored) -> mask[0] |= zone.mask());
 			positions.add(key);
 			zoneMasks.add((byte) mask[0]);
+			runBlocks(level).update(pos.getX(), pos.getY(), pos.getZ(), state);
+			fallingRuns.markPosition(scanner.layout().trenchStrips(), pos.getX(), pos.getY(), pos.getZ(),
+					minY + scanner.bottomTrenchLayers(), maxY);
 		}
 		changedBlocks.clear();
 		if (!positions.isEmpty()) {
@@ -141,6 +159,7 @@ final class ServerScanSession {
 		}
 		int minY = ZoneScanner.minY(level);
 		int maxY = scanner.maxY(level);
+		runBlocks(level);
 
 		SavedChunk saved;
 		while (System.nanoTime() < deadline && (saved = readChunks.poll()) != null) {
@@ -176,11 +195,52 @@ final class ServerScanSession {
 			}
 		}
 
-		if (queue.isEmpty() && readsInFlight == 0) {
+		if (!finished && queue.isEmpty() && readsInFlight == 0) {
 			finished = true;
 			ServerPlayNetworking.send(target, new ScanFinishedPayload(scanId,
 					ungenerated.toLongArray(), unreadable.toLongArray()));
 		}
+
+		// A run spans the whole region, so its line is only worked out once the
+		// scan is done: recomputing it each time a chunk along it was scanned
+		// would redo the same lines over and over.
+		if (finished && fallingRuns.hasDirtyLines()) {
+			fallingRuns.flush(runBlocks, scanner.layout().region(), fallingRunLength, deadline);
+			sendFallingRuns(target);
+		}
+	}
+
+	private RunBlockCache runBlocks(ServerLevel level) {
+		if (runBlocks == null) {
+			runBlocks = new RunBlockCache(ZoneScanner.minY(level), scanner.maxY(level));
+		}
+		return runBlocks;
+	}
+
+	/** Sends the run highlights of every chunk whose runs changed since the last call. */
+	private void sendFallingRuns(ServerPlayer target) {
+		LongOpenHashSet changed = new LongOpenHashSet();
+		fallingRuns.alongXIndex().drainDirty(changed::add);
+		fallingRuns.alongZIndex().drainDirty(changed::add);
+		List<FallingRunsPayload.ChunkRuns> chunks = new ArrayList<>();
+		LongIterator it = changed.iterator();
+		while (it.hasNext()) {
+			long key = it.nextLong();
+			chunks.add(new FallingRunsPayload.ChunkRuns(ChunkIndexedPositions.chunkX(key), ChunkIndexedPositions.chunkZ(key),
+					positionsIn(fallingRuns.alongXIndex(), key), positionsIn(fallingRuns.alongZIndex(), key)));
+			if (chunks.size() == RUN_CHUNKS_PER_PAYLOAD) {
+				ServerPlayNetworking.send(target, new FallingRunsPayload(scanId, chunks));
+				chunks = new ArrayList<>();
+			}
+		}
+		if (!chunks.isEmpty()) {
+			ServerPlayNetworking.send(target, new FallingRunsPayload(scanId, chunks));
+		}
+	}
+
+	private static long[] positionsIn(ChunkIndexedPositions set, long chunkKey) {
+		LongOpenHashSet positions = set.chunkPositions(chunkKey);
+		return positions == null ? new long[0] : positions.toLongArray();
 	}
 
 	/** Reads a chunk the server has not loaded from the save, in the background. */
@@ -210,5 +270,12 @@ final class ServerScanSession {
 		}
 		ServerPlayNetworking.send(target, new ChunkResultPayload(scanId, chunkX, chunkZ, positions));
 		scanned.add(ChunkPosCompat.chunkKey(new ChunkPos(chunkX, chunkZ)));
+
+		List<ZoneLayout.TrenchStrip> strips = scanner.layout().trenchStrips();
+		if (strips.stream().anyMatch(strip -> strip.rect().intersectsChunk(chunkX << 4, chunkZ << 4))) {
+			runBlocks.storeChunk(chunkX, chunkZ, sections, minSectionY);
+			// The lowest layers belong to the bottom trench zone (when enabled), not the trench inner.
+			fallingRuns.markChunk(strips, chunkX, chunkZ, minY + scanner.bottomTrenchLayers(), maxY, runBlocks);
+		}
 	}
 }

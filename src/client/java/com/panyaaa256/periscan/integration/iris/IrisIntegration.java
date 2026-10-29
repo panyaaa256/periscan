@@ -1,7 +1,7 @@
 package com.panyaaa256.periscan.integration.iris;
 
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
@@ -52,7 +52,7 @@ public final class IrisIntegration {
 			api.getMethod("assignPipeline", RenderPipeline.class, program);
 			return true;
 		} catch (ReflectiveOperationException | LinkageError e) {
-			PeriScanClient.LOGGER.warn("PeriScan: iris is present but incompatible, highlights will not render "
+			PeriScan.LOGGER.warn("PeriScan: iris is present but incompatible, highlights will not render "
 					+ "while a shader pack is active: {}", e.toString());
 			return false;
 		}

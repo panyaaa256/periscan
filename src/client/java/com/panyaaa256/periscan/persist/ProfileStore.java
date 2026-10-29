@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.persist;
 
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.persist.ProfileFile.Data;
 import com.panyaaa256.periscan.persist.ProfileFile.SavedProfile;
 import com.panyaaa256.periscan.scan.ScanManager;
@@ -141,7 +141,7 @@ public final class ProfileStore {
 	}
 
 	private static WorldFiles worldFiles(String fileName, String legacyFileName) {
-		Path dir = FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("worlds");
+		Path dir = FabricLoader.getInstance().getConfigDir().resolve(PeriScan.MOD_ID).resolve("worlds");
 		return new WorldFiles(dir.resolve(fileName + ".json"), dir.resolve(legacyFileName + ".json"));
 	}
 }

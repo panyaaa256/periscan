@@ -7,24 +7,18 @@ import com.panyaaa256.periscan.scan.ScanManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
 public class PeriScanClient implements ClientModInitializer {
-	public static final String MOD_ID = "periscan";
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-
 	private static Supplier<Screen> scheduledScreen = null;
 
 	@Override
 	public void onInitializeClient() {
 		if (!PeriScanConfig.yaclLoaded()) {
-			LOGGER.warn("PeriScan: YetAnotherConfigLib is not installed; the default config is used and cannot be changed");
+			PeriScan.LOGGER.warn("PeriScan: YetAnotherConfigLib is not installed; the default config is used and cannot be changed");
 		} else if (PeriScanConfig.load()) {
-			LOGGER.warn("PeriScan: the config file had invalid values; they were reset to the nearest allowed ones");
+			PeriScan.LOGGER.warn("PeriScan: the config file had invalid values; they were reset to the nearest allowed ones");
 		}
 		PeriCommand.register();
 		PeriKeybinds.register();
@@ -45,10 +39,5 @@ public class PeriScanClient implements ClientModInitializer {
 
 	public static void scheduleScreen(Supplier<Screen> screen) {
 		scheduledScreen = screen;
-	}
-
-	/** An identifier in this mod's namespace. */
-	public static Identifier id(String path) {
-		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}
 }

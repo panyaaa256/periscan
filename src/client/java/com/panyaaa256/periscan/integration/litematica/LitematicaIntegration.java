@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.integration.litematica;
 
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Mirror;
@@ -117,7 +117,7 @@ public final class LitematicaIntegration {
 			manager.getMethod("removeSchematicPlacement", placement);
 			return true;
 		} catch (ReflectiveOperationException | LinkageError e) {
-			PeriScanClient.LOGGER.warn("PeriScan: litematica is present but incompatible, schematic placement disabled: {}",
+			PeriScan.LOGGER.warn("PeriScan: litematica is present but incompatible, schematic placement disabled: {}",
 					e.toString());
 			return false;
 		}

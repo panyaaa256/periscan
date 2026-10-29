@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.persist.SafeFiles;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -47,7 +47,7 @@ public final class SchematicProfileStore {
 
 	/** The folder holding every schematic profile. */
 	public static Path root() {
-		return FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID).resolve("schematics");
+		return FabricLoader.getInstance().getConfigDir().resolve(PeriScan.MOD_ID).resolve("schematics");
 	}
 
 	/**
@@ -101,7 +101,7 @@ public final class SchematicProfileStore {
 				if (entry != null && seen.add(entry.fileName())) {
 					entries.add(entry);
 				} else {
-					PeriScanClient.LOGGER.warn("PeriScan: skipping invalid schematic entry in {}: {}", file, element);
+					PeriScan.LOGGER.warn("PeriScan: skipping invalid schematic entry in {}: {}", file, element);
 				}
 			}
 			int defaultOriginY = json.has("defaultOriginY") ? json.get("defaultOriginY").getAsInt()
@@ -110,9 +110,9 @@ public final class SchematicProfileStore {
 		} catch (Exception e) {
 			try {
 				Path backup = SafeFiles.moveAsideAsBroken(file);
-				PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, e.toString());
+				PeriScan.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, e.toString());
 			} catch (IOException moveFailure) {
-				PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up: {}", file, e.toString());
+				PeriScan.LOGGER.error("PeriScan: could not read {} and could not back it up: {}", file, e.toString());
 			}
 			return SchematicProfile.EMPTY;
 		}
@@ -147,7 +147,7 @@ public final class SchematicProfileStore {
 				}
 			}
 		} catch (IOException e) {
-			PeriScanClient.LOGGER.warn("PeriScan: could not update schematic profile folder {}: {}", dir, e.toString());
+			PeriScan.LOGGER.warn("PeriScan: could not update schematic profile folder {}: {}", dir, e.toString());
 		}
 		for (Path source : imports) {
 			String fileName = source.getFileName() == null ? "" : source.getFileName().toString();
@@ -163,7 +163,7 @@ public final class SchematicProfileStore {
 					saved.add(SchematicEntry.imported(fileName, profile.defaultOriginY()));
 				}
 			} catch (IOException e) {
-				PeriScanClient.LOGGER.warn("PeriScan: could not import {} into {}: {}", source, dir, e.toString());
+				PeriScan.LOGGER.warn("PeriScan: could not import {} into {}: {}", source, dir, e.toString());
 				failed.add(source);
 			}
 		}
@@ -195,7 +195,7 @@ public final class SchematicProfileStore {
 				Files.delete(path);
 			}
 		} catch (IOException e) {
-			PeriScanClient.LOGGER.warn("PeriScan: could not delete schematic profile {}: {}", dir(root, name), e.toString());
+			PeriScan.LOGGER.warn("PeriScan: could not delete schematic profile {}: {}", dir(root, name), e.toString());
 		}
 		return true;
 	}
@@ -244,7 +244,7 @@ public final class SchematicProfileStore {
 		try {
 			SafeFiles.writeAtomically(file, GSON.toJson(root));
 		} catch (IOException e) {
-			PeriScanClient.LOGGER.warn("PeriScan: could not save schematic profile to {}: {}", file, e.toString());
+			PeriScan.LOGGER.warn("PeriScan: could not save schematic profile to {}: {}", file, e.toString());
 		}
 	}
 }

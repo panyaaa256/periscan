@@ -23,7 +23,7 @@ import java.util.function.Consumer;
  * a default key, so they do nothing until the player assigns one.
  */
 public final class PeriKeybinds {
-	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(PeriScanClient.id("general"));
+	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(PeriScan.id("general"));
 
 	// In registration order; each key runs its action once per press.
 	private static final Map<KeyMapping, Consumer<Minecraft>> ACTIONS = new LinkedHashMap<>();
@@ -54,7 +54,7 @@ public final class PeriKeybinds {
 	}
 
 	private static void add(String name, Consumer<Minecraft> action) {
-		KeyMapping key = new KeyMapping("key." + PeriScanClient.MOD_ID + "." + name,
+		KeyMapping key = new KeyMapping("key." + PeriScan.MOD_ID + "." + name,
 				InputConstants.UNKNOWN.getValue(), CATEGORY);
 		ACTIONS.put(KeyMappingHelper.registerKeyMapping(key), action);
 	}

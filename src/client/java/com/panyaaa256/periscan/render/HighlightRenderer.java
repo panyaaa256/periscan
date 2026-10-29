@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.integration.iris.IrisIntegration;
 import com.panyaaa256.periscan.scan.ScanManager;
@@ -72,7 +72,7 @@ public final class HighlightRenderer {
 	 */
 	private static RenderPipeline pipeline(String path, boolean lines) {
 		RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-				.withLocation(PeriScanClient.id(path))
+				.withLocation(PeriScan.id(path))
 				.withVertexShader("core/position_color")
 				.withFragmentShader("core/position_color")
 				.withCull(false);

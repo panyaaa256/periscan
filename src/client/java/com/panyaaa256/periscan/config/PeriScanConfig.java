@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.config;
 
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 import com.panyaaa256.periscan.scan.ScanSettings;
 import com.panyaaa256.periscan.zone.Zone;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
@@ -23,9 +23,9 @@ public class PeriScanConfig {
 	// without YACL setting up its serializer.
 	private static final class Holder {
 		static final ConfigClassHandler<PeriScanConfig> HANDLER = ConfigClassHandler.createBuilder(PeriScanConfig.class)
-				.id(PeriScanClient.id("config"))
+				.id(PeriScan.id("config"))
 				.serializer(config -> GsonConfigSerializerBuilder.create(config)
-						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScanClient.MOD_ID + ".json"))
+						.setPath(FabricLoader.getInstance().getConfigDir().resolve(PeriScan.MOD_ID + ".json"))
 						.build())
 				.build();
 	}

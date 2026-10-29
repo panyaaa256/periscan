@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.PeriScan;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -123,7 +123,7 @@ final class ProfileFile {
 		Data data = read(legacyFile, today);
 		if (!data.profiles.isEmpty()) {
 			write(file, data);
-			PeriScanClient.LOGGER.info("PeriScan: copied the profiles of {} to {}", legacyFile, file);
+			PeriScan.LOGGER.info("PeriScan: copied the profiles of {} to {}", legacyFile, file);
 		}
 		return data;
 	}
@@ -163,7 +163,7 @@ final class ProfileFile {
 		try {
 			SafeFiles.writeAtomically(file, GSON.toJson(toJson(data)));
 		} catch (IOException e) {
-			PeriScanClient.LOGGER.warn("PeriScan: could not save profiles to {}: {}", file, e.toString());
+			PeriScan.LOGGER.warn("PeriScan: could not save profiles to {}: {}", file, e.toString());
 		}
 	}
 
@@ -172,7 +172,7 @@ final class ProfileFile {
 		int version = root.has("version") ? root.get("version").getAsInt() : 1;
 		if (version > FORMAT_VERSION) {
 			data.writable = false;
-			PeriScanClient.LOGGER.warn("PeriScan: {} was written by a newer PeriScan (format {}); "
+			PeriScan.LOGGER.warn("PeriScan: {} was written by a newer PeriScan (format {}); "
 					+ "profile changes will not be saved", file, version);
 		}
 		for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject("profiles").entrySet()) {
@@ -180,7 +180,7 @@ final class ProfileFile {
 				data.profiles.put(entry.getKey(), GSON.fromJson(entry.getValue(), SavedProfile.class));
 			} else {
 				// Only possible through hand edits; the rest of the file stays usable.
-				PeriScanClient.LOGGER.warn("PeriScan: skipping invalid profile '{}': {}", entry.getKey(), entry.getValue());
+				PeriScan.LOGGER.warn("PeriScan: skipping invalid profile '{}': {}", entry.getKey(), entry.getValue());
 			}
 		}
 		if (root.has("lastScanned") && !root.get("lastScanned").isJsonNull()) {
@@ -233,10 +233,10 @@ final class ProfileFile {
 		Data data = new Data();
 		try {
 			Path backup = SafeFiles.moveAsideAsBroken(file);
-			PeriScanClient.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, cause.toString());
+			PeriScan.LOGGER.warn("PeriScan: could not read {}, moved it to {}: {}", file, backup, cause.toString());
 		} catch (IOException e) {
 			data.writable = false;
-			PeriScanClient.LOGGER.error("PeriScan: could not read {} and could not back it up; "
+			PeriScan.LOGGER.error("PeriScan: could not read {} and could not back it up; "
 					+ "profile changes will not be saved: {}", file, cause.toString());
 		}
 		return data;

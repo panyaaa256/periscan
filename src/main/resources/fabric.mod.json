@@ -14,7 +14,7 @@
 	},
 	"license": "MIT",
 	"icon": "assets/periscan/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"accessWidener": "periscan.accesswidener",
 	"mixins": [
 		{
@@ -23,6 +23,9 @@
 		}
 	],
 	"entrypoints": {
+		"main": [
+			"com.panyaaa256.periscan.PeriScan"
+		],
 		"client": [
 			"com.panyaaa256.periscan.PeriScanClient"
 		],

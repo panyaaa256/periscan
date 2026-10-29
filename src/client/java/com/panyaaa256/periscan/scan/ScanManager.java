@@ -1,6 +1,5 @@
 package com.panyaaa256.periscan.scan;
 
-import com.panyaaa256.periscan.PeriDimension;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
 import com.panyaaa256.periscan.zone.Zone;
@@ -22,7 +21,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
@@ -35,26 +33,21 @@ import java.util.Map;
 public class ScanManager {
 	public static final ScanManager INSTANCE = new ScanManager();
 
-	// Height of the bottom trench zone: the lowest scanned layers of the trench body.
-	private static final int BOTTOM_TRENCH_LAYERS = 2;
-
 	// Ticks between the safety-net revalidations of the highlights (see onTick).
 	private static final int VALIDATE_INTERVAL_TICKS = 20;
 
+	private ZoneScanner scanner;
+	// The scanner's layout, kept at hand as almost every method needs it.
 	private ZoneLayout layout;
 	private ResourceKey<Level> dimension;
 	private ChunkPos cornerA;
 	private ChunkPos cornerB;
-	private final EnumMap<Zone, ZoneMatcher> matchers = new EnumMap<>(Zone.class);
 	private final EnumMap<Zone, ChunkIndexedPositions> highlights = new EnumMap<>(Zone.class);
 	private final FallingRunTracker fallingRuns = new FallingRunTracker();
 	private final LongOpenHashSet pendingChunks = new LongOpenHashSet();
 	// Positions (BlockPos longs) in the scanned zones whose block changed since the last tick.
 	private final LongOpenHashSet changedBlocks = new LongOpenHashSet();
-	// Layers at the bottom of the trench body that belong to the bottom trench zone
-	// instead of the trench inner zone: none while the bottom trench zone is
-	// disabled, so the trench inner zone then covers them too.
-	private int bottomTrenchLayers;
+	private final ZoneScanner.Sink addHighlight = (zone, pos) -> highlights.get(zone).add(pos);
 	private int tickCounter = 0;
 	private boolean dormantNoticePending = false;
 
@@ -127,25 +120,18 @@ public class ScanManager {
 			deactivate();
 			return List.of();
 		}
-		ScanSettings settings = config.scanSettings();
 		this.dimension = dim;
 		this.cornerA = a;
 		this.cornerB = b;
-		this.layout = ZoneLayout.of(a, b, ZoneLayout.Settings.from(settings));
-		this.bottomTrenchLayers = settings.bottomTrench() ? BOTTOM_TRENCH_LAYERS : 0;
-
 		List<String> invalidEntries = new ArrayList<>();
-		ZoneMatcher.WaterloggedExclusions exclusions = ZoneMatcher.WaterloggedExclusions.compile(
-				settings.waterloggedBlacklist(), settings.waterloggedExcludePushDestroy(), invalidEntries);
-		matchers.clear();
-		for (Zone zone : Zone.VALUES) {
-			matchers.put(zone, zone.compileMatcher(settings, layout, exclusions, invalidEntries));
-		}
+		this.scanner = new ZoneScanner(a, b, config.scanSettings(), invalidEntries);
+		this.layout = scanner.layout();
+
 		List<Component> problems = new ArrayList<>();
 		for (String entry : invalidEntries) {
 			problems.add(Component.translatable("periscan.msg.invalid_entry", entry));
 		}
-		for (String entry : unknownTags(exclusions)) {
+		for (String entry : unknownTags()) {
 			problems.add(Component.translatable("periscan.msg.unknown_tag", entry));
 		}
 
@@ -179,12 +165,9 @@ public class ScanManager {
 	 * Config entries naming tags the world does not have (usually a typo, e.g.
 	 * "#minecraft:wall" for "#minecraft:walls"): such tags match nothing.
 	 */
-	private List<String> unknownTags(ZoneMatcher.WaterloggedExclusions exclusions) {
+	private List<String> unknownTags() {
 		Map<TagKey<Block>, String> tags = new LinkedHashMap<>();
-		exclusions.collectTags(tags);
-		for (ZoneMatcher matcher : matchers.values()) {
-			matcher.collectTags(tags);
-		}
+		scanner.collectTags(tags);
 		// The server sends the world's tags on join, so only known tags are bound here.
 		Registry<Block> blocks = BuiltInRegistries.BLOCK;
 		List<String> unknown = new ArrayList<>();
@@ -214,12 +197,12 @@ public class ScanManager {
 	}
 
 	public void deactivate() {
+		scanner = null;
 		layout = null;
 		dimension = null;
 		cornerA = null;
 		cornerB = null;
 		dormantNoticePending = false;
-		matchers.clear();
 		clearScanResults();
 	}
 
@@ -264,7 +247,7 @@ public class ScanManager {
 			return;
 		}
 		int minY = scanMinY(level);
-		int maxY = scanMaxY(level);
+		int maxY = scanner.maxY(level);
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		LongIterator it = changedBlocks.iterator();
 		while (it.hasNext()) {
@@ -280,7 +263,7 @@ public class ScanManager {
 			if (y >= minY && y <= maxY) {
 				updateHighlights(level, pos.set(x, y, z), minY);
 			}
-			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + bottomTrenchLayers, maxY);
+			fallingRuns.markPosition(layout.trenchStrips(), x, y, z, minY + scanner.bottomTrenchLayers(), maxY);
 		}
 		changedBlocks.clear();
 	}
@@ -291,11 +274,7 @@ public class ScanManager {
 		for (ChunkIndexedPositions set : highlights.values()) {
 			set.remove(key);
 		}
-		int mask = layout.zoneMask(pos.getX(), pos.getZ());
-		BlockState state = level.getBlockState(pos);
-		if (mask != 0 && !state.isAir()) {
-			addMatchingZones(mask, pos.getX(), pos.getY(), pos.getZ(), state, minY + bottomTrenchLayers - 1);
-		}
+		scanner.scanBlock(pos.getX(), pos.getY(), pos.getZ(), level.getBlockState(pos), minY, addHighlight);
 	}
 
 	private void clearChunkHighlights(ChunkPos pos) {
@@ -307,71 +286,16 @@ public class ScanManager {
 
 	private void scanChunk(ClientLevel level, LevelChunk chunk) {
 		ChunkPos cp = chunk.getPos();
-		int baseX = cp.getMinBlockX();
-		int baseZ = cp.getMinBlockZ();
-
-		byte[] columnMasks = new byte[256];
-		boolean anyColumn = false;
-		for (int dx = 0; dx < 16; dx++) {
-			for (int dz = 0; dz < 16; dz++) {
-				int mask = layout.zoneMask(baseX + dx, baseZ + dz);
-				columnMasks[(dx << 4) | dz] = (byte) mask;
-				anyColumn |= mask != 0;
-			}
-		}
-		if (!anyColumn) {
+		int chunkX = VersionCompat.chunkX(cp);
+		int chunkZ = VersionCompat.chunkZ(cp);
+		int minY = scanMinY(level);
+		int maxY = scanner.maxY(level);
+		if (!scanner.scanChunk(chunkX, chunkZ, chunk.getSections(), chunk.getMinSectionY(), minY, maxY, addHighlight)) {
 			return;
 		}
-
-		int minY = scanMinY(level);
-		int maxY = scanMaxY(level);
-		int bottomTopY = minY + bottomTrenchLayers - 1;
-		for (int y = minY; y <= maxY; y++) {
-			LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-			if (section.hasOnlyAir()) {
-				// Jump to the end of this section.
-				y = (((y >> 4) + 1) << 4) - 1;
-				continue;
-			}
-			int localY = y & 15;
-			for (int dx = 0; dx < 16; dx++) {
-				for (int dz = 0; dz < 16; dz++) {
-					int mask = columnMasks[(dx << 4) | dz];
-					if (mask == 0) {
-						continue;
-					}
-					BlockState state = section.getBlockState(dx, localY, dz);
-					if (state.isAir()) {
-						continue;
-					}
-					addMatchingZones(mask, baseX + dx, y, baseZ + dz, state, bottomTopY);
-				}
-			}
-		}
-
 		// The lowest layers belong to the bottom trench zone (when enabled), not the trench inner.
-		fallingRuns.markChunk(layout.trenchStrips(), VersionCompat.chunkX(cp), VersionCompat.chunkZ(cp),
-				minY + bottomTrenchLayers, maxY, blockView(level));
-	}
-
-	/**
-	 * Highlights the block in every zone of the column mask whose matcher accepts it.
-	 * The bottom trench zone is the lowest scanned layers (up to bottomTopY); the
-	 * trench inner zone starts above them. With the bottom trench zone disabled
-	 * bottomTopY is below the scan, so the trench inner zone takes every layer.
-	 */
-	private void addMatchingZones(int mask, int x, int y, int z, BlockState state, int bottomTopY) {
-		for (Zone zone : Zone.VALUES) {
-			if ((mask & zone.mask()) == 0) {
-				continue;
-			}
-			if (zone == Zone.BOTTOM_TRENCH ? y > bottomTopY : zone == Zone.TRENCH_INNER && y <= bottomTopY) {
-				continue;
-			}
-			if (matchers.get(zone).matches(state, x, z)) {
-				highlights.get(zone).add(BlockPos.asLong(x, y, z));
-			}
-		}
+		fallingRuns.markChunk(layout.trenchStrips(), chunkX, chunkZ,
+				minY + scanner.bottomTrenchLayers(), maxY, blockView(level));
 	}
 
 	private void flushFallingLines(ClientLevel level) {
@@ -407,8 +331,7 @@ public class ScanManager {
 
 	/** Lowest scanned Y (inclusive): the bedrock floor is skipped where it is known. */
 	public static int scanMinY(ClientLevel level) {
-		PeriDimension dimension = PeriDimension.of(level.dimension());
-		return dimension == null ? level.getMinY() : Math.max(level.getMinY(), dimension.scanFloorY());
+		return ZoneScanner.minY(level);
 	}
 
 	/** Highest scanned Y (inclusive), from the config. */
@@ -452,10 +375,7 @@ public class ScanManager {
 	private void validateHighlights(ClientLevel level) {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		for (Zone zone : Zone.VALUES) {
-			ZoneMatcher matcher = matchers.get(zone);
-			if (matcher == null) {
-				continue;
-			}
+			ZoneMatcher matcher = scanner.matcher(zone);
 			highlights.get(zone).removeIf(key -> {
 				pos.set(BlockPos.getX(key), BlockPos.getY(key), BlockPos.getZ(key));
 				if (!level.getChunkSource().hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {

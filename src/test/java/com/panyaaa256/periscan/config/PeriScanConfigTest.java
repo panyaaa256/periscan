@@ -1,5 +1,6 @@
 package com.panyaaa256.periscan.config;
 
+import com.panyaaa256.periscan.scan.ScanSettings;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -45,6 +46,27 @@ class PeriScanConfigTest {
 		assertEquals(defaults.eater.blocks, config.eater.blocks);
 		assertEquals(defaults.trenchOuter.color, config.trenchOuter.color);
 		assertEquals(defaults.trenchOuter.blocks, config.trenchOuter.blocks);
+	}
+
+	@Test
+	void scanSettingsCopyTheScanValues() {
+		PeriScanConfig config = new PeriScanConfig();
+		config.northSouthWidth = 5;
+		config.bottomTrench.enabled = true;
+		config.eater.includeTrench = true;
+		config.trenchInner.fallingRunLength = 7;
+
+		ScanSettings settings = config.scanSettings();
+		assertEquals(5, settings.northSouthWidth());
+		assertTrue(settings.bottomTrench());
+		assertTrue(settings.eaterIncludeTrench());
+		assertEquals(7, settings.fallingRunLength());
+		assertEquals(config.eater.blocks, settings.eater().blocks());
+		assertEquals(config.trenchInner.fenceBlocks, settings.fenceBlocks());
+
+		// Later config edits do not reach settings already taken.
+		config.eater.blocks.add("minecraft:stone");
+		assertFalse(settings.eater().blocks().contains("minecraft:stone"));
 	}
 
 	@Test

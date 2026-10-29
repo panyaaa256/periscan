@@ -1,6 +1,6 @@
 package com.panyaaa256.periscan.zone;
 
-import com.panyaaa256.periscan.config.PeriScanConfig;
+import com.panyaaa256.periscan.scan.ScanSettings;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
@@ -45,8 +45,8 @@ public final class ZoneLayout {
 	}
 
 	/**
-	 * The config values the layout depends on. Kept separate from PeriScanConfig
-	 * so layouts can be built without loading the config (e.g. in tests).
+	 * The scan settings the layout depends on. Kept separate from ScanSettings
+	 * so tests can build layouts without the block lists.
 	 *
 	 * @param northSouthWidth trench thickness along Z
 	 * @param eastWestWidth   trench thickness along X
@@ -55,10 +55,10 @@ public final class ZoneLayout {
 			boolean trenchOuter, boolean trenchInner, boolean bottomTrench,
 			boolean eater, boolean eaterIncludeTrench) {
 
-		public static Settings from(PeriScanConfig config) {
-			return new Settings(config.northSouthWidth, config.eastWestWidth,
-					config.trenchOuter.enabled, config.trenchInner.enabled, config.bottomTrench.enabled,
-					config.eater.enabled, config.eater.includeTrench);
+		public static Settings from(ScanSettings settings) {
+			return new Settings(settings.northSouthWidth(), settings.eastWestWidth(),
+					settings.trenchOuter().enabled(), settings.trenchInner().enabled(), settings.bottomTrench(),
+					settings.eater().enabled(), settings.eaterIncludeTrench());
 		}
 	}
 

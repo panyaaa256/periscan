@@ -189,9 +189,9 @@ public final class HighlightRenderer {
 			MeshDrawer meshDrawer, int alpha, int pendingAlpha) {
 		PeriScanConfig config = PeriScanConfig.get();
 		for (Zone zone : Zone.VALUES) {
-			if (zone.settings(config).visible) {
+			if (config.zone(zone).visible) {
 				addMeshes(buffer, pose, camera, meshDrawer, ZONE_MESHES[zone.ordinal()],
-						argb(alpha, zone.settings(config).color));
+						argb(alpha, config.zone(zone).color));
 			}
 		}
 		// Falling-block runs belong to the trench inner zone: they use its color and are hidden with it.

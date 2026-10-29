@@ -127,18 +127,19 @@ public class ScanManager {
 			deactivate();
 			return List.of();
 		}
+		ScanSettings settings = config.scanSettings();
 		this.dimension = dim;
 		this.cornerA = a;
 		this.cornerB = b;
-		this.layout = ZoneLayout.of(a, b, ZoneLayout.Settings.from(config));
-		this.bottomTrenchLayers = config.bottomTrench.enabled ? BOTTOM_TRENCH_LAYERS : 0;
+		this.layout = ZoneLayout.of(a, b, ZoneLayout.Settings.from(settings));
+		this.bottomTrenchLayers = settings.bottomTrench() ? BOTTOM_TRENCH_LAYERS : 0;
 
 		List<String> invalidEntries = new ArrayList<>();
 		ZoneMatcher.WaterloggedExclusions exclusions = ZoneMatcher.WaterloggedExclusions.compile(
-				config.waterloggedBlacklist, config.waterloggedExcludePushDestroy, invalidEntries);
+				settings.waterloggedBlacklist(), settings.waterloggedExcludePushDestroy(), invalidEntries);
 		matchers.clear();
 		for (Zone zone : Zone.VALUES) {
-			matchers.put(zone, zone.compileMatcher(config, layout, exclusions, invalidEntries));
+			matchers.put(zone, zone.compileMatcher(settings, layout, exclusions, invalidEntries));
 		}
 		List<Component> problems = new ArrayList<>();
 		for (String entry : invalidEntries) {

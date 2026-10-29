@@ -1,6 +1,7 @@
 package com.panyaaa256.periscan.config;
 
 import com.panyaaa256.periscan.PeriScanClient;
+import com.panyaaa256.periscan.scan.ScanSettings;
 import com.panyaaa256.periscan.zone.Zone;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
@@ -44,11 +45,33 @@ public class PeriScanConfig {
 	public static boolean anyZoneEnabled() {
 		PeriScanConfig config = get();
 		for (Zone zone : Zone.VALUES) {
-			if (zone.settings(config).enabled) {
+			if (config.zone(zone).enabled) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/** The settings of the given zone. */
+	public ZoneSettings zone(Zone zone) {
+		return switch (zone) {
+			case TRENCH_OUTER -> trenchOuter;
+			case TRENCH_INNER -> trenchInner;
+			case BOTTOM_TRENCH -> bottomTrench;
+			case EATER -> eater;
+		};
+	}
+
+	/** The values a scan depends on, copied so later config edits do not change them. */
+	public ScanSettings scanSettings() {
+		return new ScanSettings(northSouthWidth, eastWestWidth, scanMaxY,
+				blockZone(trenchOuter), blockZone(trenchInner), bottomTrench.enabled, blockZone(eater),
+				List.copyOf(trenchInner.fenceBlocks), trenchInner.fallingRunLength, eater.includeTrench,
+				waterloggedExcludePushDestroy, List.copyOf(waterloggedBlacklist));
+	}
+
+	private static ScanSettings.BlockZone blockZone(BlockZoneSettings settings) {
+		return new ScanSettings.BlockZone(settings.enabled, List.copyOf(settings.blocks), settings.waterlogged);
 	}
 
 	// Trench thickness in columns. northSouth runs along the Z axis, eastWest along the X axis.

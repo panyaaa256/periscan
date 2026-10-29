@@ -83,7 +83,7 @@ public final class PeriKeybinds {
 
 	private static void toggleZone(Minecraft client, Zone zone) {
 		PeriScanConfig config = PeriScanConfig.get();
-		ZoneSettings settings = zone.settings(config);
+		ZoneSettings settings = config.zone(zone);
 		Component name = Component.translatable("periscan.config.category." + zone.id());
 		// A zone that is not scanned has no highlights to show or hide.
 		if (!settings.enabled) {

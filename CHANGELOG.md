@@ -1,19 +1,8 @@
-Adds keys, and lets you hide highlights without stopping the scan: all of them at once, or zone by zone. `/peri schematic edit` no longer creates a missing schematic profile; create new ones with `/peri schematic create` first.
+PeriScan can now be installed on the server too (Minecraft 1.21.9 and newer): the server then scans the whole area, wherever the players are. On Minecraft 1.21.9 and newer, YACL is no longer required.
 
 ### Added
-- Add a "PeriScan" category to the key binds (Options > Controls > Key Binds). No key is assigned by default
-  - Open Settings
-  - Show/Hide Highlights (everything)
-  - Show/Hide for each zone
-  - Rescan (same as `/peri scan reload`)
-  - Clear Scan (same as `/peri scan clear`)
-- Add "Show highlights" (General) and "Show this zone" (each zone) to the settings. They are the same switches as the keys, and are kept when the game restarts
-- Add `/peri schematic create <schematic profile>`, which creates an empty schematic profile and opens its settings
-- Add "Keep the saved orientation" to each schematic of a schematic profile. When it is on, the schematic is placed on every corner without being flipped or rotated, and is moved to fit the corner instead
+- Add scanning on the server (Minecraft 1.21.9 and newer). When the server also has PeriScan, it scans the whole area for the players, including chunks no player has loaded, and highlights follow block changes anywhere in the area. The server only needs PeriScan and Fabric API. Singleplayer works this way as is
+- Add a chat message with the number of chunks in the area that are not generated yet, as the server does not scan them
 
 ### Changed
-- `/peri schematic edit` only opens schematic profiles that exist. A mistyped name is now reported, instead of opening an empty profile
-- Replace the placeholder mod icon with the PeriScan icon
-
-### Fixed
-- Limit the chunk coordinates of `/peri add` to the world (-1875000 to 1875000). Larger values overflowed the block coordinates
+- Make YACL optional on Minecraft 1.21.9 and newer. Without it, PeriScan runs with the default settings, and the settings screens say that YACL is needed instead of opening

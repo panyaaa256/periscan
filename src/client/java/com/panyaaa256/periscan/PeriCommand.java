@@ -123,7 +123,7 @@ public final class PeriCommand {
 								.then(literal("remove")
 										.then(argument("profile", StringArgumentType.word()).suggests(SUGGEST_SCHEMATIC_PROFILE)
 												.executes(PeriCommand::schematicRemove))))
-						.then(literal("config").executes(ctx -> openConfig()))));
+						.then(literal("config").executes(ctx -> openConfig(ctx.getSource())))));
 	}
 
 	/** Peris are never built in the end; fail fast so the mistake is obvious. */
@@ -315,14 +315,24 @@ public final class PeriCommand {
 		return false;
 	}
 
+	/** The settings screens are made with YACL, which is optional. */
+	private static boolean rejectWithoutYacl(FabricClientCommandSource source) {
+		if (!PeriScanConfig.yaclLoaded()) {
+			source.sendError(Component.translatable("periscan.msg.yacl_missing"));
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	 * Creates an empty schematic profile and opens its settings screen. The
 	 * profile exists from now on, even if the screen is closed without saving.
 	 */
 	private static int schematicCreate(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
-		// Checked first: without litematica the profile could not be filled.
-		if (rejectWithoutLitematica(source)) {
+		// Checked first: without litematica the profile could not be filled, and
+		// without YACL its settings screen could not be opened.
+		if (rejectWithoutLitematica(source) || rejectWithoutYacl(source)) {
 			return 0;
 		}
 		String schematicProfile = StringArgumentType.getString(ctx, "profile");
@@ -350,7 +360,7 @@ public final class PeriCommand {
 	private static int schematicEdit(CommandContext<FabricClientCommandSource> ctx) {
 		FabricClientCommandSource source = ctx.getSource();
 		// Schematics are imported from litematica's schematics folder.
-		if (rejectWithoutLitematica(source)) {
+		if (rejectWithoutLitematica(source) || rejectWithoutYacl(source)) {
 			return 0;
 		}
 		String schematicProfile = StringArgumentType.getString(ctx, "profile");
@@ -485,7 +495,10 @@ public final class PeriCommand {
 		return 1;
 	}
 
-	private static int openConfig() {
+	private static int openConfig(FabricClientCommandSource source) {
+		if (rejectWithoutYacl(source)) {
+			return 0;
+		}
 		PeriScanClient.scheduleScreen(() -> PeriScanConfigScreen.create(null));
 		return 1;
 	}

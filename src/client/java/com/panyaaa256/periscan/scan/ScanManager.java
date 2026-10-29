@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -345,11 +346,14 @@ public class ScanManager {
 		if (player == null) {
 			return;
 		}
+		// Red, like the errors of the /peri command: part of the region was not scanned.
 		if (finished.ungenerated().length > 0) {
-			VersionCompat.sendChat(player, Component.translatable("periscan.msg.ungenerated_chunks", finished.ungenerated().length));
+			VersionCompat.sendChat(player, Component.translatable("periscan.msg.ungenerated_chunks",
+					finished.ungenerated().length).withStyle(ChatFormatting.RED));
 		}
 		if (finished.unreadable().length > 0) {
-			VersionCompat.sendChat(player, Component.translatable("periscan.msg.unreadable_chunks", finished.unreadable().length));
+			VersionCompat.sendChat(player, Component.translatable("periscan.msg.unreadable_chunks",
+					finished.unreadable().length).withStyle(ChatFormatting.RED));
 		}
 	}
 

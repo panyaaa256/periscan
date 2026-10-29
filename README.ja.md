@@ -24,7 +24,7 @@ PeriScanは、World Eaterやtrencherを動かす前に取り除くべきブロ�
 - 任意: [Litematica](https://modrinth.com/mod/litematica)（設計図をまとめて配置するときに必要）
 - 任意: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-Minecraft 1.21.9以降では、YACLが必要なのは設定画面を開くときだけです。入っていなければ、PeriScanは初期設定のまま動きます。
+YACLが必要なのは、設定画面を開くときだけです。入っていなければ、PeriScanは初期設定のまま動きます。
 
 ### クライアントへの導入
 

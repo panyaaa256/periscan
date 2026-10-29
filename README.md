@@ -24,7 +24,7 @@ The [usage guide](docs/usage.md) explains how to use it in detail.
 - Optional: [Litematica](https://modrinth.com/mod/litematica), needed for placing schematics in bulk
 - Optional: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-On Minecraft 1.21.9 and newer, YACL is only needed to open the settings screens. Without it, PeriScan runs with the default settings.
+YACL is only needed to open the settings screens. Without it, PeriScan runs with the default settings.
 
 ### Installing on the client
 

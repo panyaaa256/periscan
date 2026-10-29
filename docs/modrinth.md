@@ -30,7 +30,7 @@ Block lists, colors and trench widths can be changed with `/peri config`, or fro
 ## Requirements
 
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl). On Minecraft 1.21.9 and newer, only needed for the settings screens: without it, PeriScan runs with the default settings
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl). Only needed for the settings screens: without it, PeriScan runs with the default settings
 - Optional: [Litematica](https://modrinth.com/mod/litematica), for placing schematics in bulk
 - Optional: [Mod Menu](https://modrinth.com/mod/modmenu), for opening the settings from the mod list
 

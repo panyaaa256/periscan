@@ -165,7 +165,7 @@ PeriScanは、World Eaterやtrencherの動作を妨げるブロックを、指�
 
 設定画面を開くコマンドは`/peri config`です。Mod Menuが入っていれば、Mod MenuのPeriScanの設定ボタンからも開けます。設定が反映されるのは、保存した時点です。スキャン中なら、新しい設定でスキャンし直します。
 
-設定画面を開くにはYACLが必要です。Minecraft 1.21.9以降では、YACLがなくても初期設定のままPeriScanを使えます。
+設定画面を開くにはYACLが必要です。YACLがなくても、初期設定のままPeriScanを使えます。
 
 ### 全般
 

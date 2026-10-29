@@ -165,7 +165,7 @@ A zone with "Scan this zone" turned off has nothing to highlight. Its key only t
 
 The settings screen opens with `/peri config`. With Mod Menu installed, the settings button of PeriScan in Mod Menu opens it too. Changes apply when you save them. If you are scanning, the area is rescanned with the new settings.
 
-The settings screens need YACL. On Minecraft 1.21.9 and newer, PeriScan also runs without YACL, with the default settings.
+The settings screens need YACL. Without YACL, PeriScan still runs, with the default settings.
 
 ### General
 

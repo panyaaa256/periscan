@@ -1,4 +1,4 @@
-PeriScan is a client-side Fabric mod for building perimeters. Give it the area, and it highlights every block that would stop a World Eater or trencher. You can then clear them out before the machines run. Highlights are drawn through blocks, so buried chests and obsidian show up too.
+PeriScan is a Fabric mod for building perimeters. Give it the area, and it highlights every block that would stop a World Eater or trencher. You can then clear them out before the machines run. Highlights are drawn through blocks, so buried chests and obsidian show up too.
 
 ![Vaults and trial spawners in a trial chamber, highlighted in red through the walls](https://raw.githubusercontent.com/panyaaa256/periscan/main/docs/assets/screenshots/trial-chamber.png)
 
@@ -12,6 +12,7 @@ PeriScan is a client-side Fabric mod for building perimeters. Give it the area, 
 - Finds long runs of falling blocks, such as sand and gravel, inside the trenches
 - Follows block changes right away: a highlight disappears once its block is gone
 - Keeps scanned highlights visible from far away, so you can check the whole perimeter at once
+- With PeriScan on the server too (Minecraft 1.21.9 and newer), scans the whole area wherever you are, including chunks no player has loaded
 - Saves areas per world or server as named profiles
 - Adds keys to show or hide all highlights or a single zone
 - Places your schematics on the corners of the perimeter in bulk, if you have Litematica
@@ -29,11 +30,11 @@ Block lists, colors and trench widths can be changed with `/peri config`, or fro
 ## Requirements
 
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl). On Minecraft 1.21.9 and newer, only needed for the settings screens: without it, PeriScan runs with the default settings
 - Optional: [Litematica](https://modrinth.com/mod/litematica), for placing schematics in bulk
 - Optional: [Mod Menu](https://modrinth.com/mod/modmenu), for opening the settings from the mod list
 
-PeriScan only needs to be installed on the client. It does not need to be installed on the server.
+PeriScan works with only the client having it. On Minecraft 1.21.9 and newer, it can also be installed on the server, together with Fabric API (YACL is not needed there). The server then scans the whole area for the players and follows block changes anywhere in it. In singleplayer, this works as is.
 
 ## Compatibility
 

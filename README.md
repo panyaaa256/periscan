@@ -36,15 +36,24 @@ See [the usage guide](docs/usage.md) for how to use it.
 - Minecraft 1.20 to 26.3 (see the table above)
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) for your Minecraft version
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl) for your Minecraft version. On Minecraft 1.21.9 and newer, it is only needed for the settings screens: without it, PeriScan runs with the default settings
 - Optional: [Litematica](https://modrinth.com/mod/litematica), needed for placing schematics in bulk
 - Optional: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-PeriScan only needs to be installed on the client. It does not need to be installed on the server.
+PeriScan works with only the client having it. On Minecraft 1.21.9 and newer, it can also be installed on the server (see below).
 
 ## Installing
 
 Put the PeriScan jar for your Minecraft version (see the table above), together with Fabric API and YACL, into the `mods` folder of your Fabric installation.
+
+### Installing it on the server too (Minecraft 1.21.9 and newer)
+
+When the server also has PeriScan, the server scans the area for the players:
+
+- The whole area is scanned wherever you are, including chunks no player has loaded. Chunks that are not generated yet are left out, and the chat says how many there are.
+- Block changes anywhere in the area show up, even far away from you.
+
+The server needs PeriScan and Fabric API; YACL is not needed there. In singleplayer, this works as is: the game's own server has PeriScan too.
 
 ## Building from source
 

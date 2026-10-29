@@ -36,15 +36,24 @@ World Eater や trencher を動かす前に取り除くべきブロックを、�
 - Minecraft 1.20〜26.3（上の表を参照）
 - [Fabric Loader](https://fabricmc.net/use/) 0.19.3 以降
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)（Minecraft のバージョンに合うもの）
+- [YetAnotherConfigLib (YACL)](https://modrinth.com/mod/yacl)（Minecraft のバージョンに合うもの）。Minecraft 1.21.9 以降では設定画面を開くときだけ必要で、入っていなければ初期設定のまま動きます
 - 任意: [Litematica](https://modrinth.com/mod/litematica)（設計図の一括配置で必要）
 - 任意: [Mod Menu](https://modrinth.com/mod/modmenu)
 
-PeriScan はクライアント側に導入するだけで使えます。サーバー側に入れる必要はありません。
+PeriScan はクライアント側に導入するだけで使えます。Minecraft 1.21.9 以降では、サーバー側にも導入できます（後述）。
 
 ## 導入
 
 Minecraft のバージョンに合う PeriScan の jar（上の表を参照）を、Fabric API・YACL と一緒に Fabric 環境の `mods` フォルダに入れてください。
+
+### サーバーにも導入する場合（Minecraft 1.21.9 以降）
+
+サーバーにも PeriScan が入っていると、範囲のスキャンをサーバーが行います。
+
+- プレイヤーがどこにいても、範囲全体をスキャンします。どのプレイヤーも読み込んでいないチャンクも対象です。まだ生成されていないチャンクはスキャンせず、その数をチャットに表示します。
+- 範囲内のブロックの変化は、遠く離れた場所のものでもハイライトに反映されます。
+
+サーバーに必要なのは PeriScan と Fabric API です。YACL は要りません。シングルプレイではゲーム内部のサーバーにも PeriScan が入るので、何もしなくてもこの動作になります。
 
 ## ソースからのビルド
 

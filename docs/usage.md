@@ -109,7 +109,18 @@ The "Trench bottom" zone is the lowest two of those layers (Y = -59 and -58 in t
 
 ### Chunks not scanned yet
 
-A chunk is scanned as soon as it loads. Chunks that are not loaded yet are shown like this:
+How chunks get scanned depends on whether the server has PeriScan. In singleplayer it always does, as the game's own server has PeriScan too.
+
+**When the server has PeriScan** (Minecraft 1.21.9 and newer), the server scans every chunk of the area, including chunks no player has loaded. Until it is done:
+
+- The bottom of the screen shows "the server is scanning - … chunks left"
+- A large orange box is shown where each chunk not scanned yet is (can be turned off)
+
+Runs of falling blocks are highlighted once the whole area has been scanned.
+
+Chunks that are not generated yet are not scanned. When the scan is done, the chat says how many there are. Generate them (by going there, for example), then run `/peri scan reload`.
+
+**When the server does not have PeriScan**, a chunk is scanned as soon as it loads on your side. Chunks that are not loaded yet are shown like this:
 
 - The "… chunks not loaded yet" message at the bottom of the screen
 - A large orange box where each of those chunks is (can be turned off)
@@ -118,11 +129,15 @@ Get close to a chunk to load it and it is scanned.
 
 ### When blocks change
 
-Highlights follow block changes right away, including changes made by other players. When a highlighted block is replaced by something else, its highlight disappears. When a block that should be highlighted appears, such as obsidian formed by lava and water, it is highlighted right away too. Runs of falling blocks are updated the same way when one of their blocks is broken or when falling sand and gravel land. Changes made while you were too far away to see them show up when you come back and the chunk loads again.
+Highlights follow block changes right away, including changes made by other players. When a highlighted block is replaced by something else, its highlight disappears. When a block that should be highlighted appears, such as obsidian formed by lava and water, it is highlighted right away too. Runs of falling blocks are updated the same way when one of their blocks is broken or when falling sand and gravel land.
+
+When the server has PeriScan, changes anywhere in the area show up, even in chunks you have not loaded. Your own changes take a moment longer to show, as they go through the server. When the server does not have PeriScan, changes made while you were too far away to see them show up when you come back and the chunk loads again.
 
 ## Settings
 
 Open the settings with `/peri config`, or with the settings button of PeriScan in Mod Menu if you have it installed. Saved changes apply right away; if you are scanning, the area is rescanned with the new settings.
+
+The settings screens need YACL. On Minecraft 1.21.9 and newer, PeriScan also runs without YACL, with the default settings.
 
 ### General
 
@@ -262,7 +277,11 @@ The corners are named by their X and Z side: `+-` is the +X/-Z corner.
 |---|---|
 | "all zones are disabled" | In `/peri config`, turn on "Scan this zone" for at least one zone |
 | "profile '…' belongs to …" | Go to the dimension where you created the profile and try again |
-| "… chunks not loaded yet" | Go near the orange boxes; those chunks are scanned once they load |
+| "… chunks not loaded yet" | Go near the orange boxes; those chunks are scanned once they load (shown when the server does not have PeriScan) |
+| "the server is scanning - … chunks left" | Wait; the server scans the rest of the area on its own |
+| "… chunks of the region are not generated yet" | Generate those chunks (by going there, for example), then run `/peri scan reload` |
+| "… chunks could not be read from the server's save" | The server log says which chunks and why; their save data may be damaged |
+| "YetAnotherConfigLib (YACL) is not installed" | Install YACL to open the settings screens. Until then, the default settings are used |
 | "a saved profile is available" | Run `/peri scan reload` in that dimension to resume scanning |
 | "litematica is not installed (or is an incompatible version)" | Install Litematica, or update it to the version for your Minecraft version |
 | "no schematic profile named …" | Create it with `/peri schematic create <schematic profile>`, or check the name with `/peri schematic list` |

@@ -3,6 +3,9 @@ package com.panyaaa256.periscan.scan;
 import com.panyaaa256.periscan.compat.ChunkPosCompat;
 import com.panyaaa256.periscan.compat.VersionCompat;
 import com.panyaaa256.periscan.config.PeriScanConfig;
+import com.panyaaa256.periscan.network.ChunkResultPayload;
+import com.panyaaa256.periscan.network.ScanStartPayload;
+import com.panyaaa256.periscan.network.ScanStopPayload;
 import com.panyaaa256.periscan.zone.Zone;
 import com.panyaaa256.periscan.zone.ZoneLayout;
 import com.panyaaa256.periscan.zone.ZoneMatcher;
@@ -11,6 +14,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -37,6 +41,11 @@ public class ScanManager {
 	// Ticks between the safety-net revalidations of the highlights (see onTick).
 	private static final int VALIDATE_INTERVAL_TICKS = 20;
 
+	// Remote mode: the server has PeriScan and scans the region itself, whether
+	// this client has the chunks loaded or not, and sends the results.
+	private boolean remote;
+	// Number of the last scan request sent to the server; results of older ones are dropped.
+	private int scanId;
 	private ZoneScanner scanner;
 	// The scanner's layout, kept at hand as almost every method needs it.
 	private ZoneLayout layout;
@@ -61,7 +70,9 @@ public class ScanManager {
 	public void init() {
 		ClientChunkEvents.CHUNK_LOAD.register(this::onChunkLoad);
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> deactivate());
+		// The server ends the scan itself when the player leaves.
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clear());
+		ClientPlayNetworking.registerGlobalReceiver(ChunkResultPayload.TYPE, (payload, context) -> onChunkResult(payload));
 	}
 
 	public boolean isActive() {
@@ -124,8 +135,9 @@ public class ScanManager {
 		this.dimension = dim;
 		this.cornerA = a;
 		this.cornerB = b;
+		ScanSettings settings = config.scanSettings();
 		List<String> invalidEntries = new ArrayList<>();
-		this.scanner = new ZoneScanner(a, b, config.scanSettings(), invalidEntries);
+		this.scanner = new ZoneScanner(a, b, settings, invalidEntries);
 		this.layout = scanner.layout();
 
 		List<Component> problems = new ArrayList<>();
@@ -139,6 +151,13 @@ public class ScanManager {
 		clearScanResults();
 		for (ChunkPos chunk : layout.chunks()) {
 			pendingChunks.add(ChunkPosCompat.chunkKey(chunk));
+		}
+
+		remote = ClientPlayNetworking.canSend(ScanStartPayload.TYPE);
+		if (remote) {
+			// The chunks stay pending until their results arrive (onChunkResult).
+			ClientPlayNetworking.send(new ScanStartPayload(++scanId, dim, a, b, settings));
+			return problems;
 		}
 
 		// Scan whatever is already loaded; the rest is picked up by CHUNK_LOAD.
@@ -198,6 +217,15 @@ public class ScanManager {
 	}
 
 	public void deactivate() {
+		if (remote && ClientPlayNetworking.canSend(ScanStopPayload.TYPE)) {
+			ClientPlayNetworking.send(ScanStopPayload.INSTANCE);
+		}
+		clear();
+	}
+
+	/** Forgets the scan without telling the server. */
+	private void clear() {
+		remote = false;
 		scanner = null;
 		layout = null;
 		dimension = null;
@@ -217,7 +245,8 @@ public class ScanManager {
 	}
 
 	private void onChunkLoad(ClientLevel level, LevelChunk chunk) {
-		if (layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
+		// In remote mode the server scans the chunks (onChunkResult).
+		if (remote || layout == null || level.dimension() != dimension || !layout.intersectsChunk(chunk.getPos())) {
 			return;
 		}
 		pendingChunks.remove(ChunkPosCompat.chunkKey(chunk.getPos()));
@@ -236,7 +265,7 @@ public class ScanManager {
 	 * once at the end of the tick, from the block states as they are then.
 	 */
 	public void onBlockChanged(ClientLevel level, BlockPos pos) {
-		if (layout == null || level.dimension() != dimension || !layout.containsColumn(pos.getX(), pos.getZ())) {
+		if (remote || layout == null || level.dimension() != dimension || !layout.containsColumn(pos.getX(), pos.getZ())) {
 			return;
 		}
 		changedBlocks.add(pos.asLong());
@@ -276,6 +305,22 @@ public class ScanManager {
 			set.remove(key);
 		}
 		scanner.scanBlock(pos.getX(), pos.getY(), pos.getZ(), level.getBlockState(pos), minY, addHighlight);
+	}
+
+	/** A chunk the server scanned (remote mode): its highlights replace what the chunk had. */
+	private void onChunkResult(ChunkResultPayload result) {
+		if (!remote || result.scanId() != scanId) {
+			return; // a result of a scan stopped or replaced since
+		}
+		ChunkPos chunk = new ChunkPos(result.chunkX(), result.chunkZ());
+		pendingChunks.remove(ChunkPosCompat.chunkKey(chunk));
+		clearChunkHighlights(chunk);
+		for (Zone zone : Zone.VALUES) {
+			ChunkIndexedPositions set = highlights.get(zone);
+			for (long pos : result.positions()[zone.ordinal()]) {
+				set.add(pos);
+			}
+		}
 	}
 
 	private void clearChunkHighlights(ChunkPos pos) {
@@ -353,19 +398,22 @@ public class ScanManager {
 		}
 		tickCounter++;
 
-		applyBlockChanges(client.level);
+		// In remote mode the highlights come from the server as they are.
+		if (!remote) {
+			applyBlockChanges(client.level);
 
-		// Safety net for the removal side: drop highlights whose block no longer
-		// matches, in case a change bypassed onBlockChanged or the world's tags
-		// changed. Block changes normally update the highlights right away.
-		if (tickCounter % VALIDATE_INTERVAL_TICKS == 0) {
-			validateHighlights(client.level);
+			// Safety net for the removal side: drop highlights whose block no longer
+			// matches, in case a change bypassed onBlockChanged or the world's tags
+			// changed. Block changes normally update the highlights right away.
+			if (tickCounter % VALIDATE_INTERVAL_TICKS == 0) {
+				validateHighlights(client.level);
+			}
+
+			// Everything above (and chunk loads since the last tick) only marked falling
+			// lines dirty; recompute them once. Dirty lines wait here while the player is
+			// in another dimension; they are evaluated against whatever is loaded then.
+			flushFallingLines(client.level);
 		}
-
-		// Everything above (and chunk loads since the last tick) only marked falling
-		// lines dirty; recompute them once. Dirty lines wait here while the player is
-		// in another dimension; they are evaluated against whatever is loaded then.
-		flushFallingLines(client.level);
 
 		if (!pendingChunks.isEmpty() && tickCounter % 20 == 0 && client.player != null) {
 			VersionCompat.sendOverlay(client.player,

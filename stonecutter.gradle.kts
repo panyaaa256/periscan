@@ -30,6 +30,7 @@ stonecutter parameters {
 			replace("WorldRenderContext", "LevelRenderContext")
 			replace("accessWidener v2 named", "classTweaker v1 official")
 			replace("PayloadTypeRegistry.playC2S()", "PayloadTypeRegistry.serverboundPlay()")
+			replace("PayloadTypeRegistry.playS2C()", "PayloadTypeRegistry.clientboundPlay()")
 		}
 		// 26.2: the current screen moved from Minecraft to Gui.
 		string(current.parsed >= "26.2") {

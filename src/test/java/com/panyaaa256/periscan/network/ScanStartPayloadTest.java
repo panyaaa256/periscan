@@ -42,7 +42,7 @@ class ScanStartPayloadTest {
 				new BlockZone(true, List.of(), true),
 				List.of("#minecraft:walls"), 10, false,
 				true, List.of("minecraft:oak_stairs"));
-		ScanStartPayload payload = new ScanStartPayload(Level.NETHER, new ChunkPos(-3, 7), new ChunkPos(12, -40), settings);
+		ScanStartPayload payload = new ScanStartPayload(7, Level.NETHER, new ChunkPos(-3, 7), new ChunkPos(12, -40), settings);
 
 		assertEquals(payload, roundTrip(payload));
 	}
@@ -56,7 +56,7 @@ class ScanStartPayloadTest {
 		BlockZone zone = new BlockZone(true, entries, false);
 		ScanSettings settings = new ScanSettings(12, 3, 128, zone, zone, false, zone,
 				entries, 10, false, true, entries);
-		ScanStartPayload payload = new ScanStartPayload(Level.OVERWORLD, new ChunkPos(0, 0), new ChunkPos(31, 31), settings);
+		ScanStartPayload payload = new ScanStartPayload(1, Level.OVERWORLD, new ChunkPos(0, 0), new ChunkPos(31, 31), settings);
 
 		assertEquals(payload, roundTrip(payload));
 	}

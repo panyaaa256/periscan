@@ -13,9 +13,10 @@ import net.minecraft.world.level.Level;
 /**
  * Client to server: scan the given perimeter (chunk coordinates, outermost
  * rectangle, as in a profile) in the given dimension with the client's settings.
- * Replaces the player's previous scan, if any.
+ * Replaces the player's previous scan, if any. The server tags its results with
+ * scanId, so the client can drop results of a scan it has since replaced.
  */
-public record ScanStartPayload(ResourceKey<Level> dimension, ChunkPos cornerA, ChunkPos cornerB,
+public record ScanStartPayload(int scanId, ResourceKey<Level> dimension, ChunkPos cornerA, ChunkPos cornerB,
 		ScanSettings settings) implements CustomPacketPayload {
 
 	public static final Type<ScanStartPayload> TYPE = new Type<>(PeriScan.id("scan_start"));
@@ -24,6 +25,7 @@ public record ScanStartPayload(ResourceKey<Level> dimension, ChunkPos cornerA, C
 			StreamCodec.ofMember(ScanStartPayload::write, ScanStartPayload::read);
 
 	private void write(FriendlyByteBuf buf) {
+		buf.writeVarInt(scanId);
 		buf.writeResourceKey(dimension);
 		buf.writeChunkPos(cornerA);
 		buf.writeChunkPos(cornerB);
@@ -31,8 +33,8 @@ public record ScanStartPayload(ResourceKey<Level> dimension, ChunkPos cornerA, C
 	}
 
 	private static ScanStartPayload read(FriendlyByteBuf buf) {
-		return new ScanStartPayload(buf.readResourceKey(Registries.DIMENSION), buf.readChunkPos(), buf.readChunkPos(),
-				ScanSettings.STREAM_CODEC.decode(buf));
+		return new ScanStartPayload(buf.readVarInt(), buf.readResourceKey(Registries.DIMENSION),
+				buf.readChunkPos(), buf.readChunkPos(), ScanSettings.STREAM_CODEC.decode(buf));
 	}
 
 	@Override

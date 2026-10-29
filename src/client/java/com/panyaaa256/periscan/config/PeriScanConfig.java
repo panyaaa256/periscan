@@ -37,8 +37,43 @@ public class PeriScanConfig {
 	public static final int MIN_FALLING_RUN = 2;
 	public static final int MAX_FALLING_RUN = 64;
 
+	// YACL is optional (the server side does not need it). Without it the config
+	// file can be neither read, saved nor edited: the defaults are used, and
+	// changes made from the keys last until the game closes.
+	private static final class Fallback {
+		static final PeriScanConfig INSTANCE = new PeriScanConfig();
+	}
+
+	/** Whether YACL, which reads, saves and edits the config, is installed. */
+	public static boolean yaclLoaded() {
+		return FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3");
+	}
+
 	public static PeriScanConfig get() {
-		return handler().instance();
+		return yaclLoaded() ? handler().instance() : Fallback.INSTANCE;
+	}
+
+	/**
+	 * Reads the config file and fixes values out of range. Returns whether the
+	 * file had such values (they are then saved fixed). Does nothing without YACL.
+	 */
+	public static boolean load() {
+		if (!yaclLoaded()) {
+			return false;
+		}
+		handler().load();
+		if (!get().sanitize()) {
+			return false;
+		}
+		save();
+		return true;
+	}
+
+	/** Saves the config file. Does nothing without YACL. */
+	public static void save() {
+		if (yaclLoaded()) {
+			handler().save();
+		}
 	}
 
 	public static boolean anyZoneEnabled() {

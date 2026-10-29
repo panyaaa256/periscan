@@ -21,10 +21,10 @@ public class PeriScanClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		PeriScanConfig.handler().load();
-		if (PeriScanConfig.get().sanitize()) {
+		if (!PeriScanConfig.yaclLoaded()) {
+			LOGGER.warn("PeriScan: YetAnotherConfigLib is not installed; the default config is used and cannot be changed");
+		} else if (PeriScanConfig.load()) {
 			LOGGER.warn("PeriScan: the config file had invalid values; they were reset to the nearest allowed ones");
-			PeriScanConfig.handler().save();
 		}
 		PeriCommand.register();
 		PeriKeybinds.register();

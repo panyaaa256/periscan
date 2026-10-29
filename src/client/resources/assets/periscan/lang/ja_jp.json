@@ -79,6 +79,7 @@
 	"periscan.msg.no_last_profile": "PeriScan: まだ何もスキャンしていません。先に /peri scan start <name> を実行してください。",
 	"periscan.msg.end_not_supported": "PeriScan: エンドでperiを作ることはないため、このコマンドはエンドでは使えません。",
 	"periscan.msg.litematica_missing": "PeriScan: litematicaが入っていない(または非対応バージョンの)ため、schematic機能は使えません。",
+	"periscan.msg.yacl_missing": "PeriScan: YetAnotherConfigLib (YACL) が入っていないため、設定画面を開けません。初期設定のまま動作します。",
 	"periscan.msg.schem_profile_invalid_name": "PeriScan:「%s」は設計図プロファイルの名前に使えません",
 	"periscan.msg.no_schem_profile": "PeriScan: 設計図プロファイル「%s」はありません。/peri schematic create <profile> で作成してください。",
 	"periscan.msg.no_schem_profiles": "PeriScan: 設計図プロファイルがまだありません。/peri schematic create <profile> で作成してください。",

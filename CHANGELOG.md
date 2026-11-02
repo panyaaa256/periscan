@@ -1,8 +1,7 @@
-PeriScan can now be installed on the server too (Minecraft 1.21.9 and newer): the server then scans the whole area, wherever the players are. YACL is no longer required on any Minecraft version.
+The server scans faster, and a new setting picks whether the server or your own game scans (Minecraft 1.21.9 and newer).
 
 ### Added
-- Add scanning on the server (Minecraft 1.21.9 and newer). When the server also has PeriScan, it scans the whole area for the players, including chunks no player has loaded, and highlights follow block changes anywhere in the area. The server only needs PeriScan and Fabric API. Singleplayer works this way as is
-- Add a chat message with the number of chunks in the area that are not generated yet, as the server does not scan them
+- Add "Scan on" to the general settings (Minecraft 1.21.9 and newer). "Server", the default, works as before: the server scans when it has PeriScan. "Client" always scans in your own game, even when the server has PeriScan
 
 ### Changed
-- Make YACL optional. Without it, PeriScan runs with the default settings, and the settings screens say that YACL is needed instead of opening
+- Make the server scan faster (Minecraft 1.21.9 and newer). The server now spends more of its spare time in each tick on the scan, and still leaves room for its own work

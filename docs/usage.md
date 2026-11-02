@@ -62,6 +62,8 @@ Deleting a profile with `/peri remove <name>` also removes the schematics placed
 
 How chunks get scanned depends on whether the server has PeriScan. In singleplayer, the game's own server has PeriScan too, so the scan always progresses as when the server has it.
 
+When "Scan on" in the settings is set to "Client", the scan progresses as when the server does not have PeriScan, even if it has it (Minecraft 1.21.9 and newer).
+
 #### When the server has PeriScan (Minecraft 1.21.9 and newer)
 
 The server scans every chunk of the area, including chunks no player has loaded. Until the scan is done, the bottom of the screen shows "the server is scanning - … chunks left", and a large orange box marks each chunk not scanned yet. To hide the boxes, turn off "Highlight unscanned chunks" in the settings.
@@ -175,6 +177,7 @@ The settings screens need YACL. Without YACL, PeriScan still runs, with the defa
 | East-west trench width | Width of the trenches at the east and west ends, in lanes (3–32) | 3 |
 | Maximum scanned Y | The highest Y coordinate that is scanned | 128 |
 | Show highlights | Turn off to hide everything PeriScan draws, both the highlights and the unscanned chunk boxes. Scanning continues | On |
+| Scan on | "Server": the server scans when it has PeriScan, and your game scans when it does not. "Client": your game always scans, and only the chunks loaded in your game are scanned (Minecraft 1.21.9 and newer) | Server |
 | Highlight unscanned chunks | Shows chunks that have not been scanned yet as boxes | On |
 | Unscanned chunk color | Color of the boxes above | Orange |
 | Exclude push-destroyed blocks from waterlogged check | Blocks that pistons break, such as leaves, coral and dripstone, are not highlighted even when waterlogged | On |

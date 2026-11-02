@@ -38,6 +38,8 @@ The server scans the whole area wherever the players are, including chunks no pl
 
 The server needs two things: PeriScan and Fabric API. It does not need YACL. In singleplayer, the game's own server has PeriScan too, so this works as is.
 
+To scan in your own game even when the server has PeriScan, set "Scan on" in the settings to "Client".
+
 ### Version table
 
 The jar to use for each Minecraft version, and the branch its source is on:

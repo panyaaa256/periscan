@@ -11,6 +11,7 @@ import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
+import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
@@ -21,6 +22,7 @@ import net.minecraft.network.chat.Component;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -48,6 +50,13 @@ public final class PeriScanConfigScreen {
 						.name(Component.translatable(KEY + "category.general"))
 						.option(tickBox("show_highlights", "show_highlights.desc", defaults.showHighlights,
 								() -> config.showHighlights, v -> config.showHighlights = v))
+						.option(option("scan_side", "scan_side.desc", defaults.scanSide,
+								() -> config.scanSide, v -> config.scanSide = v)
+								.controller(opt -> EnumControllerBuilder.create(opt)
+										.enumClass(PeriScanConfig.ScanSide.class)
+										.formatValue(side -> Component.translatable(
+												KEY + "scan_side." + side.name().toLowerCase(Locale.ROOT))))
+								.build())
 						.option(slider("ns_width", "ns_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.northSouthWidth,
 								() -> config.northSouthWidth, v -> config.northSouthWidth = v))
 						.option(slider("ew_width", "ew_width.desc", MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH, defaults.eastWestWidth,

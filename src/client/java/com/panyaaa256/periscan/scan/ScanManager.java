@@ -161,7 +161,13 @@ public class ScanManager {
 			pendingChunks.add(ChunkPosCompat.chunkKey(chunk));
 		}
 
-		remote = ClientPlayNetworking.canSend(ScanStartPayload.TYPE);
+		boolean wasRemote = remote;
+		// Without PeriScan on the server, the client scans even when set to the server.
+		remote = config.scanSide == PeriScanConfig.ScanSide.SERVER && ClientPlayNetworking.canSend(ScanStartPayload.TYPE);
+		if (wasRemote && !remote && ClientPlayNetworking.canSend(ScanStopPayload.TYPE)) {
+			// Switched to the client: the server would otherwise keep scanning.
+			ClientPlayNetworking.send(ScanStopPayload.INSTANCE);
+		}
 		if (remote) {
 			// The chunks stay pending until their results arrive (onChunkResult).
 			ClientPlayNetworking.send(new ScanStartPayload(++scanId, dim, a, b, settings));

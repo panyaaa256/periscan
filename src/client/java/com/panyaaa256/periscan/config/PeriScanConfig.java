@@ -132,6 +132,18 @@ public class PeriScanConfig {
 	@SerialEntry
 	public boolean showHighlights = true;
 
+	/** Where a scan runs. */
+	public enum ScanSide {
+		// On the server when it has PeriScan: it also reads the chunks that are not
+		// loaded from the save. On a server without PeriScan the client scans.
+		SERVER,
+		// Always on the client: only the chunks the client has loaded are scanned.
+		CLIENT
+	}
+
+	@SerialEntry
+	public ScanSide scanSide = ScanSide.SERVER;
+
 	/** Settings every zone has. */
 	public static class ZoneSettings {
 		public boolean enabled = true;
@@ -239,6 +251,8 @@ public class PeriScanConfig {
 		eastWestWidth = fix.clamp(eastWestWidth, MIN_TRENCH_WIDTH, MAX_TRENCH_WIDTH);
 		scanMaxY = fix.clamp(scanMaxY, MIN_SCAN_MAX_Y, MAX_SCAN_MAX_Y);
 		pendingChunkColor = fix.orDefault(pendingChunkColor, defaults.pendingChunkColor);
+		// Gson reads a name that is not one of the values as null.
+		scanSide = fix.orDefault(scanSide, defaults.scanSide);
 		waterloggedBlacklist = fix.entries(waterloggedBlacklist, defaults.waterloggedBlacklist);
 
 		trenchOuter = fix.orDefault(trenchOuter, defaults.trenchOuter);

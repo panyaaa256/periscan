@@ -37,12 +37,14 @@ class PeriScanConfigTest {
 		PeriScanConfig defaults = new PeriScanConfig();
 		PeriScanConfig config = new PeriScanConfig();
 		config.pendingChunkColor = null;
+		config.scanSide = null;
 		config.eater = null;
 		config.trenchOuter.color = null;
 		config.trenchOuter.blocks = null;
 
 		assertTrue(config.sanitize());
 		assertEquals(defaults.pendingChunkColor, config.pendingChunkColor);
+		assertEquals(PeriScanConfig.ScanSide.SERVER, config.scanSide);
 		assertEquals(defaults.eater.blocks, config.eater.blocks);
 		assertEquals(defaults.trenchOuter.color, config.trenchOuter.color);
 		assertEquals(defaults.trenchOuter.blocks, config.trenchOuter.blocks);

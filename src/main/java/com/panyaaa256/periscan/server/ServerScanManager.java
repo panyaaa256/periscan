@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,12 +25,24 @@ import java.util.UUID;
  * starts it again with /peri scan reload.
  */
 public final class ServerScanManager {
-	// Time each server tick may spend scanning chunks, shared by all sessions,
-	// so a large region does not hold up the tick.
-	private static final long SCAN_BUDGET_NANOS = 5_000_000;
+	// Share of the time left until the next tick that scanning may use, shared
+	// by all sessions. The rest stays for what the server does while it waits
+	// (packets, chunk loading for the players).
+	private static final double SCAN_BUDGET_SHARE = 0.6;
+	// Time scanning may use when there is none left (an overloaded server, or
+	// /tick sprint), so a scan still gets through.
+	private static final long MIN_SCAN_BUDGET_NANOS = 1_000_000;
+	// Ticks summed up in each timing line of the debug log.
+	private static final int TIMING_LOG_TICKS = 20;
 
 	// Only touched on the server thread: payload handlers, ticks and connection events run there.
 	private static final Map<UUID, ServerScanSession> SESSIONS = new LinkedHashMap<>();
+
+	// Scan timing since the last debug log line (see logTiming).
+	private static int timingTicks;
+	private static long timingBudgetNanos;
+	private static long timingUsedNanos;
+	private static int timingChunks;
 
 	private ServerScanManager() {
 	}
@@ -42,7 +55,10 @@ public final class ServerScanManager {
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.getPlayer()));
 		ServerTickEvents.END_SERVER_TICK.register(ServerScanManager::onTick);
 		// Singleplayer starts a new integrated server for every world it opens.
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> SESSIONS.clear());
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			SESSIONS.clear();
+			resetTiming();
+		});
 	}
 
 	private static void start(ServerPlayer player, ScanStartPayload request) {
@@ -80,16 +96,53 @@ public final class ServerScanManager {
 				scanning.add(session);
 			}
 		}
+		if (scanning.isEmpty()) {
+			return;
+		}
+		// The server has already moved its next tick time on when this event runs
+		// (after the tick time is measured), and it compares it with Util.getNanos(),
+		// which is System.nanoTime() unless something replaces it.
+		long start = System.nanoTime();
+		long budget = Math.max(MIN_SCAN_BUDGET_NANOS,
+				(long) ((server.getNextTickTime() - start) * SCAN_BUDGET_SHARE));
 		// Each session gets an even share of what is left of the budget, so one
 		// large region does not keep the other players waiting.
-		long end = System.nanoTime() + SCAN_BUDGET_NANOS;
+		long end = start + budget;
 		int left = scanning.size();
+		int chunks = 0;
 		for (ServerScanSession session : scanning) {
 			long now = System.nanoTime();
 			if (now >= end) {
 				break;
 			}
-			session.scanSome(server, now + (end - now) / left--);
+			chunks += session.scanSome(server, now + (end - now) / left--);
 		}
+		logTiming(budget, System.nanoTime() - start, chunks);
+	}
+
+	/** Sums up the scan timing of the ticks that scanned, and logs it every TIMING_LOG_TICKS of them. */
+	private static void logTiming(long budget, long used, int chunks) {
+		timingTicks++;
+		timingBudgetNanos += budget;
+		timingUsedNanos += used;
+		timingChunks += chunks;
+		if (timingTicks < TIMING_LOG_TICKS) {
+			return;
+		}
+		if (PeriScan.LOGGER.isDebugEnabled()) {
+			PeriScan.LOGGER.debug("PeriScan: last {} ticks: {} ms budget, {} ms used, {} chunks per tick on average",
+					timingTicks,
+					String.format(Locale.ROOT, "%.2f", timingBudgetNanos / 1e6 / timingTicks),
+					String.format(Locale.ROOT, "%.2f", timingUsedNanos / 1e6 / timingTicks),
+					String.format(Locale.ROOT, "%.1f", (double) timingChunks / timingTicks));
+		}
+		resetTiming();
+	}
+
+	private static void resetTiming() {
+		timingTicks = 0;
+		timingBudgetNanos = 0;
+		timingUsedNanos = 0;
+		timingChunks = 0;
 	}
 }

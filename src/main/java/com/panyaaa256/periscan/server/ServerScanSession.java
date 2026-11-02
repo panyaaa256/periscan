@@ -150,13 +150,16 @@ final class ServerScanSession {
 	 * Scans chunks until there are none left to scan right now or
 	 * System.nanoTime() reaches the deadline. Does nothing while the player or
 	 * the dimension is missing (the session ends when the player leaves).
+	 *
+	 * @return the number of chunks scanned
 	 */
-	void scanSome(MinecraftServer server, long deadline) {
+	int scanSome(MinecraftServer server, long deadline) {
 		ServerPlayer target = server.getPlayerList().getPlayer(player);
 		ServerLevel level = server.getLevel(dimension);
 		if (target == null || level == null) {
-			return;
+			return 0;
 		}
+		int scannedBefore = scanned.size();
 		int minY = ZoneScanner.minY(level);
 		int maxY = scanner.maxY(level);
 		runBlocks(level);
@@ -208,6 +211,7 @@ final class ServerScanSession {
 			fallingRuns.flush(runBlocks, scanner.layout().region(), fallingRunLength, deadline);
 			sendFallingRuns(target);
 		}
+		return scanned.size() - scannedBefore;
 	}
 
 	private RunBlockCache runBlocks(ServerLevel level) {
